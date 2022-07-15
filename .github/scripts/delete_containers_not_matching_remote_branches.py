@@ -33,7 +33,7 @@ def main(package_name: str, dry_run: bool) -> None:
 
     # first fetch a list of all docker images (as well as other information) from the repository
     all_docker_images = subprocess.check_output(
-        'gcloud artifacts docker images list europe-west1-docker.pkg.dev/earthwave-sys-0/ewdr', shell=True
+        'gcloud artifacts docker images list europe-west1-docker.pkg.dev/glambie/dr', shell=True
     ).decode().split("\n")[1:-1]  # strip off header and trailing newline with indexing
 
     # extract only the docker image names related to this package

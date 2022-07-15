@@ -20,7 +20,7 @@ else:
 setup(
     name='glambie',
     version=version_number,
-    description='Template repository for Earthwave Python Packages.',
+    description='Public software developed for the Glacier Mass Balance Intercomparison Exercise (GlaMBIE)',
     long_description=long_description,
     long_description_content_type="text/markdown",
     author='Earthwave Ltd',

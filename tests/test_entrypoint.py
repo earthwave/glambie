@@ -2,10 +2,10 @@ import sys
 from unittest.mock import patch
 
 
-from python_template.example_entrypoint import main
+from glambie.example_entrypoint import main
 
 
-@patch.object(sys, 'argv', ["python_template", "-a", "4", "-b", "5"])
+@patch.object(sys, 'argv', ["glambie", "-a", "4", "-b", "5"])
 def test_main(capsys):
     main()
     stdout = str(capsys.readouterr())

@@ -4,14 +4,14 @@ Note that not all packages need a command line entry point.
 """
 import argparse
 
-from python_template.example_module_a import BadCalculator
-from python_template.example_sub_package.example_module_b import WorseCalculator
+from glambie.example_module_a import BadCalculator
+from glambie.example_sub_package.example_module_b import WorseCalculator
 
 
 def main():
     # Build the argument parser
     parser = argparse.ArgumentParser(
-        prog='python_template', description='Perform some bad calculations on two integers.')
+        prog='glambie', description='Perform some bad calculations on two integers.')
     parser.add_argument('-a', dest='integer_a', type=int, help='The first integer')
     parser.add_argument('-b', dest='integer_b', type=int, help='The second integer')
 

@@ -1,6 +1,6 @@
 import pytest
 
-from python_template.example_sub_package.example_module_b import WorseCalculator
+from glambie.example_sub_package.example_module_b import WorseCalculator
 
 
 @pytest.fixture()

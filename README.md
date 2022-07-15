@@ -1,6 +1,6 @@
-![example workflow](https://github.com/earthwave/python-template/actions/workflows/python_template_test.yml/badge.svg)
-![example workflow](https://github.com/earthwave/python-template/actions/workflows/python_template_deploy.yml/badge.svg)
-# python-template
+![example workflow](https://github.com/earthwave/glambie/actions/workflows/glambie_test.yml/badge.svg)
+![example workflow](https://github.com/earthwave/glambie/actions/workflows/glambie_deploy.yml/badge.svg)
+# glambie
 This repository serves as a template for the creation of new Earthwave Python Packages.
 Please copy this template (the entire repository) to create all new Earthwave Python Packages.
 
@@ -13,12 +13,12 @@ It does not cover all of the work needed to upload a containerised service to a 
 If you're unfamiliar with GitHub or with CI/CD, please ask a Software Engineer to help you set up this template. You should start by hitting the "Use This Template" button and creating a new repository with your preferred package name. Remember to carefully consider the name! 
 
 ### Updating the names in the template and triggering the first successful workflow
-The next thing you should do is clone the repository and make a single commit to a **new branch** in which you have changed both "python_template"  to "\<your new package\>" everywhere in the code, including for **file names and folder names**. Remember also to look for "python-template" and change those instances as well. It is important to make this change now, or you won't be able to set up branch protection later.
+The next thing you should do is clone the repository and make a single commit to a **new branch** in which you have changed both "glambie"  to "\<your new package\>" everywhere in the code, including for **file names and folder names**. Remember also to look for "glambie" and change those instances as well. It is important to make this change now, or you won't be able to set up branch protection later.
 
 Push this change and wait for the CI chain to complete succesfully (a green tick on the actions page). This should take a few minutes at most. Once that happens, merge your first branch to main and delete it. You should see the deploy stage completing succesfully and the first version of your new package being published to the [Google Python Artifact Registry](https://console.cloud.google.com/artifacts/python/earthwave-sys-0/europe-west1/ewpr).
 Look under the "actions" tab for a green tick. if you see an orange circle, wait for it to finish and result in a green tick (you may need to refresh the page).
 
-If you see one red x (the first run, a failed "deploy") and two green ticks, you're ready to proceed. If not, go back and make sure you've updated all instances of "python_template" and "python-template", including for file names and folder names, and push again.
+If you see one red x (the first run, a failed "deploy") and two green ticks, you're ready to proceed. If not, go back and make sure you've updated all instances of "glambie" and "glambie", including for file names and folder names, and push again.
 
 ### Updating the General settings
 you should now change some settings for your new repository. Hit "Settings" from the top menu and then "General" on the left menu.
@@ -47,7 +47,7 @@ plus any additional teams that are relevant to the repository.
 The next thing you need to set up is branch protection rules. These are *not* automatically copied over
 from the template repository. Hit "Settings" from the top menu, then "branches" on the left menu, then "add rule" on the right.
 Only one branch protection rule needs to be added (for main).
-You can see the correct configuration [here, in the branch protection rules for the template](https://github.com/earthwave/python-template/settings/branch_protection_rules/26319410). Type "main" into the Branch name pattern box.
+You can see the correct configuration [here, in the branch protection rules for the template](https://github.com/earthwave/glambie/settings/branch_protection_rules/26319410). Type "main" into the Branch name pattern box.
 
 Ensure the following *are* ticked:
 * Require a pull request before merging
@@ -102,7 +102,7 @@ to the higher Operational Standard, you need to swap in two files:
 1. Delete `.github/test_requirements.txt` and rename `.github/test_requirements_operational.txt` to `.github/test_requirements.txt`.
 2. Delete `setup.cfg` and rename `setup_operational.cfg` to `setup.cfg`.
 
-Additionally, delete the line `notebooks_allowed: true` from `.github/workflows/python_template_test.yml`
+Additionally, delete the line `notebooks_allowed: true` from `.github/workflows/glambie_test.yml`
 
 This repository is written to the Basic Standard, and so will not pass the CI chain at the Operational Standard.
 You'll need to make some improvements first, as indicated by the CI chain.
@@ -133,19 +133,19 @@ to run `gcloud auth login --no-launch-browser` and follow the simple instruction
 the latest version from the Earthwave Python Google Artifact Repository:
 
 ```
-pip install python-template --extra-index-url https://europe-west1-python.pkg.dev/earthwave-sys-0/ewpr/simple/ --use-deprecated=legacy-resolver
+pip install glambie --extra-index-url https://europe-west1-python.pkg.dev/earthwave-sys-0/ewpr/simple/ --use-deprecated=legacy-resolver
 ```
 
 You can then use this package as follows (obviously you will need to edit this section after copying this template):
 
 ```
-python -m python_template -a <number_a> -b <number_b>
+python -m glambie -a <number_a> -b <number_b>
 ```
 
 For more help, run:
 
 ```
-python -m python_template -h
+python -m glambie -h
 ```
 
 
@@ -153,8 +153,8 @@ python -m python_template -h
 To develop this package, please clone the repository:
 
 ```
-git clone https://github.com/earthwave/python-template.git
-cd python-template
+git clone https://github.com/earthwave/glambie.git
+cd glambie
 ```
 
 Then create a new conda environment:

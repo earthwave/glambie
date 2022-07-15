@@ -1,6 +1,6 @@
 import pytest
 
-from python_template.example_module_a import BadCalculator
+from glambie.example_module_a import BadCalculator
 
 
 @pytest.fixture()

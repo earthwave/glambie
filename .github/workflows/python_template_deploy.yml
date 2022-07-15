@@ -1,6 +1,6 @@
 # When a version tag is pushed, deploy using that tag.
-# When adapting this template for your own use, please rename "python_template" to your package name.
-name: python_template_deploy
+# When adapting this template for your own use, please rename "glambie" to your package name.
+name: glambie_deploy
 
 on:
   push:
@@ -11,12 +11,12 @@ jobs:
   build_container_if_needed:
     uses: ./.github/workflows/generic_build_container_if_needed.yml
     with:
-      package_name: python_template
+      package_name: glambie
     secrets: inherit
 
   deploy:
     needs: build_container_if_needed
     uses: ./.github/workflows/generic_deploy.yml
     with:
-      package_name: python_template
+      package_name: glambie
     secrets: inherit

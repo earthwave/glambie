@@ -18,14 +18,14 @@ else:
     version_number = 'v0.0.0'  # default value when under development
 
 setup(
-    name='python_template',
+    name='glambie',
     version=version_number,
     description='Template repository for Earthwave Python Packages.',
     long_description=long_description,
     long_description_content_type="text/markdown",
     author='Earthwave Ltd',
     author_email='info@earthwave.co.uk',
-    url='https://github.com/earthwave/python-template',
+    url='https://github.com/earthwave/glambie',
     python_requires=">=3.9",
     packages=find_packages(),
     # note requirements listed ininstall_requires should be the *minimum required*

@@ -1,10 +1,10 @@
 # start from Earthwave's agreed common python starting image
 FROM continuumio/miniconda3:4.11.0
-# add the earthwave user, set their password and switch to their home directory
-RUN useradd -m earthwave
-ARG EARTHWAVE_PASSWORD
-RUN echo "earthwave:${EARTHWAVE_PASSWORD}" | chpasswd
-WORKDIR /home/earthwave
+# add the glambie user, set their password and switch to their home directory
+RUN useradd -m glambie
+ARG GLAMBIE_PASSWORD
+RUN echo "earthwave:${GLAMBIE_PASSWORD}" | chpasswd
+WORKDIR /home/glambie
 # install rsync so that we can use it to copy files in and out of drives / buckets, and curl for the next step
 RUN apt-get update && apt-get install -y rsync curl
 # install google cloud tools (right now, just for debugging within the container)

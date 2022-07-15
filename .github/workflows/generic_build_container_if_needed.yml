@@ -99,7 +99,7 @@ jobs:
           EOT
           docker build \
             --build-arg PACKAGE_NAME=${{ inputs.package_name }} \
-            --build-arg EARTHWAVE_PASSWORD=${{ secrets.EARTHWAVE_PASSWORD }} \
+            --build-arg GLAMBIE_PASSWORD=${{ secrets.GLAMBIE_PASSWORD }} \
             -t ${{ steps.name_container.outputs.image_name }} -f .github/test_env_dockerfile .
 
       - name: Push image to cloud

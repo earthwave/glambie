@@ -78,11 +78,6 @@ jobs:
         shell: bash -l {0}
     steps:
       - uses: actions/checkout@v3
-        # Note that git actions performed with secrets.GITHUB_TOKEN will not trigger another workflow. 
-        # To trigger another workflow, you must use a PAT instead (and that PAT must have workflow permissions).
-        # Here, we use the ADMIN_PAT because we're going to impersonate earthwave-admin to tag the release.
-        with:
-            token: ${{ secrets.EARTHWAVE_ADMIN_PAT }}
 
       - name: Prepare repository for interaction
         # we have to manually set the username and email before we can commit and push
@@ -91,8 +86,8 @@ jobs:
         run: |
           git tag -d $(git tag -l)
           git fetch --tags
-          git config --global user.name "earthwave-admin"
-          git config --global user.email "github_admin@earthwave.co.uk"
+          git config --global user.name "glambie-admin"
+          git config --global user.email "glambie@earthwave.co.uk"
           git config --global pull.rebase false
 
       - name: Build
@@ -131,7 +126,7 @@ jobs:
         # Note we have to export a PAT before we can use the GitHub CLI (which this script does internally)
         run: |
           conda activate ${{ inputs.package_name }}
-          export GH_TOKEN=${{ secrets.EARTHWAVE_ADMIN_PAT }}
+          export GH_TOKEN=${{ github.token }}
           python .github/scripts/upversion_dependencies.py \
             --this_repo_name $GITHUB_REPOSITORY \
             --this_package_name "${{ inputs.package_name }}" \

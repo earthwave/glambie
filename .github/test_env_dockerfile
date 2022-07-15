@@ -3,7 +3,7 @@ FROM continuumio/miniconda3:4.11.0
 # add the glambie user, set their password and switch to their home directory
 RUN useradd -m glambie
 ARG GLAMBIE_PASSWORD
-RUN echo "earthwave:${GLAMBIE_PASSWORD}" | chpasswd
+RUN echo "glambie:${GLAMBIE_PASSWORD}" | chpasswd
 WORKDIR /home/glambie
 # install rsync so that we can use it to copy files in and out of drives / buckets, and curl for the next step
 RUN apt-get update && apt-get install -y rsync curl
@@ -11,8 +11,8 @@ RUN apt-get update && apt-get install -y rsync curl
 RUN curl -sSL https://sdk.cloud.google.com | bash
 ENV PATH $PATH:/root/google-cloud-sdk/bin
 # set google cloud application default credentials
-COPY gcp_credentials.json /home/earthwave/gcp_credentials.json
-ENV GOOGLE_APPLICATION_CREDENTIALS /home/earthwave/gcp_credentials.json
+COPY gcp_credentials.json /home/glambie/gcp_credentials.json
+ENV GOOGLE_APPLICATION_CREDENTIALS /home/glambie/gcp_credentials.json
 # we use PACKAGE_NAME as an argument so we can use the same dockerfile for any package
 ARG PACKAGE_NAME
 # create the conda environment. Note that you have to specify a particular version here

@@ -11,8 +11,8 @@ RUN apt-get update && apt-get install -y rsync curl
 RUN curl -sSL https://sdk.cloud.google.com | bash
 ENV PATH $PATH:/root/google-cloud-sdk/bin
 # set google cloud application default credentials
-COPY gcp_credentials.json /home/glambie/gcp_credentials.json
-ENV GOOGLE_APPLICATION_CREDENTIALS /home/glambie/gcp_credentials.json
+COPY GLAMBIE_GCP_CREDENTIALS.json /home/glambie/GLAMBIE_GCP_CREDENTIALS.json
+ENV GOOGLE_APPLICATION_CREDENTIALS /home/glambie/GLAMBIE_GCP_CREDENTIALS.json
 # we use PACKAGE_NAME as an argument so we can use the same dockerfile for any package
 ARG PACKAGE_NAME
 # create the conda environment. Note that you have to specify a particular version here
@@ -30,4 +30,4 @@ RUN conda run --name ${PACKAGE_NAME} pip install -r .github/test_requirements.tx
 # install the package's requirements, including Earthwave dependencies.
 COPY requirements.txt requirements.txt
 RUN conda run --name ${PACKAGE_NAME} pip install -r requirements.txt \
-    --extra-index-url https://europe-west1-python.pkg.dev/earthwave-sys-0/ewpr/simple/ --use-deprecated=legacy-resolver
+    --extra-index-url https://europe-west1-python.pkg.dev/glambie-0/pr/simple/ --use-deprecated=legacy-resolver

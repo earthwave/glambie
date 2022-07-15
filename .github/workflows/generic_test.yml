@@ -38,11 +38,11 @@ jobs:
 
       - id: lower_case_ref
         run: |
-          echo "::set-output name=image_name::europe-west1-docker.pkg.dev/earthwave-sys-0/ewdr/${{ inputs.package_name }}_$(echo "$GITHUB_REF_NAME" | awk '{print tolower($0)}')"
+          echo "::set-output name=image_name::europe-west1-docker.pkg.dev/glambie-0/dr/${{ inputs.package_name }}_$(echo "$GITHUB_REF_NAME" | awk '{print tolower($0)}')"
 
       - id: specify
         run: |
-          echo "::set-output name=image_name::europe-west1-docker.pkg.dev/earthwave-sys-0/ewdr/${{ inputs.package_name }}_$(echo "$GITHUB_REF_NAME" | awk '{print tolower($0)}')"
+          echo "::set-output name=image_name::europe-west1-docker.pkg.dev/glambie-0/dr/${{ inputs.package_name }}_$(echo "$GITHUB_REF_NAME" | awk '{print tolower($0)}')"
     outputs:
       image_name: ${{ steps.specify.outputs.image_name }}
 
@@ -53,7 +53,7 @@ jobs:
       image: ${{ needs.generate_container_name.outputs.image_name }}
       credentials:
         username: _json_key
-        password: ${{ secrets.GCP_CREDENTIALS }}
+        password: ${{ secrets.GLAMBIE_GCP_CREDENTIALS }}
     defaults:
       run:
         shell: bash -l {0}
@@ -91,7 +91,7 @@ jobs:
       image: ${{ needs.generate_container_name.outputs.image_name }}
       credentials:
         username: _json_key
-        password: ${{ secrets.GCP_CREDENTIALS }}
+        password: ${{ secrets.GLAMBIE_GCP_CREDENTIALS }}
     defaults:
       run:
         shell: bash -l {0}
@@ -112,7 +112,7 @@ jobs:
       image: ${{ needs.generate_container_name.outputs.image_name }}
       credentials:
         username: _json_key
-        password: ${{ secrets.GCP_CREDENTIALS }}
+        password: ${{ secrets.GLAMBIE_GCP_CREDENTIALS }}
       # Allow access to the GPUs on Greenie and Bluey
       options: --gpus all
     defaults:

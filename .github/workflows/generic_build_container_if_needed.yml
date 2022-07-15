@@ -40,7 +40,7 @@ jobs:
         id: auth
         uses: google-github-actions/auth@v0
         with:
-          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+          credentials_json: ${{ secrets.GLAMBIE_GCP_CREDENTIALS }}
 
       - name: Setup the Google Cloud SDK
         uses: 'google-github-actions/setup-gcloud@v0'
@@ -48,12 +48,12 @@ jobs:
       - name: Define container name
         id: name_container
         run: |
-          echo "::set-output name=image_name::europe-west1-docker.pkg.dev/earthwave-sys-0/ewdr/${{ inputs.package_name }}_$(echo "$GITHUB_REF_NAME" | awk '{print tolower($0)}')"     
+          echo "::set-output name=image_name::europe-west1-docker.pkg.dev/glambie-0/dr/${{ inputs.package_name }}_$(echo "$GITHUB_REF_NAME" | awk '{print tolower($0)}')"     
 
       - name: Check if container already exists
         id: check_container
         run: |
-          gcloud artifacts docker images list europe-west1-docker.pkg.dev/earthwave-sys-0/ewdr | grep "${{ steps.name_container.outputs.image_name }}"
+          gcloud artifacts docker images list europe-west1-docker.pkg.dev/glambie-0/dr | grep "${{ steps.name_container.outputs.image_name }}"
           echo "::set-output name=exists::$?"
 
       - name: Check if package requirements changed
@@ -94,8 +94,8 @@ jobs:
           steps.check_files.outputs.dockerfile != 0 ||
           steps.check_container.outputs.exists != 0
         run: |
-          cat <<EOT > gcp_credentials.json
-          ${{ secrets.GCP_CREDENTIALS }}
+          cat <<EOT > GLAMBIE_GCP_CREDENTIALS.json
+          ${{ secrets.GLAMBIE_GCP_CREDENTIALS }}
           EOT
           docker build \
             --build-arg PACKAGE_NAME=${{ inputs.package_name }} \

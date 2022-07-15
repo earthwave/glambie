@@ -1,0 +1,129 @@
+# A reuseable generic pipeline for testing an Earthwave Python package
+name: generic_test
+
+on:
+  workflow_call:
+    inputs:
+      package_name:
+        description: 'The name of the package to build.'
+        required: true
+        type: string    
+      notebooks_allowed:
+        description: 'Whether or not Jupyter notebooks are permitted in the package.'
+        default: false
+        required: false
+        type: boolean
+      home_directories_allowed:
+        description: 'Whether or not hardcoded home directories are permitted in the package.'
+        default: false
+        required: false
+        type: boolean
+      file_size_limit_mb:
+        description: 'The CI chain will fail if there are any files present larger than this size in MB.'
+        default: 15  # when malardpy was refactored, the largest file present in the output was 12.5 MB in size
+        required: false
+        type: number
+
+jobs:
+  generate_container_name:
+    # work out which container to use for the remainder of the pipeline, based on the package and branch name
+    runs-on: self-hosted
+    container:
+      image: ubuntu:22.04
+    defaults:
+      run:
+        shell: bash -l {0}    
+    steps:
+      - uses: actions/checkout@v3
+
+      - id: lower_case_ref
+        run: |
+          echo "::set-output name=image_name::europe-west1-docker.pkg.dev/earthwave-sys-0/ewdr/${{ inputs.package_name }}_$(echo "$GITHUB_REF_NAME" | awk '{print tolower($0)}')"
+
+      - id: specify
+        run: |
+          echo "::set-output name=image_name::europe-west1-docker.pkg.dev/earthwave-sys-0/ewdr/${{ inputs.package_name }}_$(echo "$GITHUB_REF_NAME" | awk '{print tolower($0)}')"
+    outputs:
+      image_name: ${{ steps.specify.outputs.image_name }}
+
+  lint:
+    needs: generate_container_name
+    runs-on: self-hosted
+    container:
+      image: ${{ needs.generate_container_name.outputs.image_name }}
+      credentials:
+        username: _json_key
+        password: ${{ secrets.GCP_CREDENTIALS }}
+    defaults:
+      run:
+        shell: bash -l {0}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: enforce no jupyter notebooks allowed
+        if: ${{ ! inputs.notebooks_allowed }}
+        run: |
+          [[ ! $(find . -type f -name *.ipynb | grep .) ]]
+
+      - name: enforce max noqa statement count
+        # an additional check against those trying to dodge the linter
+        run : |
+          test $(grep -r . -e "noqa:" | wc -l) -le 100
+
+      - name: enforce no hard-coded home directories
+        if: ${{ ! inputs.home_directories_allowed }}
+        run: |
+          [[ ! $(grep -r -e "/home/" --include=\*.py --include=\*.ipynb .) ]]
+
+      - name: enforce no large files
+        run: |
+          [[ $(find . -printf '%s %p\n'| grep -v .git | sort -nr | head -1 | awk '{print $1}') -le ${{ inputs.file_size_limit_mb }}*1024*1024 ]]
+
+      - name: linting
+        run: |
+          conda activate ${{ inputs.package_name }}
+          flake8
+
+  build_test:
+    needs: generate_container_name
+    runs-on: self-hosted
+    container:
+      image: ${{ needs.generate_container_name.outputs.image_name }}
+      credentials:
+        username: _json_key
+        password: ${{ secrets.GCP_CREDENTIALS }}
+    defaults:
+      run:
+        shell: bash -l {0}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Check module can be built
+        # define_new_version_number.py generates full_version.txt which is used to define the version in setup.py
+        run: |
+          conda activate ${{ inputs.package_name }}
+          python .github/scripts/define_new_version_number.py
+          python setup.py sdist bdist_wheel
+
+  unit_test:
+    needs: [generate_container_name, lint, build_test]
+    runs-on: self-hosted
+    container:
+      image: ${{ needs.generate_container_name.outputs.image_name }}
+      credentials:
+        username: _json_key
+        password: ${{ secrets.GCP_CREDENTIALS }}
+      # Allow access to the GPUs on Greenie and Bluey
+      options: --gpus all
+    defaults:
+      run:
+        shell: bash -l {0}
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: unit tests
+        run: |
+          conda activate ${{ inputs.package_name }}
+          python setup.py develop
+          pytest
+  

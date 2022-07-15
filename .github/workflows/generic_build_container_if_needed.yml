@@ -1,0 +1,114 @@
+# A reuseable generic pipeline for building a container (if necessary) for testing and deploying Earthwave python packages
+name: generic_build_container_if_needed
+
+on:
+  workflow_call:
+    inputs:
+      package_name:
+        description: 'The name of the package to build.'
+        required: true
+        type: string     
+
+jobs:
+  build_container_if_necessary:
+    # Do we actually need to build the container at all?
+    # We build (or rebuild) the container if the package requirements change or it does not already exist.
+    runs-on: self-hosted
+    container:
+      image: ubuntu:22.04
+    defaults:
+      run:
+        shell: bash -l {0}  
+    steps:
+      - name: Install dependencies not included in image
+        # note we need to install git first or actions/checkout@v3 will use GitHub's REST API instead.
+        # TODO: swap this out for a better base container.
+        run: |
+          apt-get update
+          apt-get install -y python3.9 git
+    
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: '2'
+
+      - name: Fix issue with actions/checkout
+        # For some reason we can't run later git commands using this image unless we complete this step
+        run: |
+          git config --global --add safe.directory $GITHUB_WORKSPACE
+
+      - name: Authenticate with Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v0
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+
+      - name: Setup the Google Cloud SDK
+        uses: 'google-github-actions/setup-gcloud@v0'
+
+      - name: Define container name
+        id: name_container
+        run: |
+          echo "::set-output name=image_name::europe-west1-docker.pkg.dev/earthwave-sys-0/ewdr/${{ inputs.package_name }}_$(echo "$GITHUB_REF_NAME" | awk '{print tolower($0)}')"     
+
+      - name: Check if container already exists
+        id: check_container
+        run: |
+          gcloud artifacts docker images list europe-west1-docker.pkg.dev/earthwave-sys-0/ewdr | grep "${{ steps.name_container.outputs.image_name }}"
+          echo "::set-output name=exists::$?"
+
+      - name: Check if package requirements changed
+        id: check_files
+        # note that we have to run git init to re-initialise the repo before we can run git commands.
+        # this is true only when using the ubuntu image.
+        run: |
+          git diff --exit-code HEAD^ HEAD setup.py
+          echo "::set-output name=setup::$?"
+          git diff --exit-code HEAD^ HEAD requirements.txt
+          echo "::set-output name=requirements::$?"
+          git diff --exit-code HEAD^ HEAD .github/test_env_dockerfile
+          echo "::set-output name=dockerfile::$?"
+          git diff --exit-code HEAD^ HEAD .github/test_requirements.txt
+          echo "::set-output name=test_requirements::$?"
+
+      - name: Install Docker
+        if: |
+          steps.check_files.outputs.setup != 0 ||
+          steps.check_files.outputs.requirements != 0 ||
+          steps.check_files.outputs.test_requirements != 0 ||
+          steps.check_files.outputs.dockerfile != 0 ||
+          steps.check_container.outputs.exists != 0
+        run: |
+          apt-get install -y ca-certificates sudo curl gnupg lsb-release
+          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+          echo \
+            "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
+            $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+          apt-get update
+          apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin        
+
+      - name: Build container image
+        if: |
+          steps.check_files.outputs.setup != 0 ||
+          steps.check_files.outputs.requirements != 0 ||
+          steps.check_files.outputs.test_requirements != 0 ||
+          steps.check_files.outputs.dockerfile != 0 ||
+          steps.check_container.outputs.exists != 0
+        run: |
+          cat <<EOT > gcp_credentials.json
+          ${{ secrets.GCP_CREDENTIALS }}
+          EOT
+          docker build \
+            --build-arg PACKAGE_NAME=${{ inputs.package_name }} \
+            --build-arg EARTHWAVE_PASSWORD=${{ secrets.EARTHWAVE_PASSWORD }} \
+            -t ${{ steps.name_container.outputs.image_name }} -f .github/test_env_dockerfile .
+
+      - name: Push image to cloud
+        if: |
+          steps.check_files.outputs.setup != 0 ||
+          steps.check_files.outputs.requirements != 0 ||
+          steps.check_files.outputs.test_requirements != 0 ||
+          steps.check_files.outputs.dockerfile != 0 ||
+          steps.check_container.outputs.exists != 0
+        run: |
+          gcloud auth configure-docker europe-west1-docker.pkg.dev
+          docker push ${{ steps.name_container.outputs.image_name }}              

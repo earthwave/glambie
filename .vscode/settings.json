@@ -1,0 +1,22 @@
+{
+    "files.autoSave": "afterDelay",
+    "editor.rulers": [120],
+    "python.linting.flake8Enabled": true,
+    "python.testing.pytestEnabled": true,
+    "python.testing.pytestArgs": [
+        "--no-cov"
+    ],
+    "python.sortImports.args": [
+        "--profile",
+        "google",
+        "--project",
+        "ew_common",
+        "--project",
+        "ew_malard_client",
+        "--project",
+        "ew_eolis",
+    ],
+    "autoDocstring.docstringFormat": "numpy",
+    "autoDocstring.startOnNewLine": true,
+    "python.languageServer": "Pylance",
+}

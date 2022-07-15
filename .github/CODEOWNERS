@@ -1,0 +1,11 @@
+# This is a comment.
+# Each line is a file pattern followed by one or more owners.
+
+# This file instructs GitHub to automatically request review from individuals and teams when a Pull Request is opened
+# that includes changes to certain areas of code. Note that individuals and teams need explicit write access to the
+# repository for this to work.
+
+# See https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+# for further information
+
+* @earthwave/engineering

@@ -1,0 +1,139 @@
+# A reuseable generic pipeline for deploying an Earthwave Python package.
+# Note that this pipeline assumes that setup.py already knows what version to deploy as.
+# In the template, this is achieved through the GITHUB_REF_NAME environment variable.
+name: generic_deploy
+
+on:
+  workflow_call:
+    inputs:
+      package_name:
+        description: 'The name of the package to build.'
+        required: true
+        type: string
+
+jobs:
+  generate_container_name:
+    # work out which container to use for the remainder of the pipeline, based on the package and branch name
+    runs-on: self-hosted
+    container:
+      image: ubuntu:22.04
+    defaults:
+      run:
+        shell: bash -l {0}
+    steps:
+      - uses: actions/checkout@v3
+      - id: specify
+        run: |
+          echo "::set-output name=image_name::europe-west1-docker.pkg.dev/earthwave-sys-0/ewdr/${{ inputs.package_name }}_main"
+    outputs:
+      image_name: ${{ steps.specify.outputs.image_name }}
+
+  tidy_images_and_branches:
+    # delete docker images that are no longer needed (notionally because we just merged the associated branch into main)
+    needs: generate_container_name
+    runs-on: self-hosted
+    container:
+      image: ${{ needs.generate_container_name.outputs.image_name }}
+      credentials:
+        username: _json_key
+        password: ${{ secrets.GCP_CREDENTIALS }}
+    defaults:
+      run:
+        shell: bash -l {0}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Authenticate with Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v0
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+
+      - name: Setup the Google Cloud SDK
+        uses: 'google-github-actions/setup-gcloud@v0'          
+
+      - name: Delete old docker images from artifact repo
+        # note keyfile is already present in container image (was copied over during build)
+        # we have to add the cloud sdk tools back to the $PATH before python can use them properly
+        run: |
+          conda activate ${{ inputs.package_name }}
+          export PATH=/root/google-cloud-sdk/bin:$PATH
+          python .github/scripts/delete_containers_not_matching_remote_branches.py --package_name ${{ inputs.package_name }}
+
+      - name: Delete old branches from the git repo
+        run: |
+          conda activate ${{ inputs.package_name }}
+          python .github/scripts/delete_old_branches.py --branch_age_limit_days 30
+
+  deploy:
+    needs: generate_container_name
+    runs-on: self-hosted
+    container:
+      image: ${{ needs.generate_container_name.outputs.image_name }}
+      credentials:
+        username: _json_key
+        password: ${{ secrets.GCP_CREDENTIALS }}
+    defaults:
+      run:
+        shell: bash -l {0}
+    steps:
+      - uses: actions/checkout@v3
+        # Note that git actions performed with secrets.GITHUB_TOKEN will not trigger another workflow. 
+        # To trigger another workflow, you must use a PAT instead (and that PAT must have workflow permissions).
+        # Here, we use the ADMIN_PAT because we're going to impersonate earthwave-admin to tag the release.
+        with:
+            token: ${{ secrets.EARTHWAVE_ADMIN_PAT }}
+
+      - name: Prepare repository for interaction
+        # we have to manually set the username and email before we can commit and push
+        # for some reason, actions/checkout pulls in tags attached to dangling commits, so we need to remove those too
+        # lastly, we set pull.rebase false to suppress a hint message
+        run: |
+          git tag -d $(git tag -l)
+          git fetch --tags
+          git config --global user.name "earthwave-admin"
+          git config --global user.email "github_admin@earthwave.co.uk"
+          git config --global pull.rebase false
+
+      - name: Build
+        # define_new_version_number.py generates full_version.txt for use in the next step
+        run: |
+          conda activate ${{ inputs.package_name }}
+          python .github/scripts/define_new_version_number.py
+          python setup.py sdist bdist_wheel
+
+      - name: Tag current rev as this version
+        id: push_tags
+        # we add "|| exit 1" to ensure that if the tag already exists, the build fails.
+        # The tag may already exist if there were two merges to main in rapid succession.
+        # This isn't a problem, as we'll simply deploy next time.
+        # Note that we intentionally do not create GitHub releases becuase we instead store our releases
+        # in the Google Python Artifact Repo.        
+        run: |
+          git tag "$(<full_version.txt)" || exit 1
+          git push --tags
+          echo "::set-output name=full_version::$(<full_version.txt)"
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v1
+        with:
+          body: "This is an automatically generated build release.\nPlease obtain the packaged version of this release from the python artifact repo at:\n https://console.cloud.google.com/artifacts/python/earthwave-sys-0/europe-west1/ewpr.\nInstructions on how to install packages from this repo are included in the README.md. Please view CHANGELOG.md for additional details."
+          tag_name: ${{ steps.push_tags.outputs.full_version }}
+
+      - name: Deploy to Google Python Artifact Registry
+        # note twine is able to upload to gcloud because a keyfile and the keyring backend was installed during image build.
+        run: |
+          conda activate ${{ inputs.package_name }}
+          twine upload --verbose --repository-url https://europe-west1-python.pkg.dev/earthwave-sys-0/ewpr/ dist/*
+
+      - name: Raise Pull Requests in dependent repos
+        # This is very similar to Dependabot, and should probably be replaced with it in the future.
+        # Note we have to export a PAT before we can use the GitHub CLI (which this script does internally)
+        run: |
+          conda activate ${{ inputs.package_name }}
+          export GH_TOKEN=${{ secrets.EARTHWAVE_ADMIN_PAT }}
+          python .github/scripts/upversion_dependencies.py \
+            --this_repo_name $GITHUB_REPOSITORY \
+            --this_package_name "${{ inputs.package_name }}" \
+            --this_package_version "$(<full_version.txt)" \
+            --repo_age_limit_days 365

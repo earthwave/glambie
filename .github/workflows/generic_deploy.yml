@@ -24,7 +24,7 @@ jobs:
       - uses: actions/checkout@v3
       - id: specify
         run: |
-          echo "::set-output name=image_name::europe-west1-docker.pkg.dev/glambie-0/dr/${{ inputs.package_name }}_main"
+          echo "::set-output name=image_name::europe-west1-docker.pkg.dev/glambie/dr/${{ inputs.package_name }}_main"
     outputs:
       image_name: ${{ steps.specify.outputs.image_name }}
 
@@ -112,14 +112,14 @@ jobs:
       - name: Create GitHub release
         uses: softprops/action-gh-release@v1
         with:
-          body: "This is an automatically generated build release.\nPlease obtain the packaged version of this release from the python artifact repo at:\n https://console.cloud.google.com/artifacts/python/glambie-0/europe-west1/pr.\nInstructions on how to install packages from this repo are included in the README.md. Please view CHANGELOG.md for additional details."
+          body: "This is an automatically generated build release.\nPlease obtain the packaged version of this release from the python artifact repo at:\n https://console.cloud.google.com/artifacts/python/glambie/europe-west1/pr.\nInstructions on how to install packages from this repo are included in the README.md. Please view CHANGELOG.md for additional details."
           tag_name: ${{ steps.push_tags.outputs.full_version }}
 
       - name: Deploy to Google Python Artifact Registry
         # note twine is able to upload to gcloud because a keyfile and the keyring backend was installed during image build.
         run: |
           conda activate ${{ inputs.package_name }}
-          twine upload --verbose --repository-url https://europe-west1-python.pkg.dev/glambie-0/pr/ dist/*
+          twine upload --verbose --repository-url https://europe-west1-python.pkg.dev/glambie/pr/ dist/*
 
       - name: Raise Pull Requests in dependent repos
         # This is very similar to Dependabot, and should probably be replaced with it in the future.

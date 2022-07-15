@@ -25,7 +25,7 @@ to run `gcloud auth login --no-launch-browser` and follow the simple instruction
 the latest version from the Earthwave Python Google Artifact Repository:
 
 ```
-pip install glambie --extra-index-url https://europe-west1-python.pkg.dev/glambie-0/pr/simple/ --use-deprecated=legacy-resolver
+pip install glambie --extra-index-url https://europe-west1-python.pkg.dev/glambie/pr/simple/ --use-deprecated=legacy-resolver
 ```
 
 You can then use this package as follows (obviously you will need to edit this section after copying this template):
@@ -77,7 +77,7 @@ the latest version from the Earthwave Python Google Artifact Repository:
 Then finally install this package for development:
 
 ```
-pip install -e . --extra-index-url https://europe-west1-python.pkg.dev/glambie-0/pr/simple/ --use-deprecated=legacy-resolver
+pip install -e . --extra-index-url https://europe-west1-python.pkg.dev/glambie/pr/simple/ --use-deprecated=legacy-resolver
 ```
 
 You should now be able to run and pass the unit tests simply by running:

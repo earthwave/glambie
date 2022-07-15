@@ -48,12 +48,12 @@ jobs:
       - name: Define container name
         id: name_container
         run: |
-          echo "::set-output name=image_name::europe-west1-docker.pkg.dev/glambie-0/dr/${{ inputs.package_name }}_$(echo "$GITHUB_REF_NAME" | awk '{print tolower($0)}')"     
+          echo "::set-output name=image_name::europe-west1-docker.pkg.dev/glambie/dr/${{ inputs.package_name }}_$(echo "$GITHUB_REF_NAME" | awk '{print tolower($0)}')"     
 
       - name: Check if container already exists
         id: check_container
         run: |
-          gcloud artifacts docker images list europe-west1-docker.pkg.dev/glambie-0/dr | grep "${{ steps.name_container.outputs.image_name }}"
+          gcloud artifacts docker images list europe-west1-docker.pkg.dev/glambie/dr | grep "${{ steps.name_container.outputs.image_name }}"
           echo "::set-output name=exists::$?"
 
       - name: Check if package requirements changed

@@ -47,7 +47,6 @@ def datetime2year(datetime_date: datetime.date) -> float:
     """
     year_part = datetime_date - datetime(year=datetime_date.year, month=1, day=1)
     year_length = get_year_length(datetime_date.year)
-    print(year_length)
     return datetime_date.year + year_part / year_length
 
 
@@ -69,7 +68,6 @@ def year2datetime(decimal_date: float) -> datetime.date:
         - datetime(year=year, month=1, day=1)
     )
     days_within_year = timedelta(days=(decimal_date - year) * (year_length.days))
-    print(days_within_year)
     day_one_of_year = datetime(year, 1, 1)
     date = day_one_of_year + days_within_year
     return date

@@ -3,15 +3,18 @@
 # glambie
 Public repository for the [Glacier Mass Balance Intercomparison Exercise (GlaMBIE)](https://glambie.org/).
 
-## Installation for Use
-If you simply want to use this package, read this section. If instead you want to develop (i.e. change) this package,
-please read the next section. If you don't know what a Conda environment is or how to use one, please stop here and
-ask one of the Earthwave software engineers to help you out. 
+## Installation
+To start with, please ensure that you have some form of [Anaconda](https://www.anaconda.com/products/distribution)
+installed (for Python 3.9). Earthwave prefers to use 
+[Miniconda](https://repo.anaconda.com/miniconda/Miniconda3-py39_4.12.0-Linux-x86_64.sh) on Linux.
 
-Note that this section does not explain how to setup a Conda environment, because we assume that if you're
-simply using the package, you're already using Earthwave's standard dev environment, or an unrelated environment. 
-If you're having to setup an environment yourself anyway, follow the environment setup instructions
-in the next section before continuing here.
+### For Use
+If you simply want to use this package, read this section. If instead you want to develop (i.e. change) this package,
+please read the next section.
+
+
+
+Once you've done that
 
 To install this package into your local Conda
 (or other Python) environment, first install the pip keyring backend necessary to authenticate with
@@ -41,7 +44,7 @@ python -m glambie -h
 ```
 
 
-## Installation for Development
+### For Development
 To develop this package, please clone the repository:
 
 ```

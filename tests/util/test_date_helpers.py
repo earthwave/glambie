@@ -1,4 +1,5 @@
-from glambie.util.date_helpers import datetime2year, year2datetime, get_year_length, decimal_dates_to_datetime_dates, datetime_dates_to_decimal_dates
+from glambie.util.date_helpers import datetime2year, year2datetime, get_year_length, decimal_dates_to_datetime_dates, \
+    datetime_dates_to_decimal_dates
 import datetime
 
 
@@ -19,7 +20,7 @@ def test_year_conversion_loop():
     # test other way
     datetime_date = datetime.datetime(2005, 4, 2)
     decimal_date = datetime2year(datetime_date)
-    assert year2datetime(decimal_date) == datetime_date    
+    assert year2datetime(decimal_date) == datetime_date
 
 
 def test_get_year_length():
@@ -29,8 +30,9 @@ def test_get_year_length():
 
 def test_decimal_dates_to_datetime_dates():
     decimal_list = [2000, 2001]
-    assert decimal_dates_to_datetime_dates(decimal_list) == [datetime.datetime(2000, 1, 1), datetime.datetime(2001, 1, 1)]
-    
+    assert decimal_dates_to_datetime_dates(decimal_list) \
+        == [datetime.datetime(2000, 1, 1), datetime.datetime(2001, 1, 1)]
+
 
 def test_datetime_dates_to_decimal_dates():
     date_list = [datetime.datetime(2000, 1, 1), datetime.datetime(2001, 1, 1)]

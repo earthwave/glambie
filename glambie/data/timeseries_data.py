@@ -16,12 +16,12 @@ class ChangeTimeseries():
         return self._get_max_time()
 
     @property
-    def min_change(self) -> float:
+    def min_change_value(self) -> float:
         finite_list = np.isfinite(self.change)
         return np.min(self.change[finite_list])
 
     @property
-    def max_mass(self) -> float:
+    def max_change_value(self) -> float:
         finite_list = np.isfinite(self.change)
         return np.max(self.change[finite_list])
 

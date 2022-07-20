@@ -2,6 +2,7 @@
 from decimal import Decimal, getcontext
 import numpy as np
 from typing import Optional
+import pandas as pd
 
 
 class ChangeTimeseries():
@@ -17,16 +18,16 @@ class ChangeTimeseries():
 
     @property
     def min_change_value(self) -> float:
-        finite_list = np.isfinite(self.change)
-        return np.min(self.change[finite_list])
+        finite_list = np.isfinite(self.changes)
+        return np.min(self.changes[finite_list])
 
     @property
     def max_change_value(self) -> float:
-        finite_list = np.isfinite(self.change)
-        return np.max(self.change[finite_list])
+        finite_list = np.isfinite(self.changes)
+        return np.max(self.changes[finite_list])
 
     def __init__(self, dates: np.ndarray, area: np.ndarray,
-                 change: np.ndarray, errors: np.ndarray, rgi_version: int, region_id: int, unit: str,
+                 changes: np.ndarray, errors: np.ndarray, rgi_version: int, region_id: int, unit: str,
                  user: Optional[str] = None, user_group: Optional[str] = None, data_group: Optional[str] = None):
         # name of user
         self.user = user
@@ -43,13 +44,20 @@ class ChangeTimeseries():
         # assign data
         self.dates = dates
         self.area = area
-        self.change = change
+        self.changes = changes
         self.errors = errors
 
     def temporal_resolution(self) -> float:
         getcontext().prec = 3  # deal with floating point issues
         resolution = (Decimal(self.max_time) - Decimal(self.min_time)) / len(self)
         return float(resolution)
+
+    def as_dataframe(self):
+        return pd.DataFrame({'dates': self.dates,
+                             'changes': self.changes,
+                             'errors': self.errors,
+                             'area': self.area
+                             })
 
     def _get_min_time(self) -> float:
         return np.min(self.dates)

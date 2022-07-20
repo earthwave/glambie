@@ -6,7 +6,6 @@ from typing import Optional
 class ChangeTimeseries():
     """Class containing a data series and corresponding metadata
     """
-   
     @property
     def min_time(self) -> float:
         return self._get_min_time()
@@ -48,5 +47,3 @@ class ChangeTimeseries():
 
     def temporal_resolution(self) -> float:
         return (self.max_time - self.min_time) / len(self)
-
-

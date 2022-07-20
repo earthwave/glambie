@@ -4,34 +4,46 @@
 Public repository for the [Glacier Mass Balance Intercomparison Exercise (GlaMBIE)](https://glambie.org/).
 
 ## Installation
-To start with, please ensure that you have some form of [Anaconda](https://www.anaconda.com/products/distribution)
+You don't necessarily need to clone this repository to install this package.
+
+To start with, please ensure that you have:
+
+* Some form of [Anaconda](https://www.anaconda.com/products/distribution)
 installed (for Python 3.9). Earthwave prefers to use 
 [Miniconda](https://repo.anaconda.com/miniconda/Miniconda3-py39_4.12.0-Linux-x86_64.sh) on Linux.
+* the [Google Cloud command line interface](https://cloud.google.com/sdk/docs/install).
+
+Next, create a new conda environment:
+
+```
+conda create --name glambie python=3.9.7
+conda activate glambie
+```
+
+And install the pip keyring backend necessary to authenticate with
+Google Cloud:
+
+```
+pip install keyrings.google-artifactregistry-auth
+```
+
+Authenticate with the google cloud. One means of doing this that works well in the terminal is:
+```
+gcloud auth login --no-launch-browser
+```
+
 
 ### For Use
 If you simply want to use this package, read this section. If instead you want to develop (i.e. change) this package,
 please read the next section.
 
-
-
-Once you've done that
-
-To install this package into your local Conda
-(or other Python) environment, first install the pip keyring backend necessary to authenticate with
-Google Cloud (if you haven't already):
-
-```
-pip install keyrings.google-artifactregistry-auth
-```
-Authenticate with the google cloud (one means of doing this that works well over an ssh terminal is
-to run `gcloud auth login --no-launch-browser` and follow the simple instructions) and then download and install
-the latest version from the Earthwave Python Google Artifact Repository:
+To use the package, simply install it from the GlaMBIE Python Artifact repository: 
 
 ```
 pip install glambie --extra-index-url https://europe-west1-python.pkg.dev/glambie/pr/simple/ --use-deprecated=legacy-resolver
 ```
 
-You can then use this package as follows (obviously you will need to edit this section after copying this template):
+You can then use this package as follows (obviously you will need to edit this section after contributing initial work to the repository):
 
 ```
 python -m glambie -a <number_a> -b <number_b>
@@ -45,39 +57,29 @@ python -m glambie -h
 
 
 ### For Development
-To develop this package, please clone the repository:
+To develop this package, you'll need to clone it locally. To do this, you'll need to authenticate with GitHub either using a [public / private key pair](https://docs.github.com/en/authentication/connecting-to-github-with-ssh): 
+
+```
+git clone git@github.com:earthwave/glambie.git
+```
+
+Or using a [personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token) in place of a password:
 
 ```
 git clone https://github.com/earthwave/glambie.git
-cd glambie
 ```
 
-Then create a new conda environment:
+After cloning the repository, change directories into the newly created glambie folder.
 
-```
-conda create --name my_env python=3.9.7
-conda activate my_env
-```
+Note that Earthwave uses VSCode (v1.69.1 at time of writing) as our integrated development environment. Earthwave's standard VSCode environment settings are included with this repository. If you wish to use VSCode, you'll need to install the Python and Pylance plugins, and [tell VSCode to use the interpreter within the environment you've just created](https://code.visualstudio.com/docs/python/environments#_select-and-activate-an-environment).
 
-If you're using VSCode, note that you'll need to [tell VSCode to use the interpreter within the environment you've just created](https://code.visualstudio.com/docs/python/environments#_select-and-activate-an-environment).
-
-Then install all of the testing requirements:
+For a development install, install all of the testing requirements:
 
 ```
 pip install -r .github/test_requirements.txt
 ```
 
-Next, install the google artifact repo keyring backend for pip:
-
-```
-pip install keyrings.google-artifactregistry-auth
-```
-
-Authenticate with the google cloud (one means of doing this that works well over an ssh terminal is
-to run `gcloud auth login --no-launch-browser` and follow the simple instructions) and then download and install
-the latest version from the Earthwave Python Google Artifact Repository:
-
-Then finally install this package for development:
+Then install this package for development:
 
 ```
 pip install -e . --extra-index-url https://europe-west1-python.pkg.dev/glambie/pr/simple/ --use-deprecated=legacy-resolver
@@ -92,6 +94,8 @@ pytest
 Pushing directly to main is prohibited. If you wish your work to be included, first push a separate branch to
 the repository and then open a Pull Request. All branches that have not received a commit for more than 30 days
 will be automatically deleted.
+
+Note that for security reasons related to Earthwave's servers, only approved contributors may push to this repository.
 
 ## Versioning and releases
 Versioning follows a simple model featuring three integers known as the major version, minor version and build number.

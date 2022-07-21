@@ -1,5 +1,5 @@
 
-from glambie.example_entrypoint import main
+from glambie.entrypoint import main
 
 if __name__ == "__main__":
     main()

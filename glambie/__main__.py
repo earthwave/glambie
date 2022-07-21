@@ -1,3 +1,3 @@
-from glambie.example_entrypoint import main
+from glambie.entrypoint import main
 
 main()

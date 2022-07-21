@@ -2,12 +2,11 @@ import sys
 from unittest.mock import patch
 
 
-from glambie.example_entrypoint import main
+from glambie.entrypoint import main
 
 
-@patch.object(sys, 'argv', ["glambie", "-a", "4", "-b", "5"])
+@patch.object(sys, 'argv', ["glambie", "-config", "/path/to/config"])
 def test_main(capsys):
     main()
     stdout = str(capsys.readouterr())
-    assert "Worse Calculator Output" in stdout
-    assert "9" in stdout
+    assert "/path/to/config" in stdout

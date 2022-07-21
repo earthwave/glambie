@@ -125,42 +125,5 @@ jobs:
         run: |
           conda activate ${{ inputs.package_name }}
           python setup.py develop
-          pytest
-
-  tidy_images_and_branches_debug:
-    # delete docker images that are no longer needed (notionally because we just merged the associated branch into main)
-    needs: generate_container_name
-    runs-on: self-hosted
-    container:
-      image: ${{ needs.generate_container_name.outputs.image_name }}
-      credentials:
-        username: _json_key
-        password: ${{ secrets.GLAMBIE_GCP_CREDENTIALS }}
-    defaults:
-      run:
-        shell: bash -l {0}
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Authenticate with Google Cloud
-        id: auth
-        uses: google-github-actions/auth@v0
-        with:
-          credentials_json: ${{ secrets.GLAMBIE_GCP_CREDENTIALS }}
-
-      - name: Setup the Google Cloud SDK
-        uses: 'google-github-actions/setup-gcloud@v0'          
-
-      - name: Delete old docker images from artifact repo
-        # note keyfile is already present in container image (was copied over during build)
-        # we have to add the cloud sdk tools back to the $PATH before python can use them properly
-        run: |
-          conda activate ${{ inputs.package_name }}
-          export PATH=/root/google-cloud-sdk/bin:$PATH
-          python .github/scripts/delete_containers_not_matching_remote_branches.py --package_name ${{ inputs.package_name }}
-
-      - name: Delete old branches from the git repo
-        run: |
-          conda activate ${{ inputs.package_name }}
-          python .github/scripts/delete_old_branches.py --branch_age_limit_days 30          
+          pytest    
   

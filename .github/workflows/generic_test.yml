@@ -125,5 +125,5 @@ jobs:
         run: |
           conda activate ${{ inputs.package_name }}
           python setup.py develop
-          pytest
+          pytest    
   

@@ -59,7 +59,9 @@ def main(package_name: str, dry_run: bool) -> None:
             if dry_run:
                 print('DRY RUN, NO ACTION TAKEN: ' + log_message)
             else:
-                subprocess.check_output(
+                # The below can sometimes report "permission denied" even though the image was succesfully deleted!
+                # To work around this, we simply run the command and proceed whether or not it worked.
+                subprocess.run(
                     f'gcloud artifacts docker images delete {image_name} --delete-tags --quiet', shell=True)
                 print(log_message)
                 deleted_something = True

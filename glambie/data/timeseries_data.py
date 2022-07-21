@@ -10,11 +10,11 @@ class ChangeTimeseries():
     """
     @property
     def min_time(self) -> float:
-        return self._get_min_time()
+        return np.min(self.dates)
 
     @property
     def max_time(self) -> float:
-        return self._get_max_time()
+        return np.max(self.dates)
 
     @property
     def min_change_value(self) -> float:
@@ -58,12 +58,6 @@ class ChangeTimeseries():
                              'errors': self.errors,
                              'area': self.area
                              })
-
-    def _get_min_time(self) -> float:
-        return np.min(self.dates)
-
-    def _get_max_time(self) -> float:
-        return np.max(self.dates)
 
     def __len__(self) -> int:
         return len(self.dates)

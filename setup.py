@@ -33,5 +33,6 @@ setup(
     # requirements.txt should contain a specific known working version instead.
     install_requires=[
         'numpy>1.15',
+        'pandas>1.2',
     ],
 )

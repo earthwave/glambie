@@ -3,15 +3,12 @@ from dataclasses import dataclass
 
 @dataclass
 class RGIRegion():
-    """Class representing full RGI regions
-    """
-    def __init__(self, rgi_id, name, long_name, rgi6_area, rgi7_area, area_change):
-        self.rgi_id = rgi_id
-        self.name = name
-        self.long_name = long_name
-        self.rgi6_area = rgi6_area
-        self.rgi7_area = rgi7_area
-        self.area_change = area_change
+    rgi_id: int
+    name: str
+    long_name: str
+    rgi6_area: float
+    rgi7_area: float
+    area_change: float
 
 
 class Regions():
@@ -25,7 +22,7 @@ class Regions():
     ]
 
     @staticmethod
-    def get_region_by_id(rgi_id):
+    def get_region_by_id(rgi_id: int):
         region_result = [i for i in Regions.regions if i.rgi_id == rgi_id]
         if len(region_result) == 0:  # id not found
             return None
@@ -33,7 +30,7 @@ class Regions():
             return region_result[0]
 
     @staticmethod
-    def get_region_by_name(name):
+    def get_region_by_name(name: str):
         region_result = [i for i in Regions.regions if i.name == name]
         if len(region_result) == 0:  # name not found
             return None

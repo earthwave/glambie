@@ -10,8 +10,20 @@ class RGIRegion():
     rgi7_area: float
     area_change: float
 
+    def __str__(self):
+        return str(self.rgi_id) + '; ' + self.name + '; ' + self.long_name
 
-class Regions():
+
+class MetaRegions(type):
+
+    def __str__(cls):
+        string = ''
+        for region in cls.regions:
+            string = string + str(region) + '\n'
+        return string
+
+
+class Regions(metaclass=MetaRegions):
     """Containing all RGI regions for Glambie
     """
     regions = [     # probably read this from a file in future, currently containing the test regions

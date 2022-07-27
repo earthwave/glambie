@@ -54,9 +54,9 @@ def test_get_filtered_datasets_by_data_group(example_catalogue):
 
 
 def test_get_filtered_datasets_by_region_and_data_group(example_catalogue):
-    assert len(example_catalogue.get_filtered_datasets(region_name='svalbard', 
+    assert len(example_catalogue.get_filtered_datasets(region_name='svalbard',
                data_group='altimetry')) == 1
-    assert len(example_catalogue.get_filtered_datasets(region_name='svalbard', 
+    assert len(example_catalogue.get_filtered_datasets(region_name='svalbard',
                data_group='altimetry')) == 1
     assert example_catalogue.get_filtered_datasets(data_group='gravimetry')[0].data_group.name == 'gravimetry'
 

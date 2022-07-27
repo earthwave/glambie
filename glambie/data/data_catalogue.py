@@ -53,7 +53,7 @@ class DataCatalogue():
     def get_regions(self) -> list:
         return list({s.region for s in self._datasets})  # get as a set, so only unique values
 
-    def get_filtered_datasets(self, region_name: Optional[str] = None, data_group: Optional[str] = None, 
+    def get_filtered_datasets(self, region_name: Optional[str] = None, data_group: Optional[str] = None,
                               user_group: Optional[str] = None):
         datasets = self._datasets
         if region_name is not None:  # filter by region

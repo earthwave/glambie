@@ -1,4 +1,4 @@
-
+from typing import Optional
 import pandas as pd
 import json
 from glambie.const.data_groups import GlambieDataGroups
@@ -23,7 +23,7 @@ class DataCatalogue():
     def basepath(self):
         return self._basepath
 
-    def __init__(self, meta_data: dict):
+    def __init__(self, meta_data: dict, read_data: bool = False):
         self._basepath = os.path.join(*meta_data['basepath'])
         datasets_dict = meta_data['datasets']
         self._datasets = []
@@ -32,7 +32,8 @@ class DataCatalogue():
             region = Regions.get_region_by_name(ds_dict['region'])
             data_group = GlambieDataGroups.get_data_group_by_name(ds_dict['data_group'])
             user_group = ds_dict['user_group']
-            dataset = ChangeTimeseries(data_filepath=fp, region=region, data_group=data_group, user_group=user_group)
+            dataset = ChangeTimeseries(data_filepath=fp, region=region, data_group=data_group, user_group=user_group,
+                                       read_data=read_data)
             self._datasets.append(dataset)
 
     @staticmethod
@@ -49,8 +50,19 @@ class DataCatalogue():
     def __len__(self) -> int:
         return len(self.datasets)
 
-    def get_datasets_by_region(self, region_name: str):
-        return [s for s in self._datasets if s.region.name.lower() == region_name.lower()]
+    def get_regions(self) -> list:
+        return list({s.region for s in self._datasets})  # get as a set, so only unique values
+
+    def get_filtered_datasets(self, region_name: Optional[str] = None, data_group: Optional[str] = None, 
+                              user_group: Optional[str] = None):
+        datasets = self._datasets
+        if region_name is not None:  # filter by region
+            datasets = [s for s in datasets if s.region.name.lower() == region_name.lower()]
+        if data_group is not None:  # filter by data group
+            datasets = [s for s in datasets if s.data_group.name.lower() == data_group.lower()]
+        if user_group is not None:  # filter by user group
+            datasets = [s for s in datasets if s.user_group.lower() == user_group.lower()]
+        return datasets
 
     def __str__(self):
         return [str(d) for d in self.datasets]

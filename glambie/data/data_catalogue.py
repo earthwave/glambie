@@ -1,15 +1,43 @@
+from __future__ import annotations
+
 from typing import Optional
 import pandas as pd
 import json
+
 from glambie.const.data_groups import GlambieDataGroups
 from glambie.const.regions import Regions
-from glambie.data.timeseries_data import ChangeTimeseries
+from glambie.data.timeseries import Timeseries
 import os
 
 
 class DataCatalogue():
     """Class containing a catalogue of datasets
+
+    This only contains metedata - all actual data loaded by client
     """
+    def __init__(self, base_path, glambie_data_groups: dict[str, Timeseries]):
+        self.base_path = base_path
+        self.datasets = glambie_data_groups
+
+    @staticmethod
+    def from_json_file(metadata_file_path: str) -> DataCatalogue:
+        with open(metadata_file_path) as json_file:
+            DataCatalogue.from_dict(json.load(json_file))
+
+    @staticmethod
+    def from_dict(meta_data_dict: dict) -> DataCatalogue:
+        basepath = os.path.join(*meta_data_dict['basepath'])
+        datasets_dict = meta_data_dict['datasets']
+        datasets = []
+        for ds_dict in datasets_dict:
+            fp = os.path.join(basepath, ds_dict['filename'])
+            region = Regions.get_region_by_name(ds_dict['region'])
+            data_group = GlambieDataGroups.get_data_group_by_name(ds_dict['data_group'])
+            user_group = ds_dict['user_group']
+            dataset = Timeseries(data_filepath=fp, region=region, data_group=data_group, user_group=user_group)
+            datasets.append(dataset)
+
+        return DataCatalogue(basepath, datasets)
 
     @property
     def datasets(self):
@@ -23,32 +51,9 @@ class DataCatalogue():
     def basepath(self):
         return self._basepath
 
-    def __init__(self, meta_data: dict, read_data: bool = False):
-        self._basepath = os.path.join(*meta_data['basepath'])
-        datasets_dict = meta_data['datasets']
-        self._datasets = []
-        for ds_dict in datasets_dict:
-            fp = os.path.join(self._basepath, ds_dict['filename'])
-            region = Regions.get_region_by_name(ds_dict['region'])
-            data_group = GlambieDataGroups.get_data_group_by_name(ds_dict['data_group'])
-            user_group = ds_dict['user_group']
-            dataset = ChangeTimeseries(data_filepath=fp, region=region, data_group=data_group, user_group=user_group,
-                                       read_data=read_data)
-            self._datasets.append(dataset)
-
-    @staticmethod
-    def from_file(metadata_file_path: str):
-        with open(metadata_file_path) as json_file:
-            meta_data = json.load(json_file)
-            print(type(meta_data))
-            return DataCatalogue(meta_data)
-
     def as_dataframe(self):
         metadata_list = [ds.metadata_as_dataframe() for ds in self.datasets]
         return pd.concat(metadata_list)
-
-    def __len__(self) -> int:
-        return len(self.datasets)
 
     def get_regions(self) -> list:
         return list({s.region for s in self._datasets})  # get as a set, so only unique values
@@ -62,7 +67,10 @@ class DataCatalogue():
             datasets = [s for s in datasets if s.data_group.name.lower() == data_group.lower()]
         if user_group is not None:  # filter by user group
             datasets = [s for s in datasets if s.user_group.lower() == user_group.lower()]
-        return datasets
+        return self.__class__(self.base_path, datasets)
+
+    def __len__(self) -> int:
+        return len(self.datasets)
 
     def __str__(self):
         return [str(d) for d in self.datasets]

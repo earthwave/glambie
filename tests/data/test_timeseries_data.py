@@ -1,12 +1,12 @@
 import numpy as np
 import pytest
-from glambie.data.timeseries_data import ChangeTimeseries
+from glambie.data.timeseries import Timeseries
 from glambie.const.data_groups import GlambieDataGroups
 
 
 @pytest.fixture()
 def example_timeseries():
-    ts = ChangeTimeseries(rgi_version=6,
+    ts = Timeseries(rgi_version=6,
                           unit='m',
                           data_group=GlambieDataGroups.get('altimetry'))
     return ts
@@ -14,10 +14,10 @@ def example_timeseries():
 
 @pytest.fixture()
 def example_timeseries_ingested():
-    ts = ChangeTimeseries(rgi_version=6,
+    ts = Timeseries(rgi_version=6,
                           unit='m',
                           data_group=GlambieDataGroups.get('altimetry'))
-    ts.ingest_data(dates=[2010.1, 2010.2],
+    ts.set_data_contents(dates=[2010.1, 2010.2],
                    changes=np.array([2., 5.]),
                    errors=np.array([1., 1.2]),
                    area=np.array([10000, 10000]))

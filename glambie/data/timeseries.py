@@ -24,24 +24,6 @@ class TimeseriesData():
     changes: np.ndarray
     errors: np.ndarray
 
-
-class Timeseries():
-    """Class containing a data series and corresponding metadata"""
-    is_data_loaded = False
-
-    def __init__(self, user: str = None, user_group: str = None, data_group: GlambieDataGroup = None,
-                 rgi_version: int = None, region: RGIRegion = None, unit: str = None,
-                 data_filepath: str = None, data: TimeseriesData = None):
-
-        self.user = user
-        self.user_group = user_group
-        self.data_group = data_group
-        self.rgi_version = rgi_version
-        self.region = region
-        self.unit = unit
-        self.data_filepath = data_filepath
-        self.data = data
-
     @property
     def min_time(self) -> float:
         return np.min(self.dates)
@@ -66,6 +48,36 @@ class Timeseries():
         resolution = (Decimal(self.max_time) - Decimal(self.min_time)) / len(self)
         return float(resolution)
 
+    def __len__(self) -> int:
+        return len(self.dates)
+
+    def as_dataframe(self):
+        return pd.DataFrame({'dates': self.dates,
+                             'changes': self.changes,
+                             'errors': self.errors,
+                             'area': self.area
+                             })
+
+
+class Timeseries():
+    """Class containing a data series and corresponding metadata"""
+    is_data_loaded = False
+
+    def __init__(self, user: str = None, user_group: str = None, data_group: GlambieDataGroup = None,
+                 rgi_version: int = None, region: RGIRegion = None, unit: str = None,
+                 data_filepath: str = None, data: TimeseriesData = None):
+
+        self.user = user
+        self.user_group = user_group
+        self.data_group = data_group
+        self.rgi_version = rgi_version
+        self.region = region
+        self.unit = unit
+        self.data_filepath = data_filepath
+        self.data = data
+        if self.data is not None:
+            self.is_data_loaded = True
+
     def load_data(self):
         """Reads data into class, either from specified filepath param or object variable
         """
@@ -80,13 +92,6 @@ class Timeseries():
                                    errors=np.array(data['errors']))
         self.is_data_loaded = True
 
-    def data_as_dataframe(self):
-        return pd.DataFrame({'dates': self.dates,
-                             'changes': self.changes,
-                             'errors': self.errors,
-                             'area': self.area
-                             })
-
     def metadata_as_dataframe(self):
         region = self.region.name if self.region is not None else None
         data_group = self.data_group.name if self.data_group is not None else None
@@ -97,9 +102,3 @@ class Timeseries():
                              'rgi_version': self.rgi_version,
                              'unit': self.unit
                              }, index=[0])
-
-    def __len__(self) -> int:
-        return len(self.dates)
-
-    def __bool__(self) -> bool:
-        return len(self) > 0

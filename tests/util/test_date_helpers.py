@@ -6,6 +6,7 @@ from glambie.util.date_helpers import fractional_years_to_datetime_dates
 from glambie.util.date_helpers import get_year_timedelta
 from glambie.util.date_helpers import year2datetime
 
+
 def test_year2datetime():
     assert year2datetime(2000) == datetime.datetime(2000, 1, 1)
 

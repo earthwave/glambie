@@ -1,11 +1,13 @@
-import pytest
-from glambie.data.data_catalogue import DataCatalogue
 import os
+
+import pytest
+
+from glambie.data.data_catalogue import DataCatalogue
 
 
 @pytest.fixture()
 def example_catalogue():
-    return DataCatalogue({"basepath": ["tests", "test_data", "datastore"],
+    return DataCatalogue.from_dict({"basepath": ["tests", "test_data", "datastore"],
                           "datasets": [
                               {
                                   "filename": "iceland_altimetry_sharks.csv",

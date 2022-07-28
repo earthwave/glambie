@@ -16,7 +16,7 @@ class RGIRegion():
         return str(self.rgi_id) + '; ' + self.name + '; ' + self.long_name
 
 
-_regions = {
+regions = {
     'alaska': RGIRegion(rgi_id=1, name='alaska', long_name='Alaska',
                         rgi6_area=86725, rgi7_area=86725, area_change=-0.48),
     'iceland': RGIRegion(rgi_id=6, name='iceland', long_name='Iceland',
@@ -27,7 +27,7 @@ _regions = {
 
 # To Finish -> needs updating for dict
 def get_region_by_name(name: str):
-    region_result = [i for i in _regions if i.name == name]
+    region_result = [i for i in regions if i.name == name]
     if len(region_result) == 0:  # name not found
         return None
     else:

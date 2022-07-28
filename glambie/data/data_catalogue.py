@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 from typing import Optional
+from webbrowser import get
 import pandas as pd
 import json
 
-from glambie.const.data_groups import GlambieDataGroups
-from glambie.const.regions import Regions
+from glambie.const.data_groups import GLAMBIE_DATA_GROUPS
+from glambie.const.regions import regions
 from glambie.data.timeseries import Timeseries
 import os
 
@@ -15,9 +16,9 @@ class DataCatalogue():
 
     This only contains metedata - all actual data loaded by client
     """
-    def __init__(self, base_path, glambie_data_groups: dict[str, Timeseries]):
+    def __init__(self, base_path: str, datasets: dict[str, Timeseries]):
         self.base_path = base_path
-        self.datasets = glambie_data_groups
+        self._datasets = datasets
 
     @staticmethod
     def from_json_file(metadata_file_path: str) -> DataCatalogue:
@@ -31,8 +32,8 @@ class DataCatalogue():
         datasets = []
         for ds_dict in datasets_dict:
             fp = os.path.join(basepath, ds_dict['filename'])
-            region = Regions.get_region_by_name(ds_dict['region'])
-            data_group = GlambieDataGroups.get_data_group_by_name(ds_dict['data_group'])
+            region = regions[ds_dict['region']]
+            data_group = GLAMBIE_DATA_GROUPS[ds_dict['data_group']]
             user_group = ds_dict['user_group']
             dataset = Timeseries(data_filepath=fp, region=region, data_group=data_group, user_group=user_group)
             datasets.append(dataset)
@@ -52,7 +53,7 @@ class DataCatalogue():
         return self._basepath
 
     def as_dataframe(self):
-        metadata_list = [ds.metadata_as_dataframe() for ds in self.datasets]
+        metadata_list = [ds.metadata_as_dataframe() for ds in self._datasets]
         return pd.concat(metadata_list)
 
     def get_regions(self) -> list:
@@ -70,7 +71,7 @@ class DataCatalogue():
         return self.__class__(self.base_path, datasets)
 
     def __len__(self) -> int:
-        return len(self.datasets)
+        return len(self._datasets)
 
     def __str__(self):
-        return [str(d) for d in self.datasets]
+        return [str(d) for d in self._datasets]

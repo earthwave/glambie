@@ -1,14 +1,15 @@
 import numpy as np
 import pytest
+
+from glambie.const.data_groups import GLAMBIE_DATA_GROUPS
 from glambie.data.timeseries import Timeseries
-from glambie.const.data_groups import GlambieDataGroups
 
 
 @pytest.fixture()
 def example_timeseries():
     ts = Timeseries(rgi_version=6,
                           unit='m',
-                          data_group=GlambieDataGroups.get('altimetry'))
+                          data_group=GLAMBIE_DATA_GROUPS['altimetry'])
     return ts
 
 
@@ -16,7 +17,7 @@ def example_timeseries():
 def example_timeseries_ingested():
     ts = Timeseries(rgi_version=6,
                           unit='m',
-                          data_group=GlambieDataGroups.get('altimetry'))
+                          data_group=GLAMBIE_DATA_GROUPS['altimetry'])
     ts.set_data_contents(dates=[2010.1, 2010.2],
                    changes=np.array([2., 5.]),
                    errors=np.array([1., 1.2]),

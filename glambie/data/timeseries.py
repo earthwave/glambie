@@ -33,16 +33,6 @@ class Timeseries():
                  rgi_version: int = None, region: RGIRegion = None, unit: str = None,
                  data_filepath: str = None, data: TimeseriesData = None):
 
-        # user: str = None                     # name of user
-        # user_group: str = None               # experiment group
-        # data_group: GlambieDataGroup = None  # experiment group (from data files)
-        # rgi_version: int = None              # rgi
-        # region: RGIRegion = None             # basin
-        # unit: str = None                     # unit of timeseries, ie mwe (gravimetry) or m (other)
-        # data_filepath: str = None            # filepath of data
-        # _is_data_loaded = False
-        # _data = None
-
         self.user = user
         self.user_group = user_group
         self.data_group = data_group

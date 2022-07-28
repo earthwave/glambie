@@ -7,7 +7,9 @@ class GlambieDataGroup():
     long_name: str  # might add some more here later
 
 
-DATA_GLAMBIE_GROUPS = {
+GLAMBIE_DATA_GROUPS = {
     'altimetry': GlambieDataGroup(name='altimetry', long_name='Altimetry'),
     'demdiff': GlambieDataGroup(name='demdiff', long_name='DEM differencing'),
+    'gravimetry': GlambieDataGroup(name='gravimetry', long_name='Gravimetry'),
+    'combined': GlambieDataGroup(name='combined', long_name='Combination of methods')
 }

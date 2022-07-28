@@ -1,7 +1,10 @@
-from glambie.util.date_helpers import datetime2year, year2datetime, get_year_timedelta, \
-    fractional_years_to_datetime_dates, datetime_dates_to_fractional_years
 import datetime
 
+from glambie.util.date_helpers import datetime2year
+from glambie.util.date_helpers import datetime_dates_to_fractional_years
+from glambie.util.date_helpers import fractional_years_to_datetime_dates
+from glambie.util.date_helpers import get_year_timedelta
+from glambie.util.date_helpers import year2datetime
 
 def test_year2datetime():
     assert year2datetime(2000) == datetime.datetime(2000, 1, 1)

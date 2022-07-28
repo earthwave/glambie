@@ -8,17 +8,10 @@ from glambie.const.regions import RGIRegion
 import numpy as np
 import pandas as pd
 
-"""
- def __init__(self, data_group: Optional[GlambieDataGroup] = None, region: Optional[RGIRegion] = None,
-                 rgi_version: Optional[int] = None, unit: Optional[str] = None,
-                 data_filepath: Optional[str] = None, user: Optional[str] = None, user_group: Optional[str] = None,
-                 read_data: Optional[bool] = False):
-                 """
-
 
 @dataclass
 class TimeseriesData():
-    """Class to wrap the actual data contents"""
+    """Class to wrap the actual data contents of a Timeseries"""
     dates: np.ndarray
     area: np.ndarray
     changes: np.ndarray
@@ -63,10 +56,31 @@ class Timeseries():
     """Class containing a data series and corresponding metadata"""
     is_data_loaded = False
 
-    def __init__(self, user: str = None, user_group: str = None, data_group: GlambieDataGroup = None,
-                 rgi_version: int = None, region: RGIRegion = None, unit: str = None,
-                 data_filepath: str = None, data: TimeseriesData = None):
+    def __init__(self, region: RGIRegion = None, data_group: GlambieDataGroup = None, data_filepath: str = None,
+                 data: TimeseriesData = None, user: str = None, user_group: str = None,
+                 rgi_version: int = None, unit: str = None):
+        """
+        Class containing meta data and data from of an individual timeseries
 
+        Parameters
+        ----------
+        region : RGIRegion, optional
+            region if timeseres, by default None
+        data_group : GlambieDataGroup, optional
+            data group, e.g. if it's altimetry or gravimetry, by default None
+        data_filepath : str, optional
+            full file path to csv, if data is not specified it can later be read with this filepath, by default None
+        data : TimeseriesData, optional
+            The actual data contents of a Timeseries, by default None
+        user : str, optional
+            name of user / participant, by default None
+        user_group : str, optional
+            name of participant group, by default None
+        rgi_version : int, optional
+            which version of rgi has been used, e.g. 6 or 7, by default None
+        unit : str, optional
+            unit the timeseries is in, e.g. m or mwe, by default None
+        """
         self.user = user
         self.user_group = user_group
         self.data_group = data_group
@@ -79,20 +93,20 @@ class Timeseries():
             self.is_data_loaded = True
 
     def load_data(self):
-        """Reads data into class, either from specified filepath param or object variable
+        """Reads data into class from specified filepath
         """
         if self.data_filepath is None:
             raise ValueError("Can not load: file path not set")
 
         data = pd.read_csv(self.data_filepath)
 
-        self.data = TimeseriesData(dates=np.array(data['start_dates']),
+        self.data = TimeseriesData(dates=np.array(data['fractional_dates']),
                                    area=np.array(data['area']),
                                    changes=np.array(data['changes']),
                                    errors=np.array(data['errors']))
         self.is_data_loaded = True
 
-    def metadata_as_dataframe(self):
+    def metadata_as_dataframe(self) -> pd.DataFrame:
         region = self.region.name if self.region is not None else None
         data_group = self.data_group.name if self.data_group is not None else None
         return pd.DataFrame({'data_group': data_group,

@@ -13,6 +13,9 @@ class RGIRegion():
     def __str__(self):
         return str(self.rgi_id) + '; ' + self.name + '; ' + self.long_name
 
+    def __hash__(self):  # Make hashable - is there more to it than this?
+        return hash(self.name)
+
 
 REGIONS = {
     'alaska': RGIRegion(rgi_id=1, name='alaska', long_name='Alaska',
@@ -24,6 +27,6 @@ REGIONS = {
 
 
 # @SOPHIE to implement, also add return type hint
-def get_region_by_id(rgi_id: int):
-    rgi_id  # implement here
-    pass
+def get_region_by_id(rgi_id: int, region) -> str:
+    if region.rgi_id == rgi_id:
+        return region.name

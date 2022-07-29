@@ -114,6 +114,14 @@ class Timeseries():
         return self.data
 
     def metadata_as_dataframe(self) -> pd.DataFrame:  # @SOPHIE write docstring
+        """
+        Returns meta data for a timeseries dataset as a dataframe
+
+        Returns
+        -------
+        pd.DataFrame
+            Dataframe containing dataset meta data
+        """
         region = self.region.name if self.region is not None else None
         data_group = self.data_group.name if self.data_group is not None else None
         return pd.DataFrame({'data_group': data_group,

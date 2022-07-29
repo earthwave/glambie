@@ -20,11 +20,37 @@ class DataCatalogue():
 
     @staticmethod
     def from_json_file(metadata_file_path: str) -> DataCatalogue:
+        """
+        Loads a catalogue from a json file
+
+        Parameters
+        ----------
+        metadata_file_path : str
+            full file path to json metadata catalogue file
+
+        Returns
+        -------
+        DataCatalogue
+            data catalogue containing the metadata of datasets, the actual timeseries data will lazy loaded
+        """
         with open(metadata_file_path) as json_file:
             return DataCatalogue.from_dict(json.load(json_file))
 
     @staticmethod
     def from_dict(meta_data_dict: dict) -> DataCatalogue:
+        """
+        Loads a catalogue from a dictionnary
+
+        Parameters
+        ----------
+        meta_data_dict : dict
+            dictionary of catalogue metadata
+
+        Returns
+        -------
+        DataCatalogue
+            data catalogue containing the metadata of datasets, the actual timeseries data will lazy loaded
+        """
         basepath = os.path.join(*meta_data_dict['basepath'])
         datasets_dict = meta_data_dict['datasets']
         datasets = []
@@ -54,7 +80,7 @@ class DataCatalogue():
         return pd.concat(metadata_list)
 
     def get_filtered_catalogue(self, region_name: str = None, data_group: str = None,
-                               user_group: str = None):
+                               user_group: str = None) -> DataCatalogue:  # @SOPHIE TODO: add docstring to method
         datasets = self._datasets
         if region_name is not None:  # filter by region
             datasets = [s for s in datasets if s.region.name.lower() == region_name.lower()]

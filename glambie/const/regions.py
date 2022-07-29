@@ -23,7 +23,7 @@ REGIONS = {
                           rgi6_area=33959, rgi7_area=33959, area_change=-0.26)}
 
 
-# @SOPHIE to implement
+# @SOPHIE to implement, also add return type hint
 def get_region_by_id(rgi_id: int):
     rgi_id  # implement here
     pass

@@ -53,14 +53,20 @@ class TimeseriesData():
 
 
 class Timeseries():
-    """Class containing a data series and corresponding metadata"""
+    """Class containing a data series and corresponding metadata
+
+    Follows either lazy loading of data files OR direct data ingestion on object creation:
+        - If only filename is specified, data will not be ingested immediately,
+          it can be loaded later from the datafile with load_data()
+        - If data (TimeseriesData object) is specified on object creation, the data is ingested immediately
+    """
     is_data_loaded = False
 
     def __init__(self, region: RGIRegion = None, data_group: GlambieDataGroup = None, data_filepath: str = None,
                  data: TimeseriesData = None, user: str = None, user_group: str = None,
                  rgi_version: int = None, unit: str = None):
         """
-        Class containing meta data and data from of an individual timeseries
+        Class containing meta data and data from of an individual timeseries.
 
         Parameters
         ----------
@@ -92,7 +98,7 @@ class Timeseries():
         if self.data is not None:
             self.is_data_loaded = True
 
-    def load_data(self):
+    def load_data(self) -> TimeseriesData:
         """Reads data into class from specified filepath
         """
         if self.data_filepath is None:
@@ -105,8 +111,9 @@ class Timeseries():
                                    changes=np.array(data['changes']),
                                    errors=np.array(data['errors']))
         self.is_data_loaded = True
+        return self.data
 
-    def metadata_as_dataframe(self) -> pd.DataFrame:
+    def metadata_as_dataframe(self) -> pd.DataFrame:  # @SOPHIE write docstring
         region = self.region.name if self.region is not None else None
         data_group = self.data_group.name if self.data_group is not None else None
         return pd.DataFrame({'data_group': data_group,

@@ -113,7 +113,7 @@ class Timeseries():
         self.is_data_loaded = True
         return self.data
 
-    def metadata_as_dataframe(self) -> pd.DataFrame:  # @SOPHIE write docstring
+    def metadata_as_dataframe(self) -> pd.DataFrame:
         """
         Returns meta data for a timeseries dataset as a dataframe
 

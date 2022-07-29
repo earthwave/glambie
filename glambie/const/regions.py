@@ -26,9 +26,7 @@ REGIONS = {
                           rgi6_area=33959, rgi7_area=33959, area_change=-0.26)}
 
 
-# @SOPHIE to implement, also add return type hint
 def get_region_by_id(rgi_id: int) -> RGIRegion:
-    region_names = list(key for key in REGIONS)
-    for name in region_names:
-        if REGIONS[name].rgi_id == rgi_id:
-            return REGIONS[name]
+    for key in REGIONS:
+        if REGIONS[key].rgi_id == rgi_id:
+            return REGIONS[key]

@@ -1,5 +1,9 @@
+from glambie.util.timeseries_helpers import get_matched_indices
+from glambie.util.timeseries_helpers import moving_average
+from glambie.util.timeseries_helpers import resample_1d_array
+from glambie.util.timeseries_helpers import timeseries_as_months
 import numpy as np
-from glambie.util.timeseries_helpers import moving_average, timeseries_as_months, resample_1d_array
+import pytest
 
 
 def test_moving_average_no_window():
@@ -60,3 +64,19 @@ def test_resample_1d_array_linear():
     print(result)
     assert result[1] == 3.0
     assert round(result[3], 5) == 4.1  # due to floating point
+
+
+def test_get_matched_indices():
+    a = np.array([3, 5, 7, 9, 11])
+    b = np.array([5, 6, 7, 8, 9, 10])
+    ai, bi = get_matched_indices(a, b)
+    assert np.array_equal(ai, np.array([1, 2, 3]))
+    assert np.array_equal(bi, np.array([0, 2, 4]))
+    assert np.array_equal(a[ai], b[bi])
+
+
+def test_get_matched_indices_with_duplicates():
+    a = np.array([3, 5, 5, 9, 11])
+    b = np.array([5, 6, 7, 8, 9, 10])
+    with pytest.raises(ValueError, match='Input array <array1> or <array2> should not contain duplicates.'):
+        get_matched_indices(a, b)

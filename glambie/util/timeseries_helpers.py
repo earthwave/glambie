@@ -2,98 +2,100 @@ from matplotlib import pyplot as plt
 import numpy as np
 import math
 from scipy import interpolate
+from typing import Union
 
 
-def match(a, b, epsilon=0):
+def contains_duplicates(x):
+    return len(np.unique(x)) != len(x)
+
+def get_matched_indices(array1: np.array, array2: np.array, epsilon: float = 0.0) -> Union[np.array, np.array]:
     """
-    Python implementation of the IDL match.pro procedure
+    Returns two arrays of indices at which 'array1' and 'array2' match.
+    Can e.g. be used to find matching dates from two timeseries
 
-    returns lists of indices at which 'a' and 'b' match.
-    e.g:
-    >>> a = [3, 5, 7, 9, 11]
-    >>> b = [5, 6, 7, 8, 9, 10]
-    >>> ai, bi = match(a, b)
-    >>> print ai
+    Example
+    -------
+    >>> a = np.array([3, 5, 7, 9, 11])
+    >>> b = np.array([5, 6, 7, 8, 9, 10])
+    >>> ai, bi = get_matched_indices(a, b)
+    >>> print(ai)
     [1, 2, 3]
-    >>> print bi
+    >>> print(bi)
     [0, 2, 4]
-    >>> print a[ai]
+    >>> print(a[ai])
     [5, 7, 9]
-    >>> print b[bi]
+    >>> print(b[bi])
     [5, 7, 9]
 
-    N.B: This assumes that there are no duplicate values in 'a' or 'b'.
-         the results will be meaningless if duplicates exist.
+    Parameters
+    ----------
+    array1 : np.array
+        the first of the two series to match
+    array2 : np.array
+        the second of the two series to match
+    epsilon : float, optional
+        the tolerance within which to consider a pair of values to be a match, by default 0.0
 
-    TODO:
-        The IDL implementation use a histogram-based method when both
-        'a' and 'b' are integer arrays. This method is faster for small
-        arrays. It may be worthwhile implementing this method in Python.
-
-        However, this histogram method relies on use of the 'reverse_indices'
-        argument which does not exist in numpy.
-
-    INPUTS:
-        a: the first of the two series to match
-        b: the second series to match
-        epsilon: (optional) the tolerance within which to consider
-                 a pair of values to be a match.
-    OUTPUTS:
-        suba: The indices at which values in 'a' match a value in 'b'
-        subb: The indices at which values in 'b' match a value in 'a'
+    Returns
+    -------
+    Union[np.array, np.array]
+        1. The indices at which values in 'array1' match a value in 'array2'
+        2. The indices at which values in 'array2' match a value in 'array1'
     """
-    na = len(a)
-    nb = len(b)
-    suba = np.zeros(a.shape, dtype=bool)
-    subb = np.zeros(b.shape, dtype=bool)
+    if contains_duplicates(array1) or contains_duplicates(array2):
+        raise ValueError('Input array <array1> or <array2> should not contain duplicates.')
 
-    if na == 1 or nb == 1:
-        if nb > 1:
-            subb[:] = (b == a[0])
-            if subb.any():
-                suba = np.zeros((np.count_nonzero(subb)), dtype=np.int32)
+    length_arr1 = len(array1)
+    length_arr2 = len(array2)
+    match_arr1 = np.zeros(array1.shape, dtype=bool)
+    match_arr2 = np.zeros(array2.shape, dtype=bool)
+
+    if length_arr1 == 1 or length_arr2 == 1:
+        if length_arr2 > 1:
+            match_arr2[:] = (array2 == array1[0])
+            if match_arr2.any():
+                match_arr1 = np.zeros((np.count_nonzero(match_arr2)), dtype=np.int32)
             else:
-                suba = np.array([])
-            subb = np.flatnonzero(subb)
+                match_arr1 = np.array([])
+            match_arr2 = np.flatnonzero(match_arr2)
         else:
-            suba[:] = (a == b[0])
-            if suba.any():
-                subb = np.zeros((np.count_nonzero(suba)), dtype=np.int32)
+            match_arr1[:] = (array1 == array2[0])
+            if match_arr1.any():
+                match_arr2 = np.zeros((np.count_nonzero(match_arr1)), dtype=np.int32)
             else:
-                subb = np.array([])
-            suba = np.flatnonzero(suba)
-        return suba, subb
-    c = np.concatenate((a, b))
+                match_arr2 = np.array([])
+            match_arr1 = np.flatnonzero(match_arr1)
+        return match_arr1, match_arr2
+    concat_arr = np.concatenate((array1, array2))
     ind = np.concatenate(
-        [np.arange(na), np.arange(nb)]
+        [np.arange(length_arr1), np.arange(length_arr2)]
     )
     vec = np.concatenate(
-        [np.zeros([na], dtype=bool),
-         np.ones([nb], dtype=bool)]
+        [np.zeros([length_arr1], dtype=bool),
+         np.ones([length_arr2], dtype=bool)]
     )
 
-    sub = np.argsort(c)
-    c = c[sub]
+    sub = np.argsort(concat_arr)
+    concat_arr = concat_arr[sub]
     ind = ind[sub]
     vec = vec[sub]
 
-    # n = na + nb
     if epsilon == 0:
         firstdup = np.logical_and(
-            c == np.roll(c, -1),
+            concat_arr == np.roll(concat_arr, -1),
             vec != np.roll(vec, -1)
         )
     else:
         firstdup = np.logical_and(
-            np.abs(c - np.roll(c, -1)) < epsilon,
+            np.abs(concat_arr - np.roll(concat_arr, -1)) < epsilon,
             vec != np.roll(vec, -1)
         )
     count = np.count_nonzero(firstdup)
     firstdup = np.flatnonzero(firstdup)
     if count == 0:
-        suba = np.array([])
-        subb = np.array([])
-        return suba, subb
+        match_arr1 = np.array([])
+        match_arr2 = np.array([])
+        return match_arr1, match_arr2
     dup = np.zeros((count * 2), dtype=int)
     even = np.arange(count) * 2
 
@@ -102,9 +104,9 @@ def match(a, b, epsilon=0):
 
     ind = ind[dup]
     vec = vec[dup]
-    subb = ind[vec]
-    suba = ind[np.logical_not(vec)]
-    return suba, subb
+    match_arr2 = ind[vec]
+    match_arr1 = ind[np.logical_not(vec)]
+    return match_arr1, match_arr2
 
 
 def resample_1d_array(x: np.array, y: np.array, x_new: np.array, mode: str = "linear") -> np.array:
@@ -147,9 +149,9 @@ def resample_1d_array(x: np.array, y: np.array, x_new: np.array, mode: str = "li
 
 
 def moving_average(dx: float, x: np.array, y: np.array = None, clip: bool = False) -> np.array:
-    """calculate the moving average of an array.
+    """Calculates the moving average of an array.
 
-    if an argument for y is not provided, the function instead provides a moving average of the signal x,
+    If an argument for y is not provided, the function instead provides a moving average of the signal x,
     over a width of dx samples.
 
     Parameters
@@ -195,7 +197,7 @@ def moving_average(dx: float, x: np.array, y: np.array = None, clip: bool = Fals
 
 
 def timeseries_as_months(fractional_year_array: np.array, downsample_to_month: bool = True) -> np.array(float):
-    """calculates an array (in units of fractional years) of evenly spaced monthly intervals over the timespan of 
+    """Calculates an array (in units of fractional years) of evenly spaced monthly intervals over the timespan of
     a given date array (in units of fractional years)
 
     This function can be used as input for resampling to ensure that timesteps of different time series are consistent
@@ -225,7 +227,8 @@ def timeseries_as_months(fractional_year_array: np.array, downsample_to_month: b
     return monthly_array
 
 
-def ts_combine(t, y, nsigma=0, error=False, average=False, verbose=False, ret_data_out=False):
+def ts_combine(t: list[np.array], y: list[np.array], nsigma=0, error=False, average=False,
+               verbose=False, ret_data_out=False) -> Union[np.array, np.array]:
     """
     Combines a number of input sequences
 
@@ -295,7 +298,7 @@ def ts_combine(t, y, nsigma=0, error=False, average=False, verbose=False, ret_da
         # use interpolation to find y-values at the new times
         y2 = resample_1d_array(ti, yi, t2)
         # find locations where the times match other items in the input
-        m1, m2 = match(np.floor(t1 * 12), np.floor(t2 * 12))
+        m1, m2 = get_matched_indices(np.floor(t1 * 12), np.floor(t2 * 12))
         # match,fix(t1*12),fix(t2*12),m1,m2
         # print repr(y1), repr(y2), repr(m1), repr(m2)
         if verbose:

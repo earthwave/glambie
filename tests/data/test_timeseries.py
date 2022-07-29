@@ -68,5 +68,8 @@ def test_metadata_as_dataframe(example_timeseries):
     assert df['data_group'].iloc[0] == 'altimetry'
     assert df.shape[0] == 1
 
-# @SOPHIE TODO:
-# Write a unit test of Timeseries.load_data(), e.g. loading alaska_altimetry_sharks.csv
+
+def test_timeseries_load_data(example_timeseries):
+    example_timeseries.load_data()
+    assert example_timeseries.data.dates is not None
+    assert example_timeseries.is_data_loaded

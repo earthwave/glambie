@@ -77,4 +77,5 @@ def test_data_catalogue_from_file():
     assert len(catalogue.datasets) == 4
 
 
-# @ TODO Sophie: write unit test for data_catalogue.regions
+def test_data_catalogue_regions(example_catalogue):
+    assert len(example_catalogue.regions) == 2   # should contain 2 unique regions

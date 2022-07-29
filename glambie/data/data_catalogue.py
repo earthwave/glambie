@@ -1,11 +1,13 @@
 from __future__ import annotations
-import pandas as pd
+
 import json
+import os
 
 from glambie.const.data_groups import GLAMBIE_DATA_GROUPS
-from glambie.const.regions import REGIONS, RGIRegion
+from glambie.const.regions import REGIONS
+from glambie.const.regions import RGIRegion
 from glambie.data.timeseries import Timeseries
-import os
+import pandas as pd
 
 
 class DataCatalogue():

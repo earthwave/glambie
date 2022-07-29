@@ -1,8 +1,7 @@
 import os
 
-import pytest
-
 from glambie.data.data_catalogue import DataCatalogue
+import pytest
 
 
 @pytest.fixture()

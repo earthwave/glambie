@@ -1,8 +1,10 @@
+import os
+
+from glambie.const.data_groups import GLAMBIE_DATA_GROUPS
+from glambie.data.timeseries import Timeseries
+from glambie.data.timeseries import TimeseriesData
 import numpy as np
 import pytest
-import os
-from glambie.const.data_groups import GLAMBIE_DATA_GROUPS
-from glambie.data.timeseries import Timeseries, TimeseriesData
 
 
 @pytest.fixture()

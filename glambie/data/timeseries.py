@@ -54,11 +54,6 @@ class TimeseriesData():
 
 class Timeseries():
     """Class containing a data series and corresponding metadata
-
-    Follows either lazy loading of data files OR direct data ingestion on object creation:
-        - If only filename is specified, data will not be ingested immediately,
-          it can be loaded later from the datafile with load_data()
-        - If data (TimeseriesData object) is specified on object creation, the data is ingested immediately
     """
     is_data_loaded = False
 
@@ -67,6 +62,11 @@ class Timeseries():
                  rgi_version: int = None, unit: str = None):
         """
         Class containing meta data and data from of an individual timeseries.
+
+        Follows either lazy loading of data files OR direct data ingestion on object creation:
+            - If only filename is specified, data will not be ingested immediately,
+            it can be loaded later from the datafile with load_data()
+            - If data (TimeseriesData object) is specified on object creation, the data is ingested immediately
 
         Parameters
         ----------

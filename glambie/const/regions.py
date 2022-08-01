@@ -13,6 +13,9 @@ class RGIRegion():
     def __str__(self):
         return str(self.rgi_id) + '; ' + self.name + '; ' + self.long_name
 
+    def __hash__(self):  # Make hashable
+        return hash(self.name)
+
 
 REGIONS = {
     'alaska': RGIRegion(rgi_id=1, name='alaska', long_name='Alaska',
@@ -23,7 +26,9 @@ REGIONS = {
                           rgi6_area=33959, rgi7_area=33959, area_change=-0.26)}
 
 
-# @SOPHIE to implement, also add return type hint
-def get_region_by_id(rgi_id: int):
-    rgi_id  # implement here
-    pass
+def get_region_by_id(rgi_id: int) -> RGIRegion:
+    """Returns region object that matches input ID
+    """
+    for key in REGIONS:
+        if REGIONS[key].rgi_id == rgi_id:
+            return REGIONS[key]

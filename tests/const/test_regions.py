@@ -1,9 +1,9 @@
-from glambie.const.regions import REGIONS
+from glambie.const.regions import REGIONS, get_region_by_id
 
 
 def test_get_region_by_id():
-    # @SOPHIE TODO: WRITE TEST
-    pass
+    region = REGIONS['iceland']
+    assert get_region_by_id(6) == region
 
 
 def test_get_region_by_name():

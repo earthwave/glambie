@@ -82,7 +82,24 @@ class DataCatalogue():
         return pd.concat(metadata_list)
 
     def get_filtered_catalogue(self, region_name: str = None, data_group: str = None,
-                               user_group: str = None) -> DataCatalogue:  # @SOPHIE TODO: add docstring to method
+                               user_group: str = None) -> DataCatalogue:
+        """
+        Returns a catalogue filtered by region name, data group or user group
+
+        Parameters
+        ----------
+        region_name : str, optional
+            region to filter by, by default None
+        data_group : str, optional
+            data group to filter by, by default None
+        user_group : str, optional
+            user group to filter by, by default None
+
+        Returns
+        -------
+        DataCatalogue
+            A filtered version of the input catalogue
+        """
         datasets = self._datasets
         if region_name is not None:  # filter by region
             datasets = [s for s in datasets if s.region.name.lower() == region_name.lower()]

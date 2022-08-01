@@ -34,5 +34,6 @@ setup(
     install_requires=[
         'numpy>1.15',
         'pandas>1.2',
+        'matplotlib>3.0',
     ],
 )

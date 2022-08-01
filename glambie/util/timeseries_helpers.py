@@ -5,10 +5,13 @@ from scipy import interpolate
 from typing import Union
 
 
-def contains_duplicates(x):
+def contains_duplicates(x: np.array) -> bool:
+    """Checks if an array / list contains duplicate values
+    """
     return len(np.unique(x)) != len(x)
 
-def get_matched_indices(array1: np.array, array2: np.array, epsilon: float = 0.0) -> Union[np.array, np.array]:
+
+def get_matched_indices(array1: np.array, array2: np.array, tolerance: float = 0.0) -> Union[np.array, np.array]:
     """
     Returns two arrays of indices at which 'array1' and 'array2' match.
     Can e.g. be used to find matching dates from two timeseries
@@ -33,7 +36,7 @@ def get_matched_indices(array1: np.array, array2: np.array, epsilon: float = 0.0
         the first of the two series to match
     array2 : np.array
         the second of the two series to match
-    epsilon : float, optional
+    tolerance : float, optional
         the tolerance within which to consider a pair of values to be a match, by default 0.0
 
     Returns
@@ -80,14 +83,14 @@ def get_matched_indices(array1: np.array, array2: np.array, epsilon: float = 0.0
     ind = ind[sub]
     vec = vec[sub]
 
-    if epsilon == 0:
+    if tolerance == 0:
         firstdup = np.logical_and(
             concat_arr == np.roll(concat_arr, -1),
             vec != np.roll(vec, -1)
         )
     else:
         firstdup = np.logical_and(
-            np.abs(concat_arr - np.roll(concat_arr, -1)) < epsilon,
+            np.abs(concat_arr - np.roll(concat_arr, -1)) < tolerance,
             vec != np.roll(vec, -1)
         )
     count = np.count_nonzero(firstdup)
@@ -191,9 +194,9 @@ def moving_average(dx: float, x: np.array, y: np.array = None, clip: bool = Fals
                 ry[ok] = np.NAN
         return ry
     else:
-        ret = np.cumsum(x, dtype=x.dtype)
-        ret[dx:] = ret[dx:] - ret[:-dx]
-        return ret[dx - 1:] / dx
+        result = np.cumsum(x, dtype=x.dtype)
+        result[dx:] = result[dx:] - result[:-dx]
+        return result[dx - 1:] / dx
 
 
 def timeseries_as_months(fractional_year_array: np.array, downsample_to_month: bool = True) -> np.array(float):
@@ -227,117 +230,129 @@ def timeseries_as_months(fractional_year_array: np.array, downsample_to_month: b
     return monthly_array
 
 
-def ts_combine(t: list[np.array], y: list[np.array], nsigma=0, error=False, average=False,
-               verbose=False, ret_data_out=False) -> Union[np.array, np.array]:
+def combine_timeseries(t_array: list[np.ndarray],
+                       y_array: list[np.ndarray],
+                       outlier_tolerance: float = None,
+                       calculate_as_errors: bool = False,
+                       perform_moving_average: bool = False,
+                       verbose=False) \
+        -> Union[np.ndarray, np.ndarray, np.ndarray]:
     """
-    Combines a number of input sequences
+    Combines a number of input timeseries sequences
 
-    INPUTS:
-        t: an iterable of the time-series arrays to be combined
-        y: an iterable of the y-value arrays to be combined
-        nsigma: (optional) tolerance within which to consider a value to be valid
-        average: (optional) if True, performs a moving average on the output
-        verbose: (optional) if True, renders graphs for debugging purposes
-        ret_data_out (optional): if True, returns the data_out array.
-    OUTPUTS:
-        t1: The abissca series of the combined data
-        y1: The y-values of the combined data
-        data_out (optional): returns the full data set
+    Parameters
+    ----------
+    t_array : list[np.ndarray]
+        a list/iterable of the time-series arrays to be combined
+    y_array : list[np.ndarray]
+        a list/iterable of the y-value arrays to be combined
+    outlier_tolerance : float, optional
+        tolerance within which to consider a value to be valid, by default None
+    calculate_as_errors : bool, optional
+        if True, the y_array series is combined using uncertainty propagation rules, by default False
+    perform_moving_average : bool, optional
+        if True, performs a moving average on the output (over one calendar year), by default False
+    verbose : bool, optional
+        if True, renders graphs for debugging purposes, by default False
+
+    Returns
+    -------
+    Union[np.ndarray, np.ndarray, np.ndarray]
+        1: numpy array of the fractional years array of the combined data
+        2: The corresponding y-values of the combined data series
+        3. data_out: 2d array of the full resampled data set of each solution
+                     data_out[0] will be the the fractional years array of the combined data
+                     data_out[1:] all following elements will be the resampled y_values for each solution
     """
-    colors = ['r', 'g', 'b', 'c', 'y', 'm', 'o', 'k']
+
+    colors = ['r', 'g', 'b', 'c', 'y', 'm', 'o', 'k']  # n.b. this assumes we have no more than 8 solutions
     if verbose:
-        for ti, yi, c in zip(t, y, colors[1:]):
-            plt.plot(ti, yi, c + '-')
-    # create _id array, which indicates which input array each element originated from
-    _id = [np.ones(ti.shape, dtype=int) * (i + 1) for i, ti in enumerate(t)]
-    _id = np.concatenate(_id)
-    # chain together input sequences
-    t = np.concatenate(t)
-    y = np.concatenate(y)
-
-    # sort the input time-values, and interpolate them to monthly values
-    t1 = timeseries_as_months(np.sort(t))
+        for t_solution, y_solution, c in zip(t_array, y_array, colors[1:]):
+            plt.plot(t_solution, y_solution, c + '-')
+    # create solution_indices array, which indicates which input array each element originated from
+    solution_indices = [np.ones(ti.shape, dtype=int) * (i + 1) for i, ti in enumerate(t_array)]
+    solution_indices = np.concatenate(solution_indices)
+    # chain together input sequences, solution_indices describes
+    t_array = np.concatenate(t_array)
+    y_array = np.concatenate(y_array)
+    # sort the input time-values, and interpolate them to monthly values, this will be the output time domain
+    t_array_combined = timeseries_as_months(np.sort(t_array))
     # remove duplicates from where inputs have overlapped
-    t1 = np.unique(t1)
+    t_array_combined = np.unique(t_array_combined)
+    # create output array to be filled
+    y_array_combined = np.zeros(t_array_combined.shape, dtype=t_array_combined.dtype)
+    # solutions_per_timestep is used to count the number of input data points that have been used for each output point
+    solutions_per_timestep = np.zeros(t_array_combined.shape, dtype=t_array_combined.dtype)
 
-    # create output array
-    y1 = np.zeros(t1.shape, dtype=t1.dtype)
-    # c1 is used to count the number of input data points that have been used for each output point
-    c1 = np.zeros(t1.shape, dtype=t1.dtype)
-
-    # create data_out array
-    data_out = np.empty(
-        (len(t1), np.max(_id) + 1),
-        dtype=t1.dtype
+    # create data_out array for resampled data input
+    full_resampled_data = np.empty(
+        (len(t_array_combined), np.max(solution_indices) + 1),
+        dtype=t_array_combined.dtype
     )
-    # init. all values to NaN
-    data_out.fill(np.NAN)
+    full_resampled_data.fill(np.NAN)  # initially all values to NaN
+    full_resampled_data[:, 0] = t_array_combined  # fill in time domain
 
-    data_out[:, 0] = t1
-    for i in range(1, np.max(_id) + 1):
-        # find valid data-points where the id matches the current input seq. being worked on
-        ok = np.logical_and(
-            _id == i, np.isfinite(y)
-        )
-        if nsigma:
-            # if nsigma has been specified, eliminate values far from the mean
-            ok[ok] = np.abs(y[ok] - np.nanmean(y)) < max(nsigma, 1) * np.nanstd(y)
-        # if we've eliminated all values in the current input, skip to the next one.
-        if not ok.any():
+    #  RESAMPLE ALL SOLUTIONS TO MONTHLY AND SUM UP SOLUTIONS in y_array_combined
+    for index_of_solution in range(1, np.max(solution_indices) + 1):  # iterate through each solution
+        # Find valid indices for solution in concatenated array
+        valid_indices = np.logical_and(solution_indices == index_of_solution, np.isfinite(y_array))
+
+        # if outlier_tolerance has been specified, eliminate values far from the mean
+        if outlier_tolerance is not None:
+            valid_indices[valid_indices] = np.abs(y_array[valid_indices] - np.nanmean(y_array)) \
+                < max(outlier_tolerance, 1) * np.nanstd(y_array)
+        # if we've eliminated all values in the current input, skip to the next solution.
+        if not valid_indices.any():
             continue
-        # get the valid items
-        ti = t[ok]
-        yi = y[ok]
+        # Filter concatenated y_array and t_array by solution, so get values for current solution
+        t_solution = t_array[valid_indices]
+        y_solution = y_array[valid_indices]
         # sort by time
-        o = np.argsort(ti)
-        ti = ti[o]
-        yi = yi[o]
-
+        sort = np.argsort(t_solution)
+        t_solution = t_solution[sort]
+        y_solution = y_solution[sort]
         # match time to monthly values
-        t2 = timeseries_as_months(ti)
+        t_solution_resampled = timeseries_as_months(t_solution)
         # use interpolation to find y-values at the new times
-        y2 = resample_1d_array(ti, yi, t2)
-        # find locations where the times match other items in the input
-        m1, m2 = get_matched_indices(np.floor(t1 * 12), np.floor(t2 * 12))
-        # match,fix(t1*12),fix(t2*12),m1,m2
-        # print repr(y1), repr(y2), repr(m1), repr(m2)
+        y_solution_resampled = resample_1d_array(t_solution, y_solution, t_solution_resampled)
+        # find locations where the times match the times of the combined series
+        matched_indices_1, matched_indices_2 = get_matched_indices(np.floor(t_array_combined * 12),
+                                                                   np.floor(t_solution_resampled * 12))
         if verbose:
-            plt.plot(t2, y2, colors[i] + '.')
+            plt.plot(t_solution_resampled, y_solution_resampled, colors[index_of_solution] + '.',
+                     label='solution: {}'.format(index_of_solution))
         # add the values from the current input seq. to the output seq.
-        if error:
-            y1[m1] += y2[m2] ** 2.
+        if calculate_as_errors:
+            y_array_combined[matched_indices_1] += y_solution_resampled[matched_indices_2] ** 2.
         else:
-            y1[m1] += y2[m2]
-        data_out[m1, i] = y2[m2]
-        # increment the values in c1 for each current point
-        c1[m1] += 1
-    # set any zeros in c1 to ones
-    c11 = np.maximum(c1, np.ones(c1.shape))
-    # use c1 to calculate the element-wise average of the data
-    if error:
-        y1 = np.sqrt(y1 / c11) / np.sqrt(c11)
-    else:
-        y1 /= c11
+            y_array_combined[matched_indices_1] += y_solution_resampled[matched_indices_2]
+        full_resampled_data[matched_indices_1, index_of_solution] = y_solution_resampled[matched_indices_2]
+        # increment the values in solutions_per_timestep for each current point
+        solutions_per_timestep[matched_indices_1] += 1
 
+    # DIVIDE SUMMED RESULT BY NUMBER OF SOLUTIONS TO GET AVERAGE
+    # set any zeros in solutions_per_timestep to ones so we don't run into divide by 0 errors
+    solutions_per_timestep_ = np.maximum(solutions_per_timestep, np.ones(solutions_per_timestep.shape))
+    # use solutions_per_timestep_ to calculate the element-wise average of the data
+    if calculate_as_errors:
+        y_array_combined = np.sqrt(y_array_combined / solutions_per_timestep_) / np.sqrt(solutions_per_timestep_)
+    else:
+        y_array_combined /= solutions_per_timestep_
     # find any locations where no values were found
-    ok = (c1 == 0)
+    valid_indices = (solutions_per_timestep == 0)
     # set those locations to NaNs
-    if ok.any():
-        y1[ok] = np.NAN
-    # optionally plot output
-    if verbose:
-        plt.plot(t1, y1, '--k')
-    # optionally perform moving average
-    if average:
-        y1 = moving_average(13. / 12, t1, y1)
+    if valid_indices.any():
+        y_array_combined[valid_indices] = np.NAN
+
+    # PERFORM ADDITIONAL OPTIONAL EDITS ON RESULT
+    if verbose:  # optionally plot output
+        plt.plot(t_array_combined, y_array_combined, '--k', label='combined')
+    if perform_moving_average:  # optionally perform moving average
+        y_array_combined = moving_average(13. / 12, t_array_combined, y_array_combined)
         if verbose:
-            plt.plot(t1, y1, '--k', color='grey', label='moving avg')
-    data_out = data_out.T
-    # render the plot
+            plt.plot(t_array_combined, y_array_combined, '--k', color='grey', label='comb. moving avg')
+    full_resampled_data = full_resampled_data.T
     if verbose:
         plt.legend()
         plt.show()
-    # return the outputs
-    if ret_data_out:
-        return t1, y1, data_out
-    return t1, y1
+    return t_array_combined, y_array_combined, full_resampled_data

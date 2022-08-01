@@ -1,3 +1,4 @@
+from glambie.util.timeseries_helpers import combine_timeseries
 from glambie.util.timeseries_helpers import get_matched_indices
 from glambie.util.timeseries_helpers import moving_average
 from glambie.util.timeseries_helpers import resample_1d_array
@@ -80,3 +81,50 @@ def test_get_matched_indices_with_duplicates():
     b = np.array([5, 6, 7, 8, 9, 10])
     with pytest.raises(ValueError, match='Input array <array1> or <array2> should not contain duplicates.'):
         get_matched_indices(a, b)
+
+
+def test_combine_timeseries_returns():
+    t = [np.array([2010, 2011, 2012, 2014]), np.array([2011, 2012, 2014, 2015]),
+         np.array([2011.1, 2012.2, 2014.3, 2015.4])]
+    y = [np.array([10, 11, 12, 14]), np.array([16, 16, 29, 50]), np.array([17, 16, 22, 90])]
+    t, y, data = combine_timeseries(t, y, outlier_tolerance=None, calculate_as_errors=False,
+                                    perform_moving_average=False, verbose=False)
+    assert t.shape == y.shape
+    assert np.array_equal(data[0], t)
+
+
+def test_combine_timeseries_avg():  # this test is a bit lazy ;)
+    t = [np.array([2010, 2011, 2012, 2014]), np.array([2011, 2012, 2014, 2015]),
+         np.array([2011.1, 2012.2, 2014.3, 2015.4])]
+    y = [np.array([10, 11, 12, 14]), np.array([16, 16, 29, 50]), np.array([17, 16, 22, 90])]
+    t_avg, y_avg, data_avg = combine_timeseries(t, y, outlier_tolerance=None, calculate_as_errors=True,
+                                                perform_moving_average=True, verbose=False)
+    t, y, data = combine_timeseries(t, y, outlier_tolerance=None, calculate_as_errors=False,
+                                    perform_moving_average=False, verbose=False)
+    assert t_avg.shape == t.shape
+    assert ~np.array_equal(y_avg, y) # just checking that the result with moving avg is not the same as without
+
+
+def test_combine_timeseries_simple_example():
+    t = [np.array([2010, 2011]), np.array([2010, 2011])]
+    y = [np.array([1, 2]), np.array([2, 1])]  # this should return 1.5 for each element
+    t, y, data = combine_timeseries(t, y, outlier_tolerance=None, calculate_as_errors=False,
+                                    perform_moving_average=False, verbose=False)
+    assert np.all(y == 1.5)
+
+
+def test_combine_timeseries_simple_example_errors():
+    t = [np.array([2010, 2011]), np.array([2010, 2011])]
+    y = [np.array([4, 2]), np.array([6, 1])]
+    t, y, data = combine_timeseries(t, y, outlier_tolerance=None, calculate_as_errors=True,
+                                    perform_moving_average=False, verbose=False)
+    assert y[-1] == (np.sqrt(1**2 + 2**2) / 2)
+    assert round(y[0], 10) == round((np.sqrt(4**2 + 6**2) / 2), 10)  # round due to floating point diffs
+
+
+def test_combine_timeseries_simple_example_mov_avg():
+    t = [np.array([2010, 2011, 2012]), np.array([2010, 2011, 2012])]
+    y = [np.array([1, 2, 1]), np.array([2, 1, 2])]  # this should return 1.5 for each element
+    t, y, data = combine_timeseries(t, y, outlier_tolerance=None, calculate_as_errors=False,
+                                    perform_moving_average=True, verbose=False)
+    assert np.all(y == 1.5)

@@ -102,7 +102,7 @@ def test_combine_timeseries_avg():  # this test is a bit lazy ;)
     t, y, data = combine_timeseries(t, y, outlier_tolerance=None, calculate_as_errors=False,
                                     perform_moving_average=False, verbose=False)
     assert t_avg.shape == t.shape
-    assert ~np.array_equal(y_avg, y) # just checking that the result with moving avg is not the same as without
+    assert ~np.array_equal(y_avg, y)  # just checking that the result with moving avg is not the same as without
 
 
 def test_combine_timeseries_simple_example():

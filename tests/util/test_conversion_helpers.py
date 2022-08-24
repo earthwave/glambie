@@ -1,4 +1,6 @@
-from glambie.util.conversion_helpers import meters_to_gigatonnes, meters_to_meters_water_equivalent
+from glambie.util.conversion_helpers import gigatonnes_to_sea_level_rise
+from glambie.util.conversion_helpers import meters_to_gigatonnes
+from glambie.util.conversion_helpers import meters_to_meters_water_equivalent
 
 
 def test_meters_to_gigatonnes():
@@ -23,3 +25,11 @@ def test_meters_to_meters_water_equivalent():
     assert meters_to_meters_water_equivalent(test_variable_in_m,
                                              density_of_water_in_gt_per_m3=test_density_of_water_in_gt_per_m3) == (
                                                  20 / 950) * 850
+
+
+def test_gigatonnes_to_sea_level_rise():
+    test_variable_in_gt = 50
+    assert gigatonnes_to_sea_level_rise(test_variable_in_gt) == abs(50 / (3.625e8 * 1e6))
+    # if non-default ocean area is used
+    test_ocean_area = 3.8e8
+    assert gigatonnes_to_sea_level_rise(test_variable_in_gt, ocean_area=test_ocean_area) == abs(50 / (3.8e8 * 1e6))

@@ -15,7 +15,11 @@ def test_meters_to_meters_water_equivalent():
     assert meters_to_meters_water_equivalent(test_variable_in_m) == (20 / 997) * 850  # Is this ok? round() instead?
     # if non-default ice density is used
     test_density_of_ice_in_gt_per_m3 = 800
-    assert meters_to_meters_water_equivalent(test_variable_in_m, test_density_of_ice_in_gt_per_m3) == (20 / 997) * 800
+    assert meters_to_meters_water_equivalent(test_variable_in_m,
+                                             density_of_ice_in_gt_per_m3=test_density_of_ice_in_gt_per_m3) == (
+                                                 20 / 997) * 800
     # if non-default water density is used
     test_density_of_water_in_gt_per_m3 = 950
-    assert meters_to_meters_water_equivalent(test_variable_in_m, test_density_of_water_in_gt_per_m3) == (20 / 950) * 850
+    assert meters_to_meters_water_equivalent(test_variable_in_m,
+                                             density_of_water_in_gt_per_m3=test_density_of_water_in_gt_per_m3) == (
+                                                 20 / 950) * 850

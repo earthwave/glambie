@@ -75,7 +75,7 @@ def gigatonnes_to_sea_level_rise(gigatonnes_list: list, ocean_area: float = 3.62
     -------
     A list of measurements in sea level rise (mm)
     """
-    sea_level_rise_list = [gigatonne2slr(i) for i in gigatonnes_list]
+    sea_level_rise_list = [gigatonne2slr(i, ocean_area) for i in gigatonnes_list]
     return sea_level_rise_list
 
 

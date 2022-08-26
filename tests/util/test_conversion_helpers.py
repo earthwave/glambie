@@ -3,6 +3,11 @@ from glambie.util.conversion_helpers import gigatonne2meter
 from glambie.util.conversion_helpers import meter2mwe
 from glambie.util.conversion_helpers import gigatonne2slr
 
+from glambie.util.conversion_helpers import gigatonnes_to_sea_level_rise
+from glambie.util.conversion_helpers import gigatonnes_to_meters
+from glambie.util.conversion_helpers import meters_to_gigatonnes
+from glambie.util.conversion_helpers import meters_to_meters_water_equivalent
+
 
 def test_meters2gigatonnes():
     test_variable_in_m = 20
@@ -41,3 +46,23 @@ def test_gigatonnes2slr():
     # if non-default ocean area is used
     test_ocean_area = 3.8e8
     assert gigatonne2slr(test_variable_in_gt, ocean_area=test_ocean_area) == abs(50 / (3.8e8 * 1e6))
+
+
+def test_meters_to_gigatonnes():
+    meters_list = [20, 30]
+    assert meters_to_gigatonnes(meters_list, 1000) == [17, 25.5]
+
+
+def test_gigatonnes_to_meters():
+    gigatonnes_list = [17, 25.5]
+    assert gigatonnes_to_meters(gigatonnes_list, 1000) == [20, 30]
+
+
+def test_meters_to_meters_water_equivalent():
+    meters_list = [20, 30]
+    assert meters_to_meters_water_equivalent(meters_list) == [(20 / 997) * 850, (30 / 997) * 850]
+
+
+def test_gigatonnes_to_sea_level_rise():
+    gigatonnes_list = [50, 60]
+    assert gigatonnes_to_sea_level_rise(gigatonnes_list) == [abs(50 / (3.625e8 * 1e6)), abs(60 / (3.625e8 * 1e6))]

@@ -19,6 +19,27 @@ def meters_to_gigatonnes(variable_in_m: float, rgi_area_km2: float, density_of_i
     return variable_in_gt
 
 
+def gigatonnes_to_meters(variable_in_gt: float, rgi_area_km2: float, density_of_ice_in_gt_per_m3: float = 850) -> float:
+    """
+    Function to convert a measurement in gigatonnes to meters
+
+    Parameters
+    ----------
+    variable_in_gt : float
+        The variable to be converted, with input units of gigatonnes
+    rgi_area_km2 : float
+        The area of the region in km2
+    density_of_ice_in_gt_per_m3 : , optional
+        The density of ice in Gt per m3, by default 850
+
+    Returns:
+    ----------
+    Input variable converted into meters
+    """
+    variable_in_m = (1e6 * variable_in_gt) / (rgi_area_km2 * density_of_ice_in_gt_per_m3)
+    return variable_in_m
+
+
 def meters_to_meters_water_equivalent(variable_in_m: float, density_of_water_in_gt_per_m3: float = 997,
                                       density_of_ice_in_gt_per_m3: float = 850) -> float:
     """

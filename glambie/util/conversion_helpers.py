@@ -5,6 +5,10 @@ def meters_to_gigatonnes(meters_list: list, rgi_area_km2: float, density_of_ice_
     ----------
     meters_list : list
         list of measurements in meters
+    rgi_area_km2 : float
+        The area of the region in km2
+    density_of_ice_in_gt_per_m3 : , optional
+        The density of ice in Gt per m3, by default 850
 
     Returns
     -------
@@ -21,6 +25,10 @@ def gigatonnes_to_meters(gigatonnes_list: list, rgi_area_km2: float, density_of_
     ----------
     gigatonnes_list : list
         list of measurements in gigatonnes
+    rgi_area_km2 : float
+        The area of the region in km2
+    density_of_ice_in_gt_per_m3 : , optional
+        The density of ice in Gt per m3, by default 850
 
     Returns
     -------
@@ -39,6 +47,10 @@ def meters_to_meters_water_equivalent(meters_list: list, density_of_water_in_gt_
     ----------
     meters_list : list
         list of measurements in meters
+    density_of_water_in_Gt_per_m3 : float, optional
+        The density of water in Gt per m3, by default 997
+    density_of_ice_in_Gt_per_m3 : float, optional
+        The density of ice in Gt per m3, by default 850
 
     Returns
     -------
@@ -56,6 +68,8 @@ def gigatonnes_to_sea_level_rise(gigatonnes_list: list, ocean_area: float = 3.62
     ----------
     gigatonnes_list : list
         list of measurements in gigatonnes
+    ocean_area : float
+        The assumed area of the ocean in km2, by default 3.625e8
 
     Returns
     -------

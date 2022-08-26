@@ -1,8 +1,3 @@
-from glambie.util.conversion_helpers import gigatonnes_to_sea_level_rise
-from glambie.util.conversion_helpers import gigatonnes_to_meters
-from glambie.util.conversion_helpers import meters_to_gigatonnes
-from glambie.util.conversion_helpers import meters_to_meters_water_equivalent
-
 from glambie.util.conversion_helpers import meter2gigatonne
 from glambie.util.conversion_helpers import gigatonne2meter
 from glambie.util.conversion_helpers import meter2mwe
@@ -33,11 +28,11 @@ def test_meters2mwe():
     # if non-default ice density is used
     test_density_of_ice_in_gt_per_m3 = 800
     assert meter2mwe(test_variable_in_m,
-                      density_of_ice_in_gt_per_m3=test_density_of_ice_in_gt_per_m3) == (20 / 997) * 800
+                     density_of_ice_in_gt_per_m3=test_density_of_ice_in_gt_per_m3) == (20 / 997) * 800
     # if non-default water density is used
     test_density_of_water_in_gt_per_m3 = 950
     assert meter2mwe(test_variable_in_m,
-                      density_of_water_in_gt_per_m3=test_density_of_water_in_gt_per_m3) == (20 / 950) * 850
+                     density_of_water_in_gt_per_m3=test_density_of_water_in_gt_per_m3) == (20 / 950) * 850
 
 
 def test_gigatonnes2slr():
@@ -46,8 +41,3 @@ def test_gigatonnes2slr():
     # if non-default ocean area is used
     test_ocean_area = 3.8e8
     assert gigatonne2slr(test_variable_in_gt, ocean_area=test_ocean_area) == abs(50 / (3.8e8 * 1e6))
-
-
-def test_meters_to_gigatonnes():
-    meters_list = [20,30]
-    assert meters_to_gigatonnes(meters_list) == 

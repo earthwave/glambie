@@ -57,10 +57,10 @@ def test_mwe2meters():
 
 def test_gigatonnes2slr():
     test_variable_in_gt = 50
-    assert gigatonne2slr(test_variable_in_gt) == abs(50 / (3.625e8 * 1e6))
+    assert gigatonne2slr(test_variable_in_gt) == abs(50 / 3.625e8) * 1e6
     # if non-default ocean area is used
     test_ocean_area = 3.8e8
-    assert gigatonne2slr(test_variable_in_gt, ocean_area=test_ocean_area) == abs(50 / (3.8e8 * 1e6))
+    assert gigatonne2slr(test_variable_in_gt, ocean_area=test_ocean_area) == abs(50 / 3.8e8) * 1e6
 
 
 def test_meters_to_gigatonnes():
@@ -85,4 +85,4 @@ def test_meters_water_equivalent_to_meters():
 
 def test_gigatonnes_to_sea_level_rise():
     gigatonnes_list = [50, 60]
-    assert gigatonnes_to_sea_level_rise(gigatonnes_list) == [abs(50 / (3.625e8 * 1e6)), abs(60 / (3.625e8 * 1e6))]
+    assert gigatonnes_to_sea_level_rise(gigatonnes_list) == [abs(50 / 3.625e8) * 1e6, abs(60 / 3.625e8) * 1e6]

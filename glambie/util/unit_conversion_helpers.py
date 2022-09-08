@@ -199,5 +199,5 @@ def gigatonne2slr(variable_in_gt: float, ocean_area: float = 3.625e8) -> float:
     ----------
     Input variable converted into sea level rise (milimeters)
     """
-    variable_in_slr = abs(variable_in_gt / (ocean_area * 1e6))
+    variable_in_slr = abs(variable_in_gt / ocean_area) * 1e6
     return variable_in_slr

@@ -31,7 +31,7 @@ def test_gigatonnes2meters():
 
 def test_meters2mwe():
     test_variable_in_m = 20
-    assert meter2mwe(test_variable_in_m) == (20 / 997) * 850  # Is this ok? round() instead?
+    assert meter2mwe(test_variable_in_m) == (20 / 997) * 850
     # if non-default ice density is used
     test_density_of_ice_in_gt_per_m3 = 800
     assert meter2mwe(test_variable_in_m,

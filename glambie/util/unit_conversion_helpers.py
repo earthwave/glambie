@@ -1,5 +1,5 @@
 def meters_to_gigatonnes(meters_list: list, rgi_area_km2: float, density_of_ice_in_gt_per_m3: float = 850) -> list:
-    """Function to convert a list of measurements in meters into gigatonnes
+    """Function to convert a list of measurements in meters into gigatonnes.
 
     Parameters
     ----------
@@ -7,7 +7,7 @@ def meters_to_gigatonnes(meters_list: list, rgi_area_km2: float, density_of_ice_
         A list of measurements in meters
     rgi_area_km2 : float
         The area of the region in km2
-    density_of_ice_in_gt_per_m3 : , optional
+    density_of_ice_in_gt_per_m3 : float, optional
         The density of ice in Gt per m3, by default 850
 
     Returns
@@ -19,7 +19,7 @@ def meters_to_gigatonnes(meters_list: list, rgi_area_km2: float, density_of_ice_
 
 
 def gigatonnes_to_meters(gigatonnes_list: list, rgi_area_km2: float, density_of_ice_in_gt_per_m3: float = 850) -> list:
-    """Function to convert a list of measurements in gigatonnes into meters
+    """Function to convert a list of measurements in gigatonnes into meters.
 
     Parameters
     ----------
@@ -27,7 +27,7 @@ def gigatonnes_to_meters(gigatonnes_list: list, rgi_area_km2: float, density_of_
         A list of measurements in gigatonnes
     rgi_area_km2 : float
         The area of the region in km2
-    density_of_ice_in_gt_per_m3 : , optional
+    density_of_ice_in_gt_per_m3 : float, optional
         The density of ice in Gt per m3, by default 850
 
     Returns
@@ -41,7 +41,7 @@ def gigatonnes_to_meters(gigatonnes_list: list, rgi_area_km2: float, density_of_
 
 def meters_to_meters_water_equivalent(meters_list: list, density_of_water_in_gt_per_m3: float = 997,
                                       density_of_ice_in_gt_per_m3: float = 850) -> list:
-    """Function to convert a list of measurements in meters into meters water equivalent
+    """Function to convert a list of measurements in meters into meters water equivalent.
 
     Parameters
     ----------
@@ -63,7 +63,7 @@ def meters_to_meters_water_equivalent(meters_list: list, density_of_water_in_gt_
 
 def meters_water_equivalent_to_meters(meters_water_equivalent_list: list, density_of_water_in_gt_per_m3: float = 997,
                                       density_of_ice_in_gt_per_m3: float = 850) -> list:
-    """Function to convert a list of measurements in meters water equivalent into meters
+    """Function to convert a list of measurements in meters water equivalent into meters.
 
     Parameters
     ----------
@@ -85,13 +85,14 @@ def meters_water_equivalent_to_meters(meters_water_equivalent_list: list, densit
 
 
 def gigatonnes_to_sea_level_rise(gigatonnes_list: list, ocean_area: float = 3.625e8) -> list:
-    """Function to convert a list of measurements in gigatonnes into sea level rise (mm)
+    """Function to convert a list of measurements in gigatonnes into sea level rise (mm). We assume a value for the area
+       of the ocean, and that all measured mass loss contributes to sea level change.
 
     Parameters
     ----------
     gigatonnes_list : list
         list of measurements in gigatonnes
-    ocean_area : float
+    ocean_area : float, optional
         The assumed area of the ocean in km2, by default 3.625e8
 
     Returns
@@ -111,7 +112,7 @@ def meter2gigatonne(variable_in_m: float, rgi_area_km2: float, density_of_ice_in
         The variable to be converted, with input units of meters
     rgi_area_km2 : float
         The area of the region in km2
-    density_of_ice_in_gt_per_m3 : , optional
+    density_of_ice_in_gt_per_m3 : float, optional
         The density of ice in Gt per m3, by default 850
 
     Returns:
@@ -123,7 +124,7 @@ def meter2gigatonne(variable_in_m: float, rgi_area_km2: float, density_of_ice_in
 
 
 def gigatonne2meter(variable_in_gt: float, rgi_area_km2: float, density_of_ice_in_gt_per_m3: float = 850) -> float:
-    """Function to convert a measurement in gigatonnes to meters
+    """Function to convert a measurement in gigatonnes to meters.
 
     Parameters
     ----------
@@ -131,7 +132,7 @@ def gigatonne2meter(variable_in_gt: float, rgi_area_km2: float, density_of_ice_i
         The variable to be converted, with input units of gigatonnes
     rgi_area_km2 : float
         The area of the region in km2
-    density_of_ice_in_gt_per_m3 : , optional
+    density_of_ice_in_gt_per_m3 : float, optional
         The density of ice in Gt per m3, by default 850
 
     Returns:
@@ -192,7 +193,7 @@ def gigatonne2slr(variable_in_gt: float, ocean_area: float = 3.625e8) -> float:
     ----------
     variable_in_gt : float
         The variable to be converted, with input units of gigatonnes
-    ocean_area : float
+    ocean_area : float, optional
         The assumed area of the ocean in km2, by default 3.625e8
 
     Returns

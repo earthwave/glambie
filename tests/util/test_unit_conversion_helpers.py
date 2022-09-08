@@ -1,12 +1,14 @@
-from glambie.util.conversion_helpers import meter2gigatonne
-from glambie.util.conversion_helpers import gigatonne2meter
-from glambie.util.conversion_helpers import meter2mwe
-from glambie.util.conversion_helpers import gigatonne2slr
+from glambie.util.unit_conversion_helpers import meter2gigatonne
+from glambie.util.unit_conversion_helpers import gigatonne2meter
+from glambie.util.unit_conversion_helpers import meter2mwe
+from glambie.util.unit_conversion_helpers import mwe2meter
+from glambie.util.unit_conversion_helpers import gigatonne2slr
 
-from glambie.util.conversion_helpers import gigatonnes_to_sea_level_rise
-from glambie.util.conversion_helpers import gigatonnes_to_meters
-from glambie.util.conversion_helpers import meters_to_gigatonnes
-from glambie.util.conversion_helpers import meters_to_meters_water_equivalent
+from glambie.util.unit_conversion_helpers import meters_to_gigatonnes
+from glambie.util.unit_conversion_helpers import gigatonnes_to_meters
+from glambie.util.unit_conversion_helpers import meters_to_meters_water_equivalent
+from glambie.util.unit_conversion_helpers import meters_water_equivalent_to_meters
+from glambie.util.unit_conversion_helpers import gigatonnes_to_sea_level_rise
 
 
 def test_meters2gigatonnes():
@@ -40,6 +42,19 @@ def test_meters2mwe():
                      density_of_water_in_gt_per_m3=test_density_of_water_in_gt_per_m3) == (20 / 950) * 850
 
 
+def test_mwe2meters():
+    test_variable_in_mwe = 20
+    assert mwe2meter(test_variable_in_mwe) == (20 * 997) / 850
+    # if non-default ice density is used
+    test_density_of_ice_in_gt_per_m3 = 800
+    assert mwe2meter(test_variable_in_mwe,
+                     density_of_ice_in_gt_per_m3=test_density_of_ice_in_gt_per_m3) == (20 * 997) / 800
+    # if non-default water density is used
+    test_density_of_water_in_gt_per_m3 = 950
+    assert mwe2meter(test_variable_in_mwe,
+                     density_of_water_in_gt_per_m3=test_density_of_water_in_gt_per_m3) == (20 * 950) / 850
+
+
 def test_gigatonnes2slr():
     test_variable_in_gt = 50
     assert gigatonne2slr(test_variable_in_gt) == abs(50 / (3.625e8 * 1e6))
@@ -61,6 +76,11 @@ def test_gigatonnes_to_meters():
 def test_meters_to_meters_water_equivalent():
     meters_list = [20, 30]
     assert meters_to_meters_water_equivalent(meters_list) == [(20 / 997) * 850, (30 / 997) * 850]
+
+
+def test_meters_water_equivalent_to_meters():
+    mwe_list = [20, 30]
+    assert meters_water_equivalent_to_meters(mwe_list) == [(20 * 997) / 850, (30 * 997) / 850]
 
 
 def test_gigatonnes_to_sea_level_rise():

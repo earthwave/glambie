@@ -1,12 +1,13 @@
 def meters_to_gigatonnes(meters_list: list, rgi_area_km2: float, density_of_ice_in_gt_per_m3: float = 850) -> list:
-    """Function to convert a list of measurements in meters into gigatonnes.
+    """Function to convert a list of measurements of surface elevation change in meters into ice mass in gigatonnes,
+    using the area of a region and the density of ice.
 
     Parameters
     ----------
     meters_list : list
         A list of measurements in meters
     rgi_area_km2 : float
-        The area of the region in km2
+        The area of a region in km2
     density_of_ice_in_gt_per_m3 : float, optional
         The density of ice in Gt per m3, by default 850
 
@@ -18,7 +19,8 @@ def meters_to_gigatonnes(meters_list: list, rgi_area_km2: float, density_of_ice_
 
 
 def gigatonnes_to_meters(gigatonnes_list: list, rgi_area_km2: float, density_of_ice_in_gt_per_m3: float = 850) -> list:
-    """Function to convert a list of measurements in gigatonnes into meters.
+    """Function to convert a list of measurements of ice mass in gigatonnes into surface elevation change in meters,
+    using the area of a region and the density of ice.
 
     Parameters
     ----------
@@ -38,7 +40,7 @@ def gigatonnes_to_meters(gigatonnes_list: list, rgi_area_km2: float, density_of_
 
 def meters_to_meters_water_equivalent(meters_list: list, density_of_water_in_gt_per_m3: float = 997,
                                       density_of_ice_in_gt_per_m3: float = 850) -> list:
-    """Function to convert a list of measurements in meters into meters water equivalent.
+    """Function to convert a list of measurements of surface elevation change in meters into meters water equivalent.
 
     Parameters
     ----------
@@ -52,13 +54,13 @@ def meters_to_meters_water_equivalent(meters_list: list, density_of_water_in_gt_
     Returns
     -------
     A list of measurements in meters water equivalent
-    """  
+    """
     return [meter2mwe(i, density_of_water_in_gt_per_m3, density_of_ice_in_gt_per_m3) for i in meters_list]
 
 
 def meters_water_equivalent_to_meters(meters_water_equivalent_list: list, density_of_water_in_gt_per_m3: float = 997,
                                       density_of_ice_in_gt_per_m3: float = 850) -> list:
-    """Function to convert a list of measurements in meters water equivalent into meters.
+    """Function to convert a list of measurements of surface elevation change in meters water equivalent into meters.
 
     Parameters
     ----------
@@ -78,8 +80,8 @@ def meters_water_equivalent_to_meters(meters_water_equivalent_list: list, densit
 
 
 def gigatonnes_to_sea_level_rise(gigatonnes_list: list, ocean_area: float = 3.625e8) -> list:
-    """Function to convert a list of measurements in gigatonnes into sea level rise (mm). We assume a value for the area
-       of the ocean, and that all measured mass loss contributes to sea level change.
+    """Function to convert a list of measurements of ice mass loss in gigatonnes into sea level rise (millimeters). We
+    assume a value for the area of the ocean, and that all measured mass loss contributes to sea level change.
 
     Parameters
     ----------
@@ -90,13 +92,13 @@ def gigatonnes_to_sea_level_rise(gigatonnes_list: list, ocean_area: float = 3.62
 
     Returns
     -------
-    A list of measurements in sea level rise (mm)
+    A list of measurements in sea level rise (millimeters)
     """
     return [gigatonne2slr(i, ocean_area) for i in gigatonnes_list]
 
 
 def meter2gigatonne(variable_in_m: float, rgi_area_km2: float, density_of_ice_in_gt_per_m3: float = 850) -> float:
-    """Function to convert a measurement in meters to gigatonnes.
+    """Function to convert a measurement of surface elevation change in meters into ice mass in gigatonnes
 
     Parameters
     ----------
@@ -115,7 +117,7 @@ def meter2gigatonne(variable_in_m: float, rgi_area_km2: float, density_of_ice_in
 
 
 def gigatonne2meter(variable_in_gt: float, rgi_area_km2: float, density_of_ice_in_gt_per_m3: float = 850) -> float:
-    """Function to convert a measurement in gigatonnes to meters.
+    """Function to convert a measurement of ice mass in gigatonnes into surface elevation change in meters
 
     Parameters
     ----------
@@ -135,7 +137,7 @@ def gigatonne2meter(variable_in_gt: float, rgi_area_km2: float, density_of_ice_i
 
 def meter2mwe(variable_in_m: float, density_of_water_in_gt_per_m3: float = 997,
               density_of_ice_in_gt_per_m3: float = 850) -> float:
-    """Function to convert a measurement from meters into meters water equivalent.
+    """Function to convert a measurement of surface elevation change from meters into meters water equivalent.
 
     Parameters
     ----------
@@ -155,7 +157,7 @@ def meter2mwe(variable_in_m: float, density_of_water_in_gt_per_m3: float = 997,
 
 def mwe2meter(variable_in_mwe: float, density_of_water_in_gt_per_m3: float = 997,
               density_of_ice_in_gt_per_m3: float = 850) -> float:
-    """Function to convert a measurement from meters water equivalent into meters.
+    """Function to convert a measurement of surface elevation change from meters water equivalent into meters.
 
     Parameters
     ----------
@@ -174,8 +176,7 @@ def mwe2meter(variable_in_mwe: float, density_of_water_in_gt_per_m3: float = 997
 
 
 def gigatonne2slr(variable_in_gt: float, ocean_area: float = 3.625e8) -> float:
-    """Function to convert a variable in gigatonnes to sea level rise (millimeters). We assume a value for the area of the
-    ocean, and that all measured mass loss contributes to sea level change.
+    """Function to convert a measurement of ice mass loss in gigatonnes into sea level rise (millimeters).
 
     Parameters
     ----------
@@ -186,6 +187,6 @@ def gigatonne2slr(variable_in_gt: float, ocean_area: float = 3.625e8) -> float:
 
     Returns
     ----------
-    Input variable converted into sea level rise (milimeters)
+    Input variable converted into sea level rise (millimeters)
     """
     return abs(variable_in_gt / ocean_area) * 1e6

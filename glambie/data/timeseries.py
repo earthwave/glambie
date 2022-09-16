@@ -13,7 +13,6 @@ import pandas as pd
 class TimeseriesData():
     """Class to wrap the actual data contents of a Timeseries"""
     dates: np.ndarray
-    dates_string: np.ndarray
     area_reference: np.ndarray
     area_observed: np.ndarray
     changes: np.ndarray
@@ -48,7 +47,6 @@ class TimeseriesData():
 
     def as_dataframe(self):
         return pd.DataFrame({'dates': self.dates,
-                             'dates_string': self.dates_string,
                              'changes': self.changes,
                              'errors': self.errors,
                              'area_reference': self.area_reference,
@@ -111,7 +109,6 @@ class Timeseries():
         data = pd.read_csv(self.data_filepath)
 
         self.data = TimeseriesData(dates=np.array(data['date_fractional']),
-                                   dates_string=np.array(data['date']),
                                    area_reference=np.array(data['glacier_area_reference']),
                                    area_observed=np.array(data['glacier_area_observed']),
                                    changes=np.array(data['glacier_change_observed']),

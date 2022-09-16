@@ -19,7 +19,6 @@ def example_timeseries():
 @pytest.fixture()
 def example_timeseries_ingested():
     data = TimeseriesData(dates=[2010.1, 2010.2],
-                          dates_string=['2010-01-01', '2010-02-01'],
                           changes=np.array([2., 5.]),
                           errors=np.array([1., 1.2]),
                           area_reference=np.array([10000, 10000]),
@@ -62,7 +61,7 @@ def test_temporal_resolution(example_timeseries_ingested):
 
 def test_data_as_dataframe(example_timeseries_ingested):
     df = example_timeseries_ingested.data.as_dataframe()
-    assert df.shape == (2, 4)
+    assert df.shape == (2, 5)
 
 
 def test_metadata_as_dataframe(example_timeseries):

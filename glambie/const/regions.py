@@ -19,11 +19,13 @@ class RGIRegion():
 
 REGIONS = {
     'alaska': RGIRegion(rgi_id=1, name='alaska', long_name='Alaska',
-                        rgi6_area=86725, rgi7_area=86725, area_change=-0.48),
+                        rgi6_area=86724, rgi7_area=86735, area_change=0.48),
     'iceland': RGIRegion(rgi_id=6, name='iceland', long_name='Iceland',
-                         rgi6_area=11060, rgi7_area=11060, area_change=-0.36),
+                         rgi6_area=11059, rgi7_area=11059, area_change=0.36),
     'svalbard': RGIRegion(rgi_id=7, name='svalbard', long_name='Svalbard & Jan Mayen',
-                          rgi6_area=33959, rgi7_area=33959, area_change=-0.26)}
+                          rgi6_area=33958, rgi7_area=33958, area_change=-0.26),
+    'central_asia': RGIRegion(rgi_id=13, name='central_asia', long_name='Central Asia',
+                              rgi6_area=49303, rgi7_area=50344, area_change=-0.18)}
 
 
 def get_region_by_id(rgi_id: int) -> RGIRegion:

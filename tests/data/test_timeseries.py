@@ -19,7 +19,7 @@ def example_timeseries():
 @pytest.fixture()
 def example_timeseries_ingested():
     data = TimeseriesData(dates=[2010.1, 2010.2],
-                          dates_string=['2010-01-01 00:00:00+00:00', '2010-02-01 00:00:00+00:00'],
+                          dates_string=['2010-01-01', '2010-02-01'],
                           changes=np.array([2., 5.]),
                           errors=np.array([1., 1.2]),
                           area_reference=np.array([10000, 10000]),

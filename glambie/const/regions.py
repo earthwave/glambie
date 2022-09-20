@@ -23,7 +23,7 @@ REGIONS = {
     'iceland': RGIRegion(rgi_id=6, name='iceland', long_name='Iceland',
                          rgi6_area=11060, rgi7_area=11060, area_change=-0.36),
     'svalbard': RGIRegion(rgi_id=7, name='svalbard', long_name='Svalbard & Jan Mayen',
-                          rgi6_area=33958, rgi7_area=33958, area_change=-0.26),
+                          rgi6_area=33959, rgi7_area=33959, area_change=-0.26),
     'central_asia': RGIRegion(rgi_id=13, name='central_asia', long_name='Central Asia',
                               rgi6_area=49303, rgi7_area=50344, area_change=-0.18)}
 

@@ -13,7 +13,9 @@ import pandas as pd
 class TimeseriesData():
     """Class to wrap the actual data contents of a Timeseries"""
     dates: np.ndarray
+    # Area of region taken from a reference database: here, we will use the Randolph Glacier Inventory v6.0 or v7.0.
     area_reference: np.ndarray
+    # Area of region supplied alongside the timeseries data, might be a measurement made by the data provider.
     area_observed: np.ndarray
     changes: np.ndarray
     errors: np.ndarray

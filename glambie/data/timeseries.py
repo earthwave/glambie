@@ -13,7 +13,10 @@ import pandas as pd
 class TimeseriesData():
     """Class to wrap the actual data contents of a Timeseries"""
     dates: np.ndarray
-    area: np.ndarray
+    # Area of region taken from a reference database: here, we will use the Randolph Glacier Inventory v6.0 or v7.0.
+    area_reference: np.ndarray
+    # Area of region supplied alongside the timeseries data, might be a measurement made by the data provider.
+    area_observed: np.ndarray
     changes: np.ndarray
     errors: np.ndarray
 
@@ -48,7 +51,8 @@ class TimeseriesData():
         return pd.DataFrame({'dates': self.dates,
                              'changes': self.changes,
                              'errors': self.errors,
-                             'area': self.area
+                             'area_reference': self.area_reference,
+                             'area_observed': self.area_observed
                              })
 
 
@@ -106,10 +110,11 @@ class Timeseries():
 
         data = pd.read_csv(self.data_filepath)
 
-        self.data = TimeseriesData(dates=np.array(data['fractional_dates']),
-                                   area=np.array(data['area']),
-                                   changes=np.array(data['changes']),
-                                   errors=np.array(data['errors']))
+        self.data = TimeseriesData(dates=np.array(data['date_fractional']),
+                                   area_reference=np.array(data['glacier_area_reference']),
+                                   area_observed=np.array(data['glacier_area_observed']),
+                                   changes=np.array(data['glacier_change_observed']),
+                                   errors=np.array(data['glacier_change_uncertainty']))
         self.is_data_loaded = True
         return self.data
 

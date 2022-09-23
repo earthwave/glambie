@@ -28,6 +28,18 @@ def example_catalogue():
         }]})
 
 
+@pytest.fixture()
+def example_catalogue_small():
+    return DataCatalogue.from_dict({"basepath": ["tests", "test_data", "datastore"],
+                                    "datasets": [
+        {
+            "filename": "central_asia_demdiff_sharks.csv",
+            "region": "central_asia",
+            "user_group": "sharks",
+            "data_group": "demdiff"
+        }]})
+
+
 def test_data_catalogue_can_be_initiated(example_catalogue):
     assert example_catalogue is not None
 
@@ -79,3 +91,12 @@ def test_data_catalogue_from_file():
 
 def test_data_catalogue_regions(example_catalogue):
     assert len(example_catalogue.regions) == 2   # should contain 2 unique regions
+
+
+def test_load_all_data(example_catalogue_small):
+    # data not loaded yet
+    assert not example_catalogue_small.datasets[0].is_data_loaded
+    # load data of entire catalogue
+    example_catalogue_small.load_all_data()
+    # now data should be loaded
+    assert example_catalogue_small.datasets[0].is_data_loaded

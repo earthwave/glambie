@@ -109,6 +109,15 @@ class DataCatalogue():
             datasets = [s for s in datasets if s.user_group.lower() == user_group.lower()]
         return self.__class__(self.base_path, datasets)
 
+    def load_all_data(self):
+        """
+        Loads the timeseries data of all datasets in catalogue
+        Only loads data if it is not already loaded in a specific dataset
+        """
+        for dataset in self.datasets:
+            if not dataset.is_data_loaded:
+                dataset.load_data()
+
     def __len__(self) -> int:
         return len(self._datasets)
 

@@ -22,12 +22,20 @@ class TimeseriesData():
     glacier_area_observed: np.ndarray
 
     @property
-    def min_time(self) -> float:
-        return np.min(self.dates)
+    def min_start_date(self) -> float:
+        return np.min(self.start_dates)
 
     @property
-    def max_time(self) -> float:
-        return np.max(self.dates)
+    def max_start_date(self) -> float:
+        return np.max(self.start_dates)
+
+    @property
+    def min_end_date(self) -> float:
+        return np.min(self.end_dates)
+
+    @property
+    def max_end_date(self) -> float:
+        return np.max(self.end_dates)
 
     @property
     def min_change_value(self) -> float:
@@ -40,9 +48,15 @@ class TimeseriesData():
         return np.max(self.changes[finite_list])
 
     @property
-    def temporal_resolution(self) -> float:
+    def min_temporal_resolution(self) -> float:
         getcontext().prec = 3  # deal with floating point issues
-        resolution = (Decimal(self.max_time) - Decimal(self.min_time)) / len(self)
+        resolution = np.max([Decimal(end) - Decimal(start) for end, start in zip(self.end_dates, self.start_dates)])
+        return float(resolution)
+
+    @property
+    def max_temporal_resolution(self) -> float:
+        getcontext().prec = 3  # deal with floating point issues
+        resolution = np.min([Decimal(end) - Decimal(start) for end, start in zip(self.end_dates, self.start_dates)])
         return float(resolution)
 
     def __len__(self) -> int:
@@ -53,8 +67,8 @@ class TimeseriesData():
                             'end_dates': self.end_dates,
                              'changes': self.changes,
                              'errors': self.errors,
-                             'glacier_area_reference': self.area_reference,
-                             'glacier_area_observed': self.area_observed
+                             'glacier_area_reference': self.glacier_area_reference,
+                             'glacier_area_observed': self.glacier_area_observed
                              })
 
 
@@ -116,8 +130,8 @@ class Timeseries():
                                    end_dates=np.array(data['end_date_fractional']),
                                    changes=np.array(data['glacier_change_observed']),
                                    errors=np.array(data['glacier_change_uncertainty']),
-                                   area_reference=np.array(data['glacier_area_reference']),
-                                   area_observed=np.array(data['glacier_area_observed']))
+                                   glacier_area_reference=np.array(data['glacier_area_reference']),
+                                   glacier_area_observed=np.array(data['glacier_area_observed']))
         self.is_data_loaded = True
         return self.data
 

@@ -122,7 +122,7 @@ class Timeseries():
         """Reads data into class from specified filepath
         """
         if self.data_filepath is None:
-            raise ValueError("Can not load: file path not set")
+            raise ValueError("Can not load data: file path not set")
 
         data = pd.read_csv(self.data_filepath)
 

@@ -9,6 +9,7 @@ class RGIRegion():
     rgi6_area: float
     rgi7_area: float
     area_change: float
+    area_change_reference_year: int
 
     def __str__(self):
         return str(self.rgi_id) + '; ' + self.name + '; ' + self.long_name

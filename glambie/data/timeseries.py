@@ -12,13 +12,14 @@ import pandas as pd
 @dataclass
 class TimeseriesData():
     """Class to wrap the actual data contents of a Timeseries"""
-    dates: np.ndarray
-    # Area of region taken from a reference database: here, we will use the Randolph Glacier Inventory v6.0 or v7.0.
-    area_reference: np.ndarray
-    # Area of region supplied alongside the timeseries data, might be a measurement made by the data provider.
-    area_observed: np.ndarray
+    start_dates: np.ndarray
+    end_dates: np.ndarray
     changes: np.ndarray
     errors: np.ndarray
+    # Area of region taken from a reference glacier mask: e.g. Randolph Glacier Inventory v6.0 or v7.0.
+    glacier_area_reference: np.ndarray
+    # Area of region supplied alongside the timeseries data, a measurement made by the data provider.
+    glacier_area_observed: np.ndarray
 
     @property
     def min_time(self) -> float:
@@ -48,11 +49,12 @@ class TimeseriesData():
         return len(self.dates)
 
     def as_dataframe(self):
-        return pd.DataFrame({'dates': self.dates,
+        return pd.DataFrame({'start_dates': self.start_dates,
+                            'end_dates': self.end_dates,
                              'changes': self.changes,
                              'errors': self.errors,
-                             'area_reference': self.area_reference,
-                             'area_observed': self.area_observed
+                             'glacier_area_reference': self.area_reference,
+                             'glacier_area_observed': self.area_observed
                              })
 
 
@@ -110,11 +112,12 @@ class Timeseries():
 
         data = pd.read_csv(self.data_filepath)
 
-        self.data = TimeseriesData(dates=np.array(data['date_fractional']),
-                                   area_reference=np.array(data['glacier_area_reference']),
-                                   area_observed=np.array(data['glacier_area_observed']),
+        self.data = TimeseriesData(start_dates=np.array(data['start_date_fractional']),
+                                   end_dates=np.array(data['end_date_fractional']),
                                    changes=np.array(data['glacier_change_observed']),
-                                   errors=np.array(data['glacier_change_uncertainty']))
+                                   errors=np.array(data['glacier_change_uncertainty']),
+                                   area_reference=np.array(data['glacier_area_reference']),
+                                   area_observed=np.array(data['glacier_area_observed']))
         self.is_data_loaded = True
         return self.data
 

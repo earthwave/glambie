@@ -7,6 +7,7 @@ from glambie.const.data_groups import GlambieDataGroup
 from glambie.const.regions import RGIRegion
 import numpy as np
 import pandas as pd
+import warnings
 
 
 @dataclass
@@ -77,6 +78,46 @@ class TimeseriesData():
                              'glacier_area_reference': self.glacier_area_reference,
                              'glacier_area_observed': self.glacier_area_observed
                              })
+
+    def as_cumulative_timeseries(self) -> pd.DataFrame:
+        """
+        Calculates the cumulative timeseries
+
+        Returns
+        -------
+        pd.DataFrame
+            Dataframe containing the cumulative changes
+            Instead of start_dates and end_dates, the column 'dates' is used
+        """
+        if not self.is_cumulative_valid():
+            warnings.warn("Cumulative timeseries may be invalid. This may be due to the timeseries containing"
+                          "gaps or overlapping periods.")
+        dates = np.array([self.start_dates[0], *self.end_dates])
+        changes = np.array([0, *np.array(pd.Series(self.changes.cumsum()))])
+        errors = np.array([0, *self.errors])
+        df_cumulative = pd.DataFrame({'dates': dates,
+                                      'changes': changes,
+                                      'errors': errors,
+                                      'glacier_area_reference': np.array([self.glacier_area_reference[0],
+                                                                          *self.glacier_area_reference]),
+                                      'glacier_area_observed': np.array([0, *self.glacier_area_observed]),
+                                      })
+
+        return df_cumulative
+
+    def is_cumulative_valid(self):
+        """
+        Checks if computing a cumulative time series will be valid or not.
+        The conditions for validity are:
+        - No gaps in timeseries (i.e. for each end date there must be another start date, except for the last one)
+        - No overalapping spans
+
+        Returns
+        -------
+        boolean
+            True if valid, False if not valid
+        """
+        return all(start_date == end_date for start_date, end_date in zip(self.start_dates[1:], self.end_dates[:-1]))
 
 
 class Timeseries():

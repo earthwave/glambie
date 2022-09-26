@@ -11,11 +11,18 @@ import pandas as pd
 
 @dataclass
 class TimeseriesData():
-    """Class to wrap the actual data contents of a Timeseries"""
-    start_dates: np.ndarray
-    end_dates: np.ndarray
-    changes: np.ndarray
-    errors: np.ndarray
+    """Class to wrap the actual data contents of a Timeseries
+    The timeseries data are saved containing a start and enddate for each glacier change value.
+    The respective glacier change is then the change between start and end date.
+    This means, that time series are used as derivatives and not as cumulative timeseries.
+
+    For more information check the GlaMBIE Assessment Framework,
+    or the data submission instructions on the GlaMBIE website.
+    """
+    start_dates: np.ndarray  # start date of change observed
+    end_dates: np.ndarray  # end date of change observed
+    changes: np.ndarray  # change observed between start and end date
+    errors: np.ndarray  # errors of observed change
     # Area of region taken from a reference glacier mask: e.g. Randolph Glacier Inventory v6.0 or v7.0.
     glacier_area_reference: np.ndarray
     # Area of region supplied alongside the timeseries data, a measurement made by the data provider.

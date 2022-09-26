@@ -11,22 +11,38 @@ import pandas as pd
 
 @dataclass
 class TimeseriesData():
-    """Class to wrap the actual data contents of a Timeseries"""
-    dates: np.ndarray
-    # Area of region taken from a reference database: here, we will use the Randolph Glacier Inventory v6.0 or v7.0.
-    area_reference: np.ndarray
-    # Area of region supplied alongside the timeseries data, might be a measurement made by the data provider.
-    area_observed: np.ndarray
-    changes: np.ndarray
-    errors: np.ndarray
+    """Class to wrap the actual data contents of a Timeseries
+    The timeseries data are saved containing a start and enddate for each glacier change value.
+    The respective glacier change is then the change between start and end date.
+    This means, that time series are used as derivatives and not as cumulative timeseries.
+
+    For more information check the GlaMBIE Assessment Framework,
+    or the data submission instructions on the GlaMBIE website.
+    """
+    start_dates: np.ndarray  # start date of change observed
+    end_dates: np.ndarray  # end date of change observed
+    changes: np.ndarray  # change observed between start and end date
+    errors: np.ndarray  # errors of observed change
+    # Area of region taken from a reference glacier mask: e.g. Randolph Glacier Inventory v6.0 or v7.0.
+    glacier_area_reference: np.ndarray
+    # Area of region supplied alongside the timeseries data, a measurement made by the data provider.
+    glacier_area_observed: np.ndarray
 
     @property
-    def min_time(self) -> float:
-        return np.min(self.dates)
+    def min_start_date(self) -> float:
+        return np.min(self.start_dates)
 
     @property
-    def max_time(self) -> float:
-        return np.max(self.dates)
+    def max_start_date(self) -> float:
+        return np.max(self.start_dates)
+
+    @property
+    def min_end_date(self) -> float:
+        return np.min(self.end_dates)
+
+    @property
+    def max_end_date(self) -> float:
+        return np.max(self.end_dates)
 
     @property
     def min_change_value(self) -> float:
@@ -39,20 +55,27 @@ class TimeseriesData():
         return np.max(self.changes[finite_list])
 
     @property
-    def temporal_resolution(self) -> float:
+    def min_temporal_resolution(self) -> float:
         getcontext().prec = 3  # deal with floating point issues
-        resolution = (Decimal(self.max_time) - Decimal(self.min_time)) / len(self)
+        resolution = np.max([Decimal(end) - Decimal(start) for end, start in zip(self.end_dates, self.start_dates)])
+        return float(resolution)
+
+    @property
+    def max_temporal_resolution(self) -> float:
+        getcontext().prec = 3  # deal with floating point issues
+        resolution = np.min([Decimal(end) - Decimal(start) for end, start in zip(self.end_dates, self.start_dates)])
         return float(resolution)
 
     def __len__(self) -> int:
         return len(self.dates)
 
     def as_dataframe(self):
-        return pd.DataFrame({'dates': self.dates,
+        return pd.DataFrame({'start_dates': self.start_dates,
+                            'end_dates': self.end_dates,
                              'changes': self.changes,
                              'errors': self.errors,
-                             'area_reference': self.area_reference,
-                             'area_observed': self.area_observed
+                             'glacier_area_reference': self.glacier_area_reference,
+                             'glacier_area_observed': self.glacier_area_observed
                              })
 
 
@@ -106,15 +129,16 @@ class Timeseries():
         """Reads data into class from specified filepath
         """
         if self.data_filepath is None:
-            raise ValueError("Can not load: file path not set")
+            raise ValueError("Can not load data: file path not set")
 
         data = pd.read_csv(self.data_filepath)
 
-        self.data = TimeseriesData(dates=np.array(data['date_fractional']),
-                                   area_reference=np.array(data['glacier_area_reference']),
-                                   area_observed=np.array(data['glacier_area_observed']),
+        self.data = TimeseriesData(start_dates=np.array(data['start_date_fractional']),
+                                   end_dates=np.array(data['end_date_fractional']),
                                    changes=np.array(data['glacier_change_observed']),
-                                   errors=np.array(data['glacier_change_uncertainty']))
+                                   errors=np.array(data['glacier_change_uncertainty']),
+                                   glacier_area_reference=np.array(data['glacier_area_reference']),
+                                   glacier_area_observed=np.array(data['glacier_area_observed']))
         self.is_data_loaded = True
         return self.data
 

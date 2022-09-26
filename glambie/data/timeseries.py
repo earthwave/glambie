@@ -90,8 +90,8 @@ class TimeseriesData():
             Instead of start_dates and end_dates, the column 'dates' is used
         """
         if not self.is_cumulative_valid():
-            warnings.warn("WARNING: Cumulative timeseries may be invalid. This may be due to the timeseries containing \
-                gaps or overlapping periods.")
+            warnings.warn("Cumulative timeseries may be invalid. This may be due to the timeseries containing"
+                          "gaps or overlapping periods.")
         dates = np.array([self.start_dates[0], *self.end_dates])
         changes = np.array([0, *np.array(pd.Series(self.changes.cumsum()))])
         errors = np.array([0, *self.errors])

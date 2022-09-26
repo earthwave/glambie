@@ -91,24 +91,6 @@ def test_timeseries_load_data(example_timeseries):
     assert example_timeseries.is_data_loaded
 
 
-def test_as_cumulative_timeseries(example_timeseries_ingested):
-    df_cumulative = example_timeseries_ingested.data.as_cumulative_timeseries()
-    pd.testing.assert_series_equal(df_cumulative["dates"], pd.Series([2010.1, 2010.2, 2010.3], name="dates"))
-    pd.testing.assert_series_equal(df_cumulative["changes"], pd.Series([0, 2.0, 7.0], name="changes"))
-
-
-# def test_as_cumulative_timeseries_raises_warning(example_timeseries_ingested):
-#     with warnings.catch_warnings(record=True) as w:
-#         # Cause all warnings to always be triggered.
-#         warnings.simplefilter("always")
-#         # Trigger a warning.
-#         example_timeseries_ingested.data.end_dates = [2010.17, 2010.3]
-#         example_timeseries_ingested.data.as_cumulative_timeseries()
-#         # Verify some things
-#         assert len(w) == 1
-#         assert "invalid" in str(w[-1].message)
-
-
 def test_is_cumulative_valid(example_timeseries_ingested):
     # example timeseries is valid
     assert example_timeseries_ingested.data.is_cumulative_valid()
@@ -122,3 +104,21 @@ def test_is_cumulative_valid(example_timeseries_ingested):
     example_timeseries_ingested.data.start_dates = [2010.1, 2010.2]
     example_timeseries_ingested.data.end_dates = [2010.3, 2010.5]
     assert not example_timeseries_ingested.data.is_cumulative_valid()
+
+
+def test_as_cumulative_timeseries(example_timeseries_ingested):
+    df_cumulative = example_timeseries_ingested.data.as_cumulative_timeseries()
+    pd.testing.assert_series_equal(df_cumulative["dates"], pd.Series([2010.1, 2010.2, 2010.3], name="dates"))
+    pd.testing.assert_series_equal(df_cumulative["changes"], pd.Series([0, 2.0, 7.0], name="changes"))
+
+
+def test_as_cumulative_timeseries_raises_warning(example_timeseries_ingested):
+    with warnings.catch_warnings(record=True) as w:
+        # Cause all warnings to always be triggered
+        warnings.simplefilter("always")
+        # Trigger a warning
+        example_timeseries_ingested.data.end_dates = [2010.17, 2010.3]  # change end dates so ther is a data gap
+        example_timeseries_ingested.data.as_cumulative_timeseries()  # this should trigger warning
+        # Verify warning has been triggered
+        assert len(w) == 1
+        assert "invalid" in str(w[-1].message)

@@ -5,6 +5,8 @@ from glambie.util.timeseries_helpers import resample_1d_array
 from glambie.util.timeseries_helpers import timeseries_as_months
 from glambie.util.timeseries_helpers import cumulative_to_derivative
 from glambie.util.timeseries_helpers import derivative_to_cumulative
+from glambie.util.timeseries_helpers import resample_derivative_timeseries_to_monthly_grid
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -36,11 +38,20 @@ def test_moving_average_with_clip():
 
 
 def test_timeseries_as_months():
+    # basic test
     f = np.array([2010, 2011])
     ts_new = timeseries_as_months(f, downsample_to_month=True)
     assert len(ts_new) == 13
     assert ts_new[0] == 2010.0
     assert ts_new[1] == 2010.0 + (1 / 12)
+    #  test input should equal output
+    f = np.array([2010., 2010 + (1 / 12), 2010 + (2 / 12)])
+    ts_new = timeseries_as_months(f, downsample_to_month=True)
+    assert np.array_equal(f, ts_new)
+    #  should pad last element
+    f = np.array([2010.02, 2010.12, 2010.22])
+    ts_new = timeseries_as_months(f, downsample_to_month=True)
+    assert ts_new[-1] == 2010.25
 
 
 def test_timeseries_as_months_padding():
@@ -168,3 +179,27 @@ def test_derivative_to_cumulative_and_back_gives_initial_input_again():
     assert np.array_equal(start_dates2, np.array(start_dates))
     assert np.array_equal(end_dates2, np.array(end_dates))
     assert np.array_equal(derivative_changes2, np.array(derivative_changes))
+
+
+def test_resample_to_monthly_grid_test_no_changes():
+    start_dates = [2010., 2010 + (1 / 12), 2010 + (2 / 12)]
+    end_dates = [2010 + (1 / 12), 2010 + (2 / 12), 2010 + (3 / 12)]
+    changes = [3., 1., 1.]
+    start_dates2, end_dates2, changes2 = resample_derivative_timeseries_to_monthly_grid(
+        start_dates, end_dates, changes)
+    assert np.array_equal(start_dates2, np.array(start_dates))
+    assert np.array_equal(end_dates2, np.array(end_dates))
+    assert np.array_equal(changes2, np.array(changes))
+
+
+def test_resample_to_monthly_grid_test_changes():
+    start_dates = [2010.02, 2010.12, 2010.22]
+    end_dates = [2010.12, 2010.22, 2010.32]
+    changes = [3., 1., 1.]
+    start_dates2, end_dates2, changes2 = resample_derivative_timeseries_to_monthly_grid(
+        start_dates, end_dates, changes)
+    assert len(start_dates) == len(end_dates)
+    assert np.allclose(start_dates2, timeseries_as_months(start_dates))  # np.allclose to avoid floating point issues
+    assert np.allclose(end_dates2, timeseries_as_months(end_dates))
+    # make sure the last value in cumulative timeseries is the same for input and output
+    assert pd.Series(changes2).cumsum().iloc[-1] == pd.Series(changes).cumsum().iloc[-1]

@@ -1,3 +1,4 @@
+import warnings
 from matplotlib import pyplot as plt
 import numpy as np
 import math
@@ -224,10 +225,16 @@ def timeseries_as_months(fractional_year_array: np.array, downsample_to_month: b
     """
     if downsample_to_month:
         t0 = math.floor(np.min(fractional_year_array) * 12) / 12.
-        t1 = math.ceil(np.max(fractional_year_array) * 12 + 1) / 12.
-        monthly_array = np.arange((t1 - t0) * 12) / 12. + t0
+        t1 = math.ceil(np.max(fractional_year_array) * 12) / 12.
+        # small hack to include last element in case it's on a full integer number
+        monthly_array = np.arange(math.ceil((t1 - t0 + 0.00001) * 12)) / 12. + t0
     else:
         monthly_array = np.floor(fractional_year_array * 12) / 12.
+
+    if contains_duplicates(monthly_array):
+        warnings.warn("The rounded dates contain duplicates."
+                      " To avoid this, do not to use the function with data at monthly resolution or higher")
+
     return monthly_array
 
 
@@ -394,7 +401,7 @@ def derivative_to_cumulative(start_dates: list[float],
         return df_cumulative
 
 
-def cumulative_to_derivative(dates, cumulative_changes, return_type="arrays"):
+def cumulative_to_derivative(fractional_year_array, cumulative_changes, return_type="arrays"):
     """
     Calculates a a list of non cumulative changes between start and end dates from a list of cumulative changes.
 
@@ -416,12 +423,41 @@ def cumulative_to_derivative(dates, cumulative_changes, return_type="arrays"):
     # remove first row
     derivative = np.array(pd.Series(cumulative_changes).diff().iloc[1:])
     # remove last row for start dates
-    start_dates = np.array(pd.Series(dates).iloc[:-1])
+    start_dates = np.array(pd.Series(fractional_year_array).iloc[:-1])
     # remove first row for end dates
-    end_dates = np.array(pd.Series(dates).iloc[1:])
+    end_dates = np.array(pd.Series(fractional_year_array).iloc[1:])
 
     if return_type == "arrays":
         return start_dates, end_dates, derivative
     elif return_type == "dataframe":
         df = pd.DataFrame({"start_dates": start_dates, "end_dates": end_dates, "changes": derivative})
         return df
+
+
+def resample_derivative_timeseries_to_monthly_grid(start_dates, end_dates, changes):
+    """
+    Resample a timeseries of derivatives to a uniform monthly grid.
+    The monthly grid is defined by timeseries_as_months(), containing 12 evenly spaced months.
+
+    Parameters
+    ----------
+    start_dates : np.array or list of decimal dates
+        start dates of each time period
+    end_dates : np.array or list of decimal dates
+        end dates of each time period
+    changes : np.array or list
+        changes between start and end date
+
+    Returns
+    -------
+    Union[np.ndarray,np.ndarray,np.ndarray]
+        (start_dates, end_dates, changes) resampled to the monthly grid
+    """
+    # 1 convert to cumulative (to make sure rate is not lost during the resample process)
+    dates, changes = derivative_to_cumulative(start_dates, end_dates, changes)
+    # 2 resample to the monthly grid defined by timeseries_as_months()
+    monthly_grid = timeseries_as_months(dates)
+    changes = resample_1d_array(dates, changes, monthly_grid)
+    # 3 convert back to derivatives
+    start_dates, end_dates, changes = cumulative_to_derivative(monthly_grid, changes, return_type="arrays")
+    return start_dates, end_dates, changes

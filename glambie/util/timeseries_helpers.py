@@ -3,6 +3,7 @@ import numpy as np
 import math
 from scipy import interpolate
 from typing import Union
+import pandas as pd
 
 
 def contains_duplicates(x: np.array) -> bool:
@@ -356,3 +357,71 @@ def combine_timeseries(t_array: list[np.ndarray],
         plt.legend()
         plt.show()
     return t_array_combined, y_array_combined, full_resampled_data
+
+
+def derivative_to_cumulative(start_dates: list[float],
+                             end_dates: list[float],
+                             changes: list[float],
+                             return_type="arrays"):
+    """
+    Calculates a cumulative timeseries from a list of non cumulative changes between start and end date
+
+    Parameters
+    ----------
+    start_dates : np.array or list of decimal dates
+        start dates of each time period
+    end_dates : np.array or list of decimal dates
+        end dates of each time period
+    changes : np.array or list
+        changes between start and end date
+    return_type : str, optional
+        type in which the result is returned. Current options are: 'arrays' and 'dataframe', by default 'arrays'
+
+    Returns
+    -------
+    Union[np.array, np.array] or pd.DataFrame, depending on specified return_type
+        'arrays': (dates, cumulative_changes)
+        'dataframe': pd.DataFrame({'dates': dates, 'changes': changes})
+    """
+    dates = np.array([start_dates[0], *end_dates])
+    changes = np.array([0, *np.array(pd.Series(changes).cumsum())])
+    if return_type == "arrays":
+        return dates, changes
+    elif return_type == "dataframe":
+        df_cumulative = pd.DataFrame({'dates': dates,
+                                      'changes': changes,
+                                      })
+        return df_cumulative
+
+
+def cumulative_to_derivative(dates, cumulative_changes, return_type="arrays"):
+    """
+    Calculates a a list of non cumulative changes between start and end dates from a list of cumulative changes.
+
+    Parameters
+    ----------
+    dates : np.array or list of decimal dates
+        dates of timeseries
+    changes : np.array or list
+        cumulative changes
+    return_type : str, optional
+        type in which the result is returned. Current options are: 'arrays' and 'dataframe', by default 'arrays'
+
+    Returns
+    -------
+    Union[np.array, np.array, np.array] or pd.DataFrame, depending on specified return_type
+        'arrays': (start_dates, end_dates, changes)
+        'dataframe': pd.DataFrame({'start_dates': start_dates, 'end_dates': end_dates, 'changes': changes})
+    """
+    # remove first row
+    derivative = np.array(pd.Series(cumulative_changes).diff().iloc[1:])
+    # remove last row for start dates
+    start_dates = np.array(pd.Series(dates).iloc[:-1])
+    # remove first row for end dates
+    end_dates = np.array(pd.Series(dates).iloc[1:])
+
+    if return_type == "arrays":
+        return start_dates, end_dates, derivative
+    elif return_type == "dataframe":
+        df = pd.DataFrame({"start_dates": start_dates, "end_dates": end_dates, "changes": derivative})
+        return df

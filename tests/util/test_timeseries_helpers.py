@@ -3,7 +3,10 @@ from glambie.util.timeseries_helpers import get_matched_indices
 from glambie.util.timeseries_helpers import moving_average
 from glambie.util.timeseries_helpers import resample_1d_array
 from glambie.util.timeseries_helpers import timeseries_as_months
+from glambie.util.timeseries_helpers import cumulative_to_derivative
+from glambie.util.timeseries_helpers import derivative_to_cumulative
 import numpy as np
+import pandas as pd
 import pytest
 
 
@@ -128,3 +131,40 @@ def test_combine_timeseries_simple_example_mov_avg():
     t, y, data = combine_timeseries(t, y, outlier_tolerance=None, calculate_as_errors=False,
                                     perform_moving_average=True, verbose=False)
     assert np.all(y == 1.5)
+
+
+def test_cumulative_to_derivative():
+    dates = [2010, 2011, 2012, 2013]
+    cumulative_changes = [0., 3., 4., 5.]
+    start_dates, end_dates, changes = cumulative_to_derivative(dates, cumulative_changes, return_type="arrays")
+    assert np.array_equal(start_dates, np.array([2010, 2011, 2012]))
+    assert np.array_equal(end_dates, np.array([2011, 2012, 2013]))
+    assert np.array_equal(changes, np.array([3., 1., 1.]))
+    # also check returntype dataframe works
+    df = cumulative_to_derivative(dates, cumulative_changes, return_type="dataframe")
+    pd.testing.assert_series_equal(df["changes"], pd.Series([3., 1., 1.], name="changes"))
+
+
+def test_derivative_to_cumulative():
+    start_dates = [2010, 2011, 2012]
+    end_dates = [2011, 2012, 2013]
+    derivative_changes = [3., 1., 1.]
+    dates, changes = derivative_to_cumulative(start_dates, end_dates, derivative_changes, return_type="arrays")
+    assert np.array_equal(dates, np.array([2010, 2011, 2012, 2013]))
+    assert np.array_equal(changes, np.array([0., 3., 4., 5.]))
+    # also check returntype dataframe works
+    df = derivative_to_cumulative(start_dates, end_dates, derivative_changes, return_type="dataframe")
+    pd.testing.assert_series_equal(df["changes"], pd.Series([0., 3., 4., 5.], name="changes"))
+
+
+def test_derivative_to_cumulative_and_back_gives_initial_input_again():
+    start_dates = [2010, 2011, 2012]
+    end_dates = [2011, 2012, 2013]
+    derivative_changes = [3., 1., 1.]
+    dates, cumulative_changes = derivative_to_cumulative(
+        start_dates, end_dates, derivative_changes, return_type="arrays")
+    start_dates2, end_dates2, derivative_changes2 = cumulative_to_derivative(
+        dates, cumulative_changes, return_type="arrays")
+    assert np.array_equal(start_dates2, np.array(start_dates))
+    assert np.array_equal(end_dates2, np.array(end_dates))
+    assert np.array_equal(derivative_changes2, np.array(derivative_changes))

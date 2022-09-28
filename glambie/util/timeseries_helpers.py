@@ -232,8 +232,8 @@ def timeseries_as_months(fractional_year_array: np.array, downsample_to_month: b
         monthly_array = np.floor(fractional_year_array * 12) / 12.
 
     if contains_duplicates(monthly_array):
-        warnings.warn("The rounded dates contain duplicates."
-                      " To avoid this, do not to use the function with data at monthly resolution or higher")
+        warnings.warn("The rounded dates contain duplicates. "
+                      "To avoid this, use the function with data at lower temporal resolution than monthly")
 
     return monthly_array
 

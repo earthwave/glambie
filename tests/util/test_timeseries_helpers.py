@@ -39,18 +39,18 @@ def test_moving_average_with_clip():
 
 def test_timeseries_as_months():
     # basic test
-    f = np.array([2010, 2011])
-    ts_new = timeseries_as_months(f, downsample_to_month=True)
+    dates = np.array([2010, 2011])
+    ts_new = timeseries_as_months(dates, downsample_to_month=True)
     assert len(ts_new) == 13
     assert ts_new[0] == 2010.0
     assert ts_new[1] == 2010.0 + (1 / 12)
-    #  test input should equal output
-    f = np.array([2010., 2010 + (1 / 12), 2010 + (2 / 12)])
-    ts_new = timeseries_as_months(f, downsample_to_month=True)
-    assert np.array_equal(f, ts_new)
-    #  should pad last element
-    f = np.array([2010.02, 2010.12, 2010.22])
-    ts_new = timeseries_as_months(f, downsample_to_month=True)
+    # test input should equal output
+    dates = np.array([2010., 2010 + (1 / 12), 2010 + (2 / 12)])
+    ts_new = timeseries_as_months(dates, downsample_to_month=True)
+    assert np.array_equal(dates, ts_new)
+    # should pad last element
+    dates = np.array([2010.02, 2010.12, 2010.22])
+    ts_new = timeseries_as_months(dates, downsample_to_month=True)
     assert ts_new[-1] == 2010.25
 
 

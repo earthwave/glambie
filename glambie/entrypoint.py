@@ -1,6 +1,6 @@
 """
 The single command line entry point for the package.
-Currently a placeholder
+Currently a placeholder.
 """
 import argparse
 

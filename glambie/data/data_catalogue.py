@@ -13,7 +13,7 @@ import pandas as pd
 class DataCatalogue():
     """Class containing a catalogue of datasets
 
-    This only contains metadata - all actual data loaded by client
+    This only contains metadata - all actual data loaded by client.
     """
 
     def __init__(self, base_path: str, datasets: list[Timeseries]):

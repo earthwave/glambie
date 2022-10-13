@@ -81,8 +81,7 @@ def meters_water_equivalent_to_meters(meters_water_equivalent_list: list, densit
 
 def gigatonnes_to_meters_water_equivalent(gigatonnes_list: list, rgi_area_km2: float,
                                           density_of_water_in_gt_per_m3: float = 997) -> list:
-    """
-    _summary_
+    """Function to convert a list of measurements of ice mass loss in gigatonnes into meters water equivalent.
 
     Parameters
     ----------

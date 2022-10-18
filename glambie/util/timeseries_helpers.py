@@ -238,15 +238,15 @@ def timeseries_as_months(fractional_year_array: np.array, downsample_to_month: b
     return monthly_array
 
 
-def combine_timeseries(t_array: list[np.ndarray],
-                       y_array: list[np.ndarray],
-                       outlier_tolerance: float = None,
-                       calculate_as_errors: bool = False,
-                       perform_moving_average: bool = False,
-                       verbose=False) \
+def combine_timeseries_imbie(t_array: list[np.ndarray],
+                             y_array: list[np.ndarray],
+                             outlier_tolerance: float = None,
+                             calculate_as_errors: bool = False,
+                             perform_moving_average: bool = False,
+                             verbose=False) \
         -> Union[np.ndarray, np.ndarray, np.ndarray]:
     """
-    Combines a number of input timeseries sequences
+    Combines a number of input timeseries sequences using the logic from IMBIE
 
     Parameters
     ----------

@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
-from glambie.util.timeseries_combination_helpers import get_distance_to_timeperiod, calibrate_timeseries_with_trends
+from glambie.util.timeseries_combination_helpers import get_distance_to_timeperiod
+from glambie.util.timeseries_combination_helpers import calibrate_timeseries_with_trends
+from glambie.util.timeseries_combination_helpers import combine_calibrated_timeseries
 
 
 def test_get_distance_to_timeperiod():
@@ -45,4 +47,34 @@ def test_calibrate_timeseries_with_trends():
     assert np.array_equal(calibrated_ts[1], np.array(calibration_timeseries["changes"]) + expected_correction)
 
     # check distance matrix
-    assert np.array_equal(distance_matrix[0], np.array([3., 2., 1., 1., 1.]))
+    assert np.array_equal(distance_matrix[0], np.array([1., 1., 2., 3., 4.]))
+    assert np.array_equal(distance_matrix[1], np.array([3., 2., 1., 1., 1.]))
+
+
+def test_combine_calibrated_timeseries():
+    calibrated_series = np.array([[1., 2., 3., 2., 1.],
+                                  [1.66666667, 2.66666667, 3.66666667, 2.66666667, 1.66666667]])
+    distance_matrix = np.array([[1., 1., 2., 3., 4.],
+                                [3., 2., 1., 1., 1.]])
+    p_value = 2
+
+    calibrated_mean_series = combine_calibrated_timeseries(calibrated_series, distance_matrix, p_value=p_value)
+    # first number should be closer to first series than second series
+    assert abs(1.0 - calibrated_mean_series[0]) < abs(1.66666667 - calibrated_mean_series[0])
+    # second number should be closer to first series than second series
+    assert abs(2.0 - calibrated_mean_series[1]) < abs(2.66666667 - calibrated_mean_series[1])
+    # third number should be closer to second series
+    assert abs(3.0 - calibrated_mean_series[2]) > abs(3.66666667 - calibrated_mean_series[2])
+    # impact of second series should be smaller on first number than second number
+    assert abs(1.0 - calibrated_mean_series[0]) < abs(2.0 - calibrated_mean_series[1])
+
+
+def test_combine_calibrated_timeseries_high_p_value():
+    calibrated_series = np.array([[1., 2., 3., 2., 1.],
+                                  [1.66666667, 2.66666667, 3.66666667, 2.66666667, 1.66666667]])
+    distance_matrix = np.array([[1., 1., 2., 3., 4.],
+                                [3., 2., 1., 1., 1.]])
+    # when setting a high p-value the weighting matrix will be 0 everywhere outside the covered time period
+    p_value = 200000
+    calibrated_series = combine_calibrated_timeseries(calibrated_series, distance_matrix, p_value=p_value)
+    assert np.array_equal(np.array([1., 2., 3.66666667, 2.66666667, 1.66666667]), calibrated_series)

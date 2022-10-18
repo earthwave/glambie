@@ -1,3 +1,4 @@
+import warnings
 import pandas as pd
 import numpy as np
 from glambie.util.timeseries_combination_helpers import get_distance_to_timeperiod
@@ -78,3 +79,23 @@ def test_combine_calibrated_timeseries_high_p_value():
     p_value = 200000
     calibrated_series = combine_calibrated_timeseries(calibrated_series, distance_matrix, p_value=p_value)
     assert np.array_equal(np.array([1., 2., 3.66666667, 2.66666667, 1.66666667]), calibrated_series)
+
+
+def test_combine_calibrated_timeseries_warning_message():
+    trends = pd.DataFrame({"start_dates": [2000, 2002],
+                          "end_dates": [2002, 2006],  # going until 2006 should spark a warning
+                           "changes": [3, 8]})
+    calibration_timeseries = pd.DataFrame({"start_dates": [2000, 2001, 2002, 2003, 2004],
+                                          "end_dates": [2001, 2002, 2003, 2004, 2005],
+                                           "changes": [1., 2., 3., 2., 1.]})
+
+    with warnings.catch_warnings(record=True) as w:
+        # Cause all warnings to always be triggered
+        warnings.simplefilter("always")
+        # Trigger a warning
+        calibrated_ts, _distance_matrix = calibrate_timeseries_with_trends(trends, calibration_timeseries)
+        # Verify warning has been triggered
+        assert len(w) == 1
+        assert "ignored" in str(w[-1].message)
+        # Verify that the trend has been ignored and only one trend has been calibrated
+        assert len(calibrated_ts) == 1

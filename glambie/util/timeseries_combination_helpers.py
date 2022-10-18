@@ -1,3 +1,4 @@
+import warnings
 import numpy as np
 import pandas as pd
 
@@ -36,28 +37,38 @@ def calibrate_timeseries_with_trends(trends: pd.DataFrame, calibration_timeserie
     calibrated_timeseries_list = []  # will be populated with each longterm trend calibrated series
     distance_matrix_list = []
     for _idx, longterm_trend in trends.iterrows():
-        # get slice of the high resolution calibration dataset corresponding to the trend timeperiod
-        calibration_slice = calibration_timeseries[((calibration_timeseries["start_dates"]
-                                                     >= longterm_trend["start_dates"])
-                                                    & (calibration_timeseries["end_dates"]
-                                                   <= longterm_trend["end_dates"]))]
-        # average of the high resolution calibratio timeseries over shared period
-        avg_calibration_slice = calibration_slice["changes"].mean()
-        # resample to same resolution as the calibration timeseries
-        avg_trend = longterm_trend['changes'] / calibration_slice["changes"].shape[0]
-        # calculate correction and apply to the calibration timeseries
-        correction = avg_trend - avg_calibration_slice
-        calibrated_timeseries_list.append(calibration_timeseries["changes"] + correction)
+        # make sure that the
+        if (min(calibration_timeseries["start_dates"]) <= longterm_trend["start_dates"]) \
+                and (max(calibration_timeseries["end_dates"]) >= longterm_trend["end_dates"]):
+            # get slice of the high resolution calibration dataset corresponding to the trend timeperiod
+            calibration_slice = calibration_timeseries[((calibration_timeseries["start_dates"]
+                                                        >= longterm_trend["start_dates"])
+                                                        & (calibration_timeseries["end_dates"]
+                                                           <= longterm_trend["end_dates"]))]
+            # average of the high resolution calibratio timeseries over shared period
+            avg_calibration_slice = calibration_slice["changes"].mean()
+            # resample to same resolution as the calibration timeseries
+            avg_trend = longterm_trend['changes'] / calibration_slice["changes"].shape[0]
+            # calculate correction and apply to the calibration timeseries
+            correction = avg_trend - avg_calibration_slice
+            calibrated_timeseries_list.append(calibration_timeseries["changes"] + correction)
 
-        # Create distance to observation period of the trend within the time grid of the calibration timeseries
-        # note that 1 year is added for the inverse distance calculation,
-        # so that it has a value of 1 when it is within the tim period
-        temporal_resolution = calibration_timeseries["start_dates"].iloc[1] - \
-            calibration_timeseries["start_dates"].iloc[0]
-        distance_matrix_list.append([get_distance_to_timeperiod(float(year), longterm_trend['start_dates'],
-                                                                longterm_trend['end_dates'],
-                                                                resolution=temporal_resolution) + 1.0
-                                     for year in calibration_timeseries["start_dates"]])
+            # Create distance to observation period of the trend within the time grid of the calibration timeseries
+            # note that 1 year is added for the inverse distance calculation,
+            # so that it has a value of 1 when it is within the tim period
+            temporal_resolution = calibration_timeseries["start_dates"].iloc[1] - \
+                calibration_timeseries["start_dates"].iloc[0]
+            distance_matrix_list.append([get_distance_to_timeperiod(float(year), longterm_trend['start_dates'],
+                                                                    longterm_trend['end_dates'],
+                                                                    resolution=temporal_resolution) + 1.0
+                                        for year in calibration_timeseries["start_dates"]])
+        else:
+            warnings.warn("Trend is outside calibration timeseries (fully or partly) and will be ignored. "
+                          "trend_start={} , trend_end={}, calibration_series_start={}, calibration_series_end={}"
+                          .format(min(calibration_timeseries["start_dates"]),
+                                  max(calibration_timeseries["end_dates"]),
+                                  longterm_trend["start_dates"], longterm_trend["end_dates"]))
+
     return np.array(calibrated_timeseries_list), np.array(distance_matrix_list)
 
 

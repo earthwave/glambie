@@ -97,7 +97,7 @@ def test_get_matched_indices_with_duplicates():
         get_matched_indices(a, b)
 
 
-def test_combine_timeseries_returns():
+def test_combine_timeseries_imbie_returns():
     t = [np.array([2010, 2011, 2012, 2014]), np.array([2011, 2012, 2014, 2015]),
          np.array([2011.1, 2012.2, 2014.3, 2015.4])]
     y = [np.array([10, 11, 12, 14]), np.array([16, 16, 29, 50]), np.array([17, 16, 22, 90])]
@@ -107,7 +107,7 @@ def test_combine_timeseries_returns():
     assert np.array_equal(data[0], t)
 
 
-def test_combine_timeseries_avg():  # this test is a bit lazy ;)
+def test_combine_timeseries_imbie_avg():  # this test is a bit lazy ;)
     t = [np.array([2010, 2011, 2012, 2014]), np.array([2011, 2012, 2014, 2015]),
          np.array([2011.1, 2012.2, 2014.3, 2015.4])]
     y = [np.array([10, 11, 12, 14]), np.array([16, 16, 29, 50]), np.array([17, 16, 22, 90])]
@@ -119,7 +119,7 @@ def test_combine_timeseries_avg():  # this test is a bit lazy ;)
     assert ~np.array_equal(y_avg, y)  # just checking that the result with moving avg is not the same as without
 
 
-def test_combine_timeseries_simple_example():
+def test_combine_timeseries_imbie_simple_example():
     t = [np.array([2010, 2011]), np.array([2010, 2011])]
     y = [np.array([1, 2]), np.array([2, 1])]  # this should return 1.5 for each element
     t, y, data = combine_timeseries_imbie(t, y, outlier_tolerance=None, calculate_as_errors=False,
@@ -127,7 +127,7 @@ def test_combine_timeseries_simple_example():
     assert np.all(y == 1.5)
 
 
-def test_combine_timeseries_simple_example_errors():
+def test_combine_timeseries_imbie_simple_example_errors():
     t = [np.array([2010, 2011]), np.array([2010, 2011])]
     y = [np.array([4, 2]), np.array([6, 1])]
     t, y, data = combine_timeseries_imbie(t, y, outlier_tolerance=None, calculate_as_errors=True,
@@ -136,7 +136,7 @@ def test_combine_timeseries_simple_example_errors():
     assert round(y[0], 10) == round((np.sqrt(4**2 + 6**2) / 2), 10)  # round due to floating point diffs
 
 
-def test_combine_timeseries_simple_example_mov_avg():
+def test_combine_timeseries_imbie_simple_example_mov_avg():
     t = [np.array([2010, 2011, 2012]), np.array([2010, 2011, 2012])]
     y = [np.array([1, 2, 1]), np.array([2, 1, 2])]  # this should return 1.5 for each element
     t, y, data = combine_timeseries_imbie(t, y, outlier_tolerance=None, calculate_as_errors=False,

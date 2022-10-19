@@ -5,9 +5,9 @@ import pandas as pd
 
 def calibrate_timeseries_with_trends(trends: pd.DataFrame, calibration_timeseries: pd.DataFrame):
     """
-    This function calibrates a higher resolution calibarion timeseries with the trends from a trend DataFrame
+    This function calibrates a higher resolution calibration timeseries with the trends from a trend DataFrame.
     The 'calibration_timeseries' is adjusted over the common time period, to represent the new trend.
-    Each trend within 'trends' (i.e. each column) will produce a separate calibrated solution from the
+    Each trend within 'trends' (i.e. each row) will produce a separate calibrated solution from the
     'calibration_timeseries'.
 
     The function further computes a distance matrix which can be used for inversed distance weighting
@@ -15,6 +15,9 @@ def calibrate_timeseries_with_trends(trends: pd.DataFrame, calibration_timeserie
 
     Note that all dates should be prior resampled to the monthly date grid
     (see glambie.util.timeseries_helper.timeseries_as_months)
+
+    If a trend (row within trends dataframe) is not within the time frame of calibration series it will be ignored
+    and a warning will be raised.
 
     Parameters
     ----------
@@ -36,8 +39,8 @@ def calibrate_timeseries_with_trends(trends: pd.DataFrame, calibration_timeserie
     """
     calibrated_timeseries_list = []  # will be populated with each longterm trend calibrated series
     distance_matrix_list = []
-    for _idx, longterm_trend in trends.iterrows():
-        # make sure that the
+    for _, longterm_trend in trends.iterrows():
+        # make sure that the longterm trend is within the calibration series
         if (min(calibration_timeseries["start_dates"]) <= longterm_trend["start_dates"]) \
                 and (max(calibration_timeseries["end_dates"]) >= longterm_trend["end_dates"]):
             # get slice of the high resolution calibration dataset corresponding to the trend timeperiod
@@ -55,7 +58,7 @@ def calibrate_timeseries_with_trends(trends: pd.DataFrame, calibration_timeserie
 
             # Create distance to observation period of the trend within the time grid of the calibration timeseries
             # note that 1 year is added for the inverse distance calculation,
-            # so that it has a value of 1 when it is within the tim period
+            # so that it has a value of 1 when it is within the time period
             temporal_resolution = calibration_timeseries["start_dates"].iloc[1] - \
                 calibration_timeseries["start_dates"].iloc[0]
             distance_matrix_list.append([get_distance_to_timeperiod(float(year), longterm_trend['start_dates'],
@@ -112,7 +115,7 @@ def get_distance_to_timeperiod(date: float,
     Parameters
     ----------
     date : float
-        date to calcualte the distance for in fractional years
+        date to calculate the distance in fractional years
         date is assumed to be at the start within a time series (and not the middle of a timestep)
         i.e. date is a start_date
     period_start_date : float
@@ -120,8 +123,8 @@ def get_distance_to_timeperiod(date: float,
     period_end_date : float
         end of timeperiod in fractional years
     resolution : float, optional
-        resolution of date, this is added to all number later than the time period,
-        to account that date is assumed a start_date within a timeseries (and not the middle)
+        resolution of date, this is added to all values later than the time period,
+        to account for the case where date is assumed a start_date within a timeseries (and not the middle)
         by default 1/12 (one month)
 
     Returns

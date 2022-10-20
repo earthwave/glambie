@@ -1,5 +1,8 @@
 from datetime import datetime
 from datetime import timedelta
+import numpy as np
+import pandas as pd
+import math
 
 
 def fractional_years_to_datetime_dates(fractional_year_list: list) -> list:
@@ -84,3 +87,52 @@ def get_year_timedelta(year: int) -> timedelta:
         - datetime(year=year, month=1, day=1)
     )
     return year_length
+
+
+def get_glaciological_years(glaciological_year_start: float, min_date: float, max_date: float, returntype="arrays"):
+    """
+    Returns start and end dates of glaciological years within a timespan (min_date to max_date).
+    Only full years within the min_date - max_date time period are included.
+
+    Parameters
+    ----------
+    glaciological_year_start : float
+        a floating point number of when the glaciological year should start (between 0 and 1), e.g. 0.75 for October
+    min_date : float
+        minimum date to be calculated for, in fractional years
+    max_date : float
+        maximum date to be calculated for, in fractional years
+    return_type : str, optional
+        type in which the result is returned. Current options are: 'arrays' and 'dataframe', by default 'arrays'
+
+    Returns
+    -------
+    Union[np.array, np.array] or pd.DataFrame, depending on specified return_type
+        'arrays': (start_dates, end_dates)
+        'dataframe': pd.DataFrame({'start_dates': start_dates, 'end_dates': end_dates})
+    """
+    years = list(range(math.floor(min_date), math.ceil(max_date)))
+
+    start_dates = []
+    end_dates = []
+    for year in years:
+        # if glaciological year is closer to the end of the year
+        # the glaciological year is starting around the end of the previous year
+        if round(glaciological_year_start) == 1:
+            start_date = year - 1 + glaciological_year_start
+            end_date = year + glaciological_year_start
+            if (start_date >= min_date) & (end_date <= max_date):
+                start_dates.append(start_date)
+                end_dates.append(end_date)
+        # if glaciological year is closer to the start of the year
+        # the glaciological year is starting around start of the current year
+        elif round(glaciological_year_start) == 0:
+            start_date = year + glaciological_year_start
+            end_date = year + 1 + glaciological_year_start
+            if (start_date >= min_date) & (end_date <= max_date):
+                start_dates.append(start_date)
+                end_dates.append(end_date)
+    if returntype == "dataframe":
+        return pd.DataFrame({"start_dates": start_dates, "end_dates": end_dates})
+    elif returntype == "arrays":
+        return np.array(start_dates), np.array(end_dates)

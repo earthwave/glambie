@@ -434,7 +434,7 @@ def cumulative_to_derivative(fractional_year_array, cumulative_changes, return_t
         return df
 
 
-def resample_derivative_timeseries_to_monthly_grid(start_dates, end_dates, changes):
+def resample_derivative_timeseries_to_monthly_grid(start_dates, end_dates, changes, return_type="arrays"):
     """
     Resample a timeseries of derivatives to a uniform monthly grid.
     The monthly grid is defined by timeseries_as_months(), containing 12 evenly spaced months.
@@ -447,11 +447,14 @@ def resample_derivative_timeseries_to_monthly_grid(start_dates, end_dates, chang
         end dates of each time period
     changes : np.array or list
         changes between start and end date
+    return_type : str, optional
+        type in which the result is returned. Current options are: 'arrays' and 'dataframe', by default 'arrays'
 
     Returns
     -------
-    Union[np.ndarray,np.ndarray,np.ndarray]
-        (start_dates, end_dates, changes) resampled to the monthly grid
+    Union[np.array, np.array, np.array] or pd.DataFrame, depending on specified return_type
+        'arrays': (start_dates, end_dates, changes) resampled to the monthly grid
+        'dataframe': pd.DataFrame({'start_dates': start_dates, 'end_dates': end_dates, 'changes': changes})        
     """
     # 1 convert to cumulative (to make sure rate is not lost during the resample process)
     dates, changes = derivative_to_cumulative(start_dates, end_dates, changes)
@@ -460,4 +463,7 @@ def resample_derivative_timeseries_to_monthly_grid(start_dates, end_dates, chang
     changes = resample_1d_array(dates, changes, monthly_grid)
     # 3 convert back to derivatives
     start_dates, end_dates, changes = cumulative_to_derivative(monthly_grid, changes, return_type="arrays")
-    return start_dates, end_dates, changes
+    if return_type == "arrays":
+        return start_dates, end_dates, changes
+    elif return_type == "dataframe":
+        return pd.DataFrame({"start_dates": start_dates, "end_dates": end_dates, "changes": changes})

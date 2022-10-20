@@ -4,14 +4,9 @@
 Public repository for the [Glacier Mass Balance Intercomparison Exercise (GlaMBIE)](https://glambie.org/).
 
 ## Installation
-You don't necessarily need to clone this repository to install this package.
-
-To start with, please ensure that you have:
-
-* Some form of [Anaconda](https://www.anaconda.com/products/distribution)
+To start with, please ensure that you have some form of [Anaconda](https://www.anaconda.com/products/distribution)
 installed (for Python 3.9). Earthwave prefers to use 
 [Miniconda](https://repo.anaconda.com/miniconda/Miniconda3-py39_4.12.0-Linux-x86_64.sh) on Linux.
-* the [Google Cloud command line interface](https://cloud.google.com/sdk/docs/install).
 
 Next, create a new conda environment:
 
@@ -20,9 +15,16 @@ conda create --name glambie python=3.9.7
 conda activate glambie
 ```
 
-And install the pip keyring backend necessary to authenticate with
-Google Cloud:
+### Installation For Use (requires Google Cloud authentication)
+If you are willing to authenticate with the Google Cloud Platform, you can install this package without
+having to clone this repository. This is a better option for those looking to simply use the software rather than develop it.
 
+If you want to develop (i.e. change) this package, or you are unable to authenticate with the Google Cloud,
+please read the next section instead.
+
+To work with the Google Cloud, first ensure that you have installed the [Google Cloud command line interface](https://cloud.google.com/sdk/docs/install).
+
+Next, install the pip keyring backend necessary to authenticate with Google Cloud:
 ```
 pip install keyrings.google-artifactregistry-auth
 ```
@@ -32,39 +34,19 @@ Authenticate with the google cloud. One means of doing this that works well in t
 gcloud auth login --no-launch-browser
 ```
 
-
-### For Use
-If you simply want to use this package, read this section. If instead you want to develop (i.e. change) this package,
-please read the next section.
-
-To use the package, simply install it from the GlaMBIE Python Artifact repository: 
-
+The package can now be installed from the GlaMBIE Python Artifact repository: 
 ```
 pip install glambie --extra-index-url https://europe-west1-python.pkg.dev/glambie/pr/simple/ --use-deprecated=legacy-resolver
 ```
 
-You can then use this package as follows (obviously you will need to edit this section after contributing initial work to the repository):
-
-```
-python -m glambie -a <number_a> -b <number_b>
-```
-
-For more help, run:
-
-```
-python -m glambie -h
-```
-
-
-### For Development
-To develop this package, you'll need to clone it locally. To do this, you'll need to authenticate with GitHub either using a [public / private key pair](https://docs.github.com/en/authentication/connecting-to-github-with-ssh): 
-
+### Installation For Development (or when Google Cloud authentication is not possible)
+To develop this package and/or install it without using the Google Cloud, you'll need to clone this repository locally.
+To do this, you'll need to authenticate with GitHub either using a [public / private key pair](https://docs.github.com/en/authentication/connecting-to-github-with-ssh):
 ```
 git clone git@github.com:earthwave/glambie.git
 ```
 
 Or using a [personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token) in place of a password:
-
 ```
 git clone https://github.com/earthwave/glambie.git
 ```
@@ -73,20 +55,17 @@ After cloning the repository, change directories into the newly created glambie 
 
 Note that Earthwave uses VSCode (v1.69.1 at time of writing) as our integrated development environment. Earthwave's standard VSCode environment settings are included with this repository. If you wish to use VSCode, you'll need to install the Python and Pylance plugins, and [tell VSCode to use the interpreter within the environment you've just created](https://code.visualstudio.com/docs/python/environments#_select-and-activate-an-environment).
 
-For a development install, install all of the testing requirements:
-
+For a development install, ensure that you install all of the automated testing and linting requirements:
 ```
 pip install -r .github/test_requirements.txt
 ```
 
 Then install this package for development:
-
 ```
-pip install -e . --extra-index-url https://europe-west1-python.pkg.dev/glambie/pr/simple/ --use-deprecated=legacy-resolver
+pip install -e .
 ```
 
 You should now be able to run and pass the unit tests simply by running:
-
 ```
 pytest
 ```
@@ -96,6 +75,16 @@ the repository and then open a Pull Request. All branches that have not received
 will be automatically deleted.
 
 Note that for security reasons related to Earthwave's servers, only approved contributors may push to this repository.
+If you wish to make a contribution but find that you are unable to push, please email livia@earthwave.co.uk in order to request access.
+
+## Running GLaMBIE
+
+After completing the Installation instructions above, you can use this package as follows:
+```
+python -m glambie -config <config_file>
+```
+
+Note that this is a dummy entrypoint that we will replace shortly with meaningful functionality and examples.
 
 ## Versioning and releases
 Versioning follows a simple model featuring three integers known as the major version, minor version and build number.

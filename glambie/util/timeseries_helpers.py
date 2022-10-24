@@ -454,7 +454,7 @@ def resample_derivative_timeseries_to_monthly_grid(start_dates, end_dates, chang
     -------
     Union[np.array, np.array, np.array] or pd.DataFrame, depending on specified return_type
         'arrays': (start_dates, end_dates, changes) resampled to the monthly grid
-        'dataframe': pd.DataFrame({'start_dates': start_dates, 'end_dates': end_dates, 'changes': changes})        
+        'dataframe': pd.DataFrame({'start_dates': start_dates, 'end_dates': end_dates, 'changes': changes})
     """
     # 1 convert to cumulative (to make sure rate is not lost during the resample process)
     dates, changes = derivative_to_cumulative(start_dates, end_dates, changes)
@@ -467,3 +467,36 @@ def resample_derivative_timeseries_to_monthly_grid(start_dates, end_dates, chang
         return start_dates, end_dates, changes
     elif return_type == "dataframe":
         return pd.DataFrame({"start_dates": start_dates, "end_dates": end_dates, "changes": changes})
+
+
+def get_total_trend(start_dates, end_dates, changes, return_type="dataframe"):
+    """
+    Calculates the full longterm trend of a derivatives timeseries
+
+    Parameters
+    ----------
+    start_dates : np.array or list of decimal dates
+        input start dates of each time period
+    end_dates : np.array or list of decimal dates
+        input end dates of each time period
+    changes : np.array or list
+        input changes between start and end date
+    return_type : str, optional
+        type in which the result is returned. Current options are: 'value' and 'dataframe', by default 'dataframe'
+
+    Returns
+    -------
+    pd.DataFrame or single value with overall trend
+        'dataframe': pd.DataFrame({'start_dates': start_dates, 'end_dates': end_dates, 'changes': changes})
+                     will contain a single row.
+        'value': longerm trend in input unit
+
+    """
+    if return_type == "value":
+        return np.nansum(changes)
+    elif return_type == "dataframe":
+        return pd.DataFrame({"start_dates": [np.nanmin(start_dates)],
+                             "end_dates": [np.nanmax(end_dates)],
+                             "changes": [np.nansum(changes)]})
+
+

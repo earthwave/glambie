@@ -6,6 +6,7 @@ from glambie.util.timeseries_helpers import timeseries_as_months
 from glambie.util.timeseries_helpers import cumulative_to_derivative
 from glambie.util.timeseries_helpers import derivative_to_cumulative
 from glambie.util.timeseries_helpers import resample_derivative_timeseries_to_monthly_grid
+from glambie.util.timeseries_helpers import get_total_trend
 
 import numpy as np
 import pandas as pd
@@ -203,3 +204,16 @@ def test_resample_to_monthly_grid_test_changes():
     assert np.allclose(end_dates2, timeseries_as_months(end_dates))
     # make sure the last value in cumulative timeseries is the same for input and output
     assert pd.Series(changes2).cumsum().iloc[-1] == pd.Series(changes).cumsum().iloc[-1]
+
+
+def test_def_get_total_trend():
+    start_dates = [2010, 2011, 2012]
+    end_dates = [2011, 2012, 2013]
+    derivative_changes = [3., 1., 1.]
+    trend = get_total_trend(start_dates, end_dates, derivative_changes, return_type="value")
+    assert trend == np.sum(derivative_changes)
+    df_trend = get_total_trend(start_dates, end_dates, derivative_changes, return_type="dataframe")
+    assert df_trend.shape == (1, 3)
+    assert df_trend.start_dates.iloc[0] == 2010
+    assert df_trend.end_dates.iloc[0] == 2013
+    assert df_trend.changes.iloc[0] == np.sum(derivative_changes)

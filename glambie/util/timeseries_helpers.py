@@ -229,7 +229,7 @@ def timeseries_as_months(fractional_year_array: np.array, downsample_to_month: b
         # small hack to include last element in case it's on a full integer number
         monthly_array = np.arange(math.ceil((t1 - t0 + 0.00001) * 12)) / 12. + t0
     else:
-        monthly_array = np.floor(fractional_year_array * 12) / 12.
+        monthly_array = np.floor(np.array(fractional_year_array) * 12) / 12.
 
     if contains_duplicates(monthly_array):
         warnings.warn("The rounded dates contain duplicates. "
@@ -238,15 +238,15 @@ def timeseries_as_months(fractional_year_array: np.array, downsample_to_month: b
     return monthly_array
 
 
-def combine_timeseries(t_array: list[np.ndarray],
-                       y_array: list[np.ndarray],
-                       outlier_tolerance: float = None,
-                       calculate_as_errors: bool = False,
-                       perform_moving_average: bool = False,
-                       verbose=False) \
+def combine_timeseries_imbie(t_array: list[np.ndarray],
+                             y_array: list[np.ndarray],
+                             outlier_tolerance: float = None,
+                             calculate_as_errors: bool = False,
+                             perform_moving_average: bool = False,
+                             verbose=False) \
         -> Union[np.ndarray, np.ndarray, np.ndarray]:
     """
-    Combines a number of input timeseries sequences
+    Combines a number of input timeseries sequences using the logic from IMBIE
 
     Parameters
     ----------

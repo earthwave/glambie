@@ -4,25 +4,30 @@
 	    "filename" : "iceland_altimetry_sharks.csv",
 	    "region": "iceland",
 	    "user_group" : "sharks",
-	    "data_group" : "altimetry"
+	    "data_group" : "altimetry",
+		"unit" : "m"
 	  },
 	  {
 	    "filename" : "alaska_altimetry_sharks.csv",
 	    "region": "alaska",
 	    "user_group" : "sharks",
-	    "data_group" : "altimetry"
+	    "data_group" : "altimetry",
+		"unit" : "m"
 	  },
 	  {
 	    "filename" : "svalbard_altimetry_sharks.csv",
 	    "region": "svalbard",
 	    "user_group" : "sharks",
-	    "data_group" : "altimetry"
+	    "data_group" : "altimetry",
+		"unit" : "m"
+
 	  }, 	  
 	  {
 	    "filename" : "svalbard_altimetry_lions.csv",
 	    "region": "svalbard",
 	    "user_group" : "lions",
-	    "data_group" : "altimetry"
+	    "data_group" : "altimetry",
+		"unit" : "m"
 	  }
   ]
 }

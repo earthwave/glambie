@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 import os
 
+from matplotlib import units
+
 from glambie.const.data_groups import GLAMBIE_DATA_GROUPS
 from glambie.const.regions import REGIONS
 from glambie.const.regions import RGIRegion
@@ -61,7 +63,9 @@ class DataCatalogue():
             region = REGIONS[ds_dict['region']]
             data_group = GLAMBIE_DATA_GROUPS[ds_dict['data_group']]
             user_group = ds_dict['user_group']
-            datasets.append(Timeseries(data_filepath=fp, region=region, data_group=data_group, user_group=user_group))
+            unit = ds_dict['unit']
+            datasets.append(Timeseries(data_filepath=fp, region=region, data_group=data_group, user_group=user_group,
+                                       unit=unit))
 
         return DataCatalogue(basepath, datasets)
 

@@ -3,8 +3,6 @@ from __future__ import annotations
 import json
 import os
 
-from matplotlib import units
-
 from glambie.const.data_groups import GLAMBIE_DATA_GROUPS
 from glambie.const.regions import REGIONS
 from glambie.const.regions import RGIRegion

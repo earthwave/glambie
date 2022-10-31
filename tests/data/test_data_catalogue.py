@@ -12,19 +12,22 @@ def example_catalogue():
             "filename": "iceland_altimetry_sharks.csv",
             "region": "iceland",
             "user_group": "sharks",
-            "data_group": "altimetry"
+            "data_group": "altimetry",
+            "unit": "m"
         },
         {
             "filename": "svalbard_altimetry_sharks.csv",
             "region": "svalbard",
             "user_group": "sharks",
-            "data_group": "altimetry"
+            "data_group": "altimetry",
+            "unit": "m"
         },
         {
             "filename": "svalbard_altimetry_lions.csv",
             "region": "svalbard",
             "user_group": "lions",
-            "data_group": "gravimetry"
+            "data_group": "gravimetry",
+            "unit": "m"
         }]})
 
 
@@ -36,7 +39,8 @@ def example_catalogue_small():
             "filename": "central_asia_demdiff_sharks.csv",
             "region": "central_asia",
             "user_group": "sharks",
-            "data_group": "demdiff"
+            "data_group": "demdiff",
+            "unit": "m"
         }]})
 
 
@@ -54,6 +58,7 @@ def test_data_catalogue_datasets_correctly_ingested(example_catalogue):
     assert example_catalogue.datasets[2].region.name == 'svalbard'
     assert example_catalogue.datasets[1].data_group.name == 'altimetry'
     assert example_catalogue.datasets[2].data_group.name == 'gravimetry'
+    assert example_catalogue.datasets[0].unit == 'm'
 
 
 def test_get_filtered_catalogue_by_region(example_catalogue):

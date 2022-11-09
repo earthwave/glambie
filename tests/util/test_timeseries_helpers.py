@@ -7,10 +7,14 @@ from glambie.util.timeseries_helpers import cumulative_to_derivative
 from glambie.util.timeseries_helpers import derivative_to_cumulative
 from glambie.util.timeseries_helpers import resample_derivative_timeseries_to_monthly_grid
 from glambie.util.timeseries_helpers import get_total_trend
+from glambie.util.timeseries_helpers import timeseries_is_monthly_grid
+from glambie.util.timeseries_helpers import get_average_trends_over_new_time_periods
+
 
 import numpy as np
 import pandas as pd
 import pytest
+import warnings
 
 
 def test_moving_average_no_window():
@@ -217,3 +221,48 @@ def test_def_get_total_trend():
     assert df_trend.start_dates.iloc[0] == 2010
     assert df_trend.end_dates.iloc[0] == 2013
     assert df_trend.changes.iloc[0] == np.sum(derivative_changes)
+
+
+def test_timeseries_is_monthly_grid():
+    assert timeseries_is_monthly_grid([2010, 2011])
+    assert timeseries_is_monthly_grid([2010, 2010 + (1 / 12), 2010 + (2 / 12), 2010 + (3 / 12)])
+    assert not timeseries_is_monthly_grid([2010, 2010.765])
+
+
+def test_get_average_trends_over_new_time_periods():
+    start_dates = [2010, 2011, 2012]
+    end_dates = [2011, 2012, 2013]
+    changes = [3., 1., 2.]
+    new_start_dates = [2010]
+    new_end_dates = [2012]
+    trends = get_average_trends_over_new_time_periods(start_dates, end_dates, changes, new_start_dates, new_end_dates)
+    assert np.array_equal(np.array(trends["changes"]), np.array([4]))
+    assert np.array_equal(np.array(trends["start_dates"]), np.array(new_start_dates))
+    assert np.array_equal(np.array(trends["end_dates"]), np.array(new_end_dates))
+    # # if same new start_dates and end_dates given as input timeseries it should not change the result from the input
+    trends2 = get_average_trends_over_new_time_periods(start_dates, end_dates, changes, start_dates, end_dates)
+    assert np.array_equal(np.array(trends2["changes"]), np.array(changes))
+    assert np.array_equal(np.array(trends2["start_dates"]), np.array(start_dates))
+    assert np.array_equal(np.array(trends2["end_dates"]), np.array(end_dates))
+
+
+def test_get_average_trends_over_new_time_periods_raises_warning():
+    start_dates = [2010, 2011, 2012]
+    end_dates = [2011, 2012, 2013]
+    changes = [3., 1., 2.]
+    new_start_dates = [2010]
+    new_end_dates = [2012]
+
+    with warnings.catch_warnings(record=True) as w:
+        # Cause all warnings to always be triggered
+        warnings.simplefilter("always")
+        # Trigger no warning
+        get_average_trends_over_new_time_periods(start_dates, end_dates, changes, new_start_dates, new_end_dates)
+        # Verify no warning has been triggered
+        assert len(w) == 0
+        # Trigger a warning
+        new_end_dates = [2011.9]
+        get_average_trends_over_new_time_periods(start_dates, end_dates, changes, new_start_dates, new_end_dates)
+        # Verify warning has been triggered
+        assert len(w) == 1
+        assert "invalid" in str(w[-1].message)

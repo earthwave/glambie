@@ -228,14 +228,37 @@ def timeseries_as_months(fractional_year_array: np.array, downsample_to_month: b
         t1 = math.ceil(np.max(fractional_year_array) * 12) / 12.
         # small hack to include last element in case it's on a full integer number
         monthly_array = np.arange(math.ceil((t1 - t0 + 0.00001) * 12)) / 12. + t0
-    else:
-        monthly_array = np.floor(np.array(fractional_year_array) * 12) / 12.
+    else:  # we add half a month (1/24) to fractional year so it's not always rounded down
+        monthly_array = np.floor((np.array(fractional_year_array) + (1 / 24)) * 12) / 12.
 
     if contains_duplicates(monthly_array):
         warnings.warn("The rounded dates contain duplicates. "
                       "To avoid this, use the function with data at lower temporal resolution than monthly")
 
     return monthly_array
+
+
+def timeseries_is_monthly_grid(fractional_year_array: np.array) -> bool:
+    """
+    Returns True if all values in the input array are on the monthly grid defined by timeseries_as_months.
+    Also works if the resolution of the input array is not monthly.
+
+    Parameters
+    ----------
+    fractional_year_array : np.array
+        The input time-series
+
+    Returns
+    -------
+    Boolean
+        True if input series is on monthly grid, False otherwise
+    """
+    monthly_grid = timeseries_as_months(fractional_year_array, downsample_to_month=False)
+    try:
+        np.testing.assert_equal(monthly_grid, fractional_year_array)
+    except AssertionError:
+        return False
+    return True
 
 
 def combine_timeseries_imbie(t_array: list[np.ndarray],
@@ -500,3 +523,47 @@ def get_total_trend(start_dates, end_dates, changes, return_type="dataframe"):
                              "changes": [np.nansum(changes)]})
 
 
+def get_average_trends_over_new_time_periods(start_dates, end_dates, changes, new_start_dates, new_end_dates):
+    """
+    Returns average trend over new time periods.
+    Note that this can not be used for upsampling, only for downsampling (e.g. from months to annual averages)
+
+    Parameters
+    ----------
+    start_dates : np.array
+        Array with start dates of input timeseries (in fractional years)
+    end_dates : np.array
+        Array with end dates of input timeseries (in fractional years)
+    changes : np.array
+        Array with timeseries changes
+    new_start_dates : np.array
+        Array with dates of new timeseries start dates (in fractional years)
+        All values within new_start_dates should exist within start_dates or the result may be invalid
+    new_end_dates : np.array
+        Array with dates of new timeseries end dates (in fractional years)
+        All within new_end_dates values should exist within end_dates or the result may be invalid
+
+    Returns
+    -------
+    pd.DataFrame
+        with the new start_dates, end_dates and changes calculated
+        pd.DataFrame({'start_dates': start_dates, 'end_dates': end_dates, 'changes': changes})
+    """
+    # check if in monthly grid
+    if not np.isin(np.array(new_start_dates), np.array(start_dates)).all():
+        warnings.warn("New start dates should be values in timeseries start_dates."
+                      "Result may be invalid.")
+
+    if not np.isin(np.array(new_end_dates), np.array(end_dates)).all():
+        warnings.warn("New end dates should be values in timeseries end_dates."
+                      "Result may be invalid.")
+
+    timeseries_df = pd.DataFrame({"start_dates": start_dates, "end_dates": end_dates, "changes": changes})
+    annual_changes = []
+    for start_date, end_date in zip(new_start_dates, new_end_dates):
+        df_sub = timeseries_df[(timeseries_df["start_dates"] >= start_date) & (timeseries_df["end_dates"] <= end_date)]
+        annual_changes.append(get_total_trend(df_sub["start_dates"],
+                              df_sub["end_dates"], df_sub["changes"], return_type="value"))
+    return pd.DataFrame({"start_dates": new_start_dates,
+                         "end_dates": new_end_dates,
+                         "changes": annual_changes})

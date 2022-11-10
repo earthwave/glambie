@@ -122,3 +122,19 @@ def test_as_cumulative_timeseries_raises_warning(example_timeseries_ingested):
         # Verify warning has been triggered
         assert len(w) == 1
         assert "invalid" in str(w[-1].message)
+
+
+def test_convert_timeseries_to_unit_mwe(example_timeseries_ingested):
+
+    converted_timeseries = example_timeseries_ingested.convert_timeseries_to_unit_mwe()
+    assert converted_timeseries.unit == "mwe"
+    assert example_timeseries_ingested.unit == "m"
+    assert not np.array_equal(converted_timeseries.data.changes, example_timeseries_ingested.data.changes)
+    expected_converted_changes = example_timeseries_ingested.data.changes / 997 * 850
+    assert np.array_equal(converted_timeseries.data.changes, expected_converted_changes)
+
+
+def test_convert_timeseries_to_unit_mwe_no_conversion_when_already_in_mwe(example_timeseries_ingested):
+    example_timeseries_ingested.unit = "mwe"
+    converted_timeseries = example_timeseries_ingested.convert_timeseries_to_unit_mwe()
+    assert np.array_equal(converted_timeseries.data.changes, example_timeseries_ingested.data.changes)

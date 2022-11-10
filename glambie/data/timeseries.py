@@ -1,14 +1,19 @@
 
+from __future__ import annotations
+import copy
+
 from dataclasses import dataclass
 from decimal import Decimal
 from decimal import getcontext
+import warnings
 
 from glambie.const.data_groups import GlambieDataGroup
 from glambie.const.regions import RGIRegion
+from glambie.util.mass_height_conversions import \
+    meters_to_meters_water_equivalent
+from glambie.util.timeseries_helpers import derivative_to_cumulative
 import numpy as np
 import pandas as pd
-import warnings
-from glambie.util.timeseries_helpers import derivative_to_cumulative
 
 
 @dataclass
@@ -153,7 +158,7 @@ class Timeseries():
         rgi_version : int, optional
             which version of rgi has been used, e.g. 6 or 7, by default None
         unit : str, optional
-            unit the timeseries is in, e.g. m or mwe, by default None
+            unit the timeseries is in, e.g. m, mwe or gt, by default None
         """
         self.user = user
         self.user_group = user_group
@@ -201,3 +206,46 @@ class Timeseries():
                              'rgi_version': self.rgi_version,
                              'unit': self.unit
                              }, index=[0])
+
+    def convert_timeseries_to_unit_mwe(self, density_of_water: float = 997,
+                                       density_of_ice: float = 850) -> Timeseries:
+        """
+        Converts a Timeseries object to the unit of meters water equivalent.
+        Returns a copy of itself with the converted glacier changes.
+
+        Parameters
+        ----------
+        density_of_water: float, optional
+            The density of water in Gt per m3, by default 997
+        density_of_ice : float, optional
+            The density of ice in Gt per m3, by default 850
+
+        Returns
+        -------
+        Timeseries
+            A copy of the Timeseries object containing the converted timeseries data and corrected metadata information.
+
+        Raises
+        ------
+        NotImplementedError
+            For units to be converted that are not implemented yet
+        """
+
+        # if self.unit is None:  # unit of dataset is not known
+        #     warnings.warn("The unit information of Timeseries object is None and can not be converted to m.we. "
+        #                   "region={} , data_group={}, user_group={}".format(self.region.name, self.data_group.name,
+        #                                                                     self.user_group))
+        #     return self.deepcopy()
+        if self.unit == "mwe":  # no conversion needed as already in mwe
+            return copy.deepcopy(self)
+        else:
+            object_copy = copy.deepcopy(self)
+            object_copy.unit = "mwe"
+            if self.unit == "m":  # @TODO: convert uncertainties as well
+                object_copy.data.changes = np.array(meters_to_meters_water_equivalent(object_copy.data.changes,
+                                                                                      density_of_water=density_of_water,
+                                                                                      density_of_ice=density_of_ice))
+            else:
+                raise NotImplementedError(
+                    "Conversion to mwe not implemented yet for Timeseries with unit '{}'".format(self.unit))
+            return object_copy

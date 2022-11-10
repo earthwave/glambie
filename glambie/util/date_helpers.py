@@ -89,7 +89,7 @@ def get_year_timedelta(year: int) -> timedelta:
     return year_length
 
 
-def get_glaciological_years(glaciological_year_start: float, min_date: float, max_date: float, returntype="arrays"):
+def get_glaciological_years(glaciological_year_start: float, min_date: float, max_date: float, return_type="arrays"):
     """
     Returns start and end dates of glaciological years within a timespan (min_date to max_date).
     Only full years within the min_date - max_date time period are included.
@@ -107,7 +107,7 @@ def get_glaciological_years(glaciological_year_start: float, min_date: float, ma
 
     Returns
     -------
-    Union[np.array, np.array] or pd.DataFrame, depending on specified return_type
+    Tuple[np.array, np.array] or pd.DataFrame, depending on specified return_type
         'arrays': (start_dates, end_dates)
         'dataframe': pd.DataFrame({'start_dates': start_dates, 'end_dates': end_dates})
     """
@@ -132,7 +132,7 @@ def get_glaciological_years(glaciological_year_start: float, min_date: float, ma
             if (start_date >= min_date) & (end_date <= max_date):
                 start_dates.append(start_date)
                 end_dates.append(end_date)
-    if returntype == "dataframe":
+    if return_type == "dataframe":
         return pd.DataFrame({"start_dates": start_dates, "end_dates": end_dates})
-    elif returntype == "arrays":
+    elif return_type == "arrays":
         return np.array(start_dates), np.array(end_dates)

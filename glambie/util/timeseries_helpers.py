@@ -3,7 +3,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 import math
 from scipy import interpolate
-from typing import Union
+from typing import Tuple
 import pandas as pd
 
 
@@ -13,7 +13,7 @@ def contains_duplicates(x: np.array) -> bool:
     return len(np.unique(x)) != len(x)
 
 
-def get_matched_indices(array1: np.array, array2: np.array, tolerance: float = 0.0) -> Union[np.array, np.array]:
+def get_matched_indices(array1: np.array, array2: np.array, tolerance: float = 0.0) -> Tuple[np.array, np.array]:
     """
     Returns two arrays of indices at which 'array1' and 'array2' match.
     Can e.g. be used to find matching dates from two timeseries
@@ -43,7 +43,7 @@ def get_matched_indices(array1: np.array, array2: np.array, tolerance: float = 0
 
     Returns
     -------
-    Union[np.array, np.array]
+    Tuple[np.array, np.array]
         1. The indices at which values in 'array1' match a value in 'array2'
         2. The indices at which values in 'array2' match a value in 'array1'
     """
@@ -267,7 +267,7 @@ def combine_timeseries_imbie(t_array: list[np.ndarray],
                              calculate_as_errors: bool = False,
                              perform_moving_average: bool = False,
                              verbose=False) \
-        -> Union[np.ndarray, np.ndarray, np.ndarray]:
+        -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Combines a number of input timeseries sequences using the logic from IMBIE
 
@@ -288,7 +288,7 @@ def combine_timeseries_imbie(t_array: list[np.ndarray],
 
     Returns
     -------
-    Union[np.ndarray, np.ndarray, np.ndarray]
+    Tuple[np.ndarray, np.ndarray, np.ndarray]
         1: numpy array of the fractional years array of the combined data
         2: The corresponding y-values of the combined data series
         3. data_out: 2d array of the full resampled data set of each solution
@@ -409,7 +409,7 @@ def derivative_to_cumulative(start_dates: list[float],
 
     Returns
     -------
-    Union[np.array, np.array] or pd.DataFrame, depending on specified return_type
+    Tuple[np.array, np.array] or pd.DataFrame, depending on specified return_type
         'arrays': (dates, cumulative_changes)
         'dataframe': pd.DataFrame({'dates': dates, 'changes': changes})
     """
@@ -439,7 +439,7 @@ def cumulative_to_derivative(fractional_year_array, cumulative_changes, return_t
 
     Returns
     -------
-    Union[np.array, np.array, np.array] or pd.DataFrame, depending on specified return_type
+    Tuple[np.array, np.array, np.array] or pd.DataFrame, depending on specified return_type
         'arrays': (start_dates, end_dates, changes)
         'dataframe': pd.DataFrame({'start_dates': start_dates, 'end_dates': end_dates, 'changes': changes})
     """
@@ -475,7 +475,7 @@ def resample_derivative_timeseries_to_monthly_grid(start_dates, end_dates, chang
 
     Returns
     -------
-    Union[np.array, np.array, np.array] or pd.DataFrame, depending on specified return_type
+    Tuple[np.array, np.array, np.array] or pd.DataFrame, depending on specified return_type
         'arrays': (start_dates, end_dates, changes) resampled to the monthly grid
         'dataframe': pd.DataFrame({'start_dates': start_dates, 'end_dates': end_dates, 'changes': changes})
     """

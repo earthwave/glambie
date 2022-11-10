@@ -3,7 +3,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 import math
 from scipy import interpolate
-from typing import Union
+from typing import Tuple
 import pandas as pd
 
 
@@ -13,7 +13,7 @@ def contains_duplicates(x: np.array) -> bool:
     return len(np.unique(x)) != len(x)
 
 
-def get_matched_indices(array1: np.array, array2: np.array, tolerance: float = 0.0) -> Union[np.array, np.array]:
+def get_matched_indices(array1: np.array, array2: np.array, tolerance: float = 0.0) -> Tuple[np.array, np.array]:
     """
     Returns two arrays of indices at which 'array1' and 'array2' match.
     Can e.g. be used to find matching dates from two timeseries
@@ -43,7 +43,7 @@ def get_matched_indices(array1: np.array, array2: np.array, tolerance: float = 0
 
     Returns
     -------
-    Union[np.array, np.array]
+    Tuple[np.array, np.array]
         1. The indices at which values in 'array1' match a value in 'array2'
         2. The indices at which values in 'array2' match a value in 'array1'
     """
@@ -228,8 +228,8 @@ def timeseries_as_months(fractional_year_array: np.array, downsample_to_month: b
         t1 = math.ceil(np.max(fractional_year_array) * 12) / 12.
         # small hack to include last element in case it's on a full integer number
         monthly_array = np.arange(math.ceil((t1 - t0 + 0.00001) * 12)) / 12. + t0
-    else:
-        monthly_array = np.floor(np.array(fractional_year_array) * 12) / 12.
+    else:  # we add half a month (1/24) to fractional year so it's not always rounded down
+        monthly_array = np.floor((np.array(fractional_year_array) + (1 / 24)) * 12) / 12.
 
     if contains_duplicates(monthly_array):
         warnings.warn("The rounded dates contain duplicates. "
@@ -238,13 +238,36 @@ def timeseries_as_months(fractional_year_array: np.array, downsample_to_month: b
     return monthly_array
 
 
+def timeseries_is_monthly_grid(fractional_year_array: np.array) -> bool:
+    """
+    Returns True if all values in the input array are on the monthly grid defined by timeseries_as_months.
+    Also works if the resolution of the input array is not monthly.
+
+    Parameters
+    ----------
+    fractional_year_array : np.array
+        The input time-series
+
+    Returns
+    -------
+    Boolean
+        True if input series is on monthly grid, False otherwise
+    """
+    monthly_grid = timeseries_as_months(fractional_year_array, downsample_to_month=False)
+    try:
+        np.testing.assert_equal(monthly_grid, fractional_year_array)
+    except AssertionError:
+        return False
+    return True
+
+
 def combine_timeseries_imbie(t_array: list[np.ndarray],
                              y_array: list[np.ndarray],
                              outlier_tolerance: float = None,
                              calculate_as_errors: bool = False,
                              perform_moving_average: bool = False,
                              verbose=False) \
-        -> Union[np.ndarray, np.ndarray, np.ndarray]:
+        -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Combines a number of input timeseries sequences using the logic from IMBIE
 
@@ -265,7 +288,7 @@ def combine_timeseries_imbie(t_array: list[np.ndarray],
 
     Returns
     -------
-    Union[np.ndarray, np.ndarray, np.ndarray]
+    Tuple[np.ndarray, np.ndarray, np.ndarray]
         1: numpy array of the fractional years array of the combined data
         2: The corresponding y-values of the combined data series
         3. data_out: 2d array of the full resampled data set of each solution
@@ -386,7 +409,7 @@ def derivative_to_cumulative(start_dates: list[float],
 
     Returns
     -------
-    Union[np.array, np.array] or pd.DataFrame, depending on specified return_type
+    Tuple[np.array, np.array] or pd.DataFrame, depending on specified return_type
         'arrays': (dates, cumulative_changes)
         'dataframe': pd.DataFrame({'dates': dates, 'changes': changes})
     """
@@ -416,7 +439,7 @@ def cumulative_to_derivative(fractional_year_array, cumulative_changes, return_t
 
     Returns
     -------
-    Union[np.array, np.array, np.array] or pd.DataFrame, depending on specified return_type
+    Tuple[np.array, np.array, np.array] or pd.DataFrame, depending on specified return_type
         'arrays': (start_dates, end_dates, changes)
         'dataframe': pd.DataFrame({'start_dates': start_dates, 'end_dates': end_dates, 'changes': changes})
     """
@@ -434,7 +457,7 @@ def cumulative_to_derivative(fractional_year_array, cumulative_changes, return_t
         return df
 
 
-def resample_derivative_timeseries_to_monthly_grid(start_dates, end_dates, changes):
+def resample_derivative_timeseries_to_monthly_grid(start_dates, end_dates, changes, return_type="arrays"):
     """
     Resample a timeseries of derivatives to a uniform monthly grid.
     The monthly grid is defined by timeseries_as_months(), containing 12 evenly spaced months.
@@ -447,11 +470,14 @@ def resample_derivative_timeseries_to_monthly_grid(start_dates, end_dates, chang
         end dates of each time period
     changes : np.array or list
         changes between start and end date
+    return_type : str, optional
+        type in which the result is returned. Current options are: 'arrays' and 'dataframe', by default 'arrays'
 
     Returns
     -------
-    Union[np.ndarray,np.ndarray,np.ndarray]
-        (start_dates, end_dates, changes) resampled to the monthly grid
+    Tuple[np.array, np.array, np.array] or pd.DataFrame, depending on specified return_type
+        'arrays': (start_dates, end_dates, changes) resampled to the monthly grid
+        'dataframe': pd.DataFrame({'start_dates': start_dates, 'end_dates': end_dates, 'changes': changes})
     """
     # 1 convert to cumulative (to make sure rate is not lost during the resample process)
     dates, changes = derivative_to_cumulative(start_dates, end_dates, changes)
@@ -460,4 +486,84 @@ def resample_derivative_timeseries_to_monthly_grid(start_dates, end_dates, chang
     changes = resample_1d_array(dates, changes, monthly_grid)
     # 3 convert back to derivatives
     start_dates, end_dates, changes = cumulative_to_derivative(monthly_grid, changes, return_type="arrays")
-    return start_dates, end_dates, changes
+    if return_type == "arrays":
+        return start_dates, end_dates, changes
+    elif return_type == "dataframe":
+        return pd.DataFrame({"start_dates": start_dates, "end_dates": end_dates, "changes": changes})
+
+
+def get_total_trend(start_dates, end_dates, changes, return_type="dataframe"):
+    """
+    Calculates the full longterm trend of a derivatives timeseries
+
+    Parameters
+    ----------
+    start_dates : np.array or list of decimal dates
+        input start dates of each time period
+    end_dates : np.array or list of decimal dates
+        input end dates of each time period
+    changes : np.array or list
+        input changes between start and end date
+    return_type : str, optional
+        type in which the result is returned. Current options are: 'value' and 'dataframe', by default 'dataframe'
+
+    Returns
+    -------
+    pd.DataFrame or single value with overall trend
+        'dataframe': pd.DataFrame({'start_dates': start_dates, 'end_dates': end_dates, 'changes': changes})
+                     will contain a single row.
+        'value': longerm trend in input unit
+
+    """
+    if return_type == "value":
+        return np.nansum(changes)
+    elif return_type == "dataframe":
+        return pd.DataFrame({"start_dates": [np.nanmin(start_dates)],
+                             "end_dates": [np.nanmax(end_dates)],
+                             "changes": [np.nansum(changes)]})
+
+
+def get_average_trends_over_new_time_periods(start_dates, end_dates, changes, new_start_dates, new_end_dates):
+    """
+    Returns average trend over new time periods.
+    Note that this can not be used for upsampling, only for downsampling (e.g. from months to annual averages)
+
+    Parameters
+    ----------
+    start_dates : np.array
+        Array with start dates of input timeseries (in fractional years)
+    end_dates : np.array
+        Array with end dates of input timeseries (in fractional years)
+    changes : np.array
+        Array with timeseries changes
+    new_start_dates : np.array
+        Array with dates of new timeseries start dates (in fractional years)
+        All values within new_start_dates should exist within start_dates or the result may be invalid
+    new_end_dates : np.array
+        Array with dates of new timeseries end dates (in fractional years)
+        All within new_end_dates values should exist within end_dates or the result may be invalid
+
+    Returns
+    -------
+    pd.DataFrame
+        with the new start_dates, end_dates and changes calculated
+        pd.DataFrame({'start_dates': start_dates, 'end_dates': end_dates, 'changes': changes})
+    """
+    # check if in monthly grid
+    if not np.isin(np.array(new_start_dates), np.array(start_dates)).all():
+        warnings.warn("New start dates should be values in timeseries start_dates."
+                      "Result may be invalid.")
+
+    if not np.isin(np.array(new_end_dates), np.array(end_dates)).all():
+        warnings.warn("New end dates should be values in timeseries end_dates."
+                      "Result may be invalid.")
+
+    timeseries_df = pd.DataFrame({"start_dates": start_dates, "end_dates": end_dates, "changes": changes})
+    annual_changes = []
+    for start_date, end_date in zip(new_start_dates, new_end_dates):
+        df_sub = timeseries_df[(timeseries_df["start_dates"] >= start_date) & (timeseries_df["end_dates"] <= end_date)]
+        annual_changes.append(get_total_trend(df_sub["start_dates"],
+                              df_sub["end_dates"], df_sub["changes"], return_type="value"))
+    return pd.DataFrame({"start_dates": new_start_dates,
+                         "end_dates": new_end_dates,
+                         "changes": annual_changes})

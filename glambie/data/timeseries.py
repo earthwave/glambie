@@ -262,7 +262,7 @@ class Timeseries():
         density_of_water: float, optional
             The density of water in Gt per m3, by default 997
         rgi_area_version: int, optional
-            The version of RGI glacier masks to be used to determine the glacier area within the region, 
+            The version of RGI glacier masks to be used to determine the glacier area within the region,
             Current options are 6 or 7, by default 6
 
         Returns

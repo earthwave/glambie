@@ -161,7 +161,7 @@ def test_convert_timeseries_with_area_change_rate(example_timeseries_ingested):
     # setting area change rate to 0, so this should give same result as setting include_area_change=False
     example_timeseries_ingested.region.area_change = 0
     converted_timeseries_ac_0 = example_timeseries_ingested.convert_timeseries_to_unit_gt(include_area_change=True)
-    
+
     # no area change rate and area change rate = 0 should give same result
     assert np.array_equal(converted_timeseries_no_ac.data.changes, converted_timeseries_ac_0.data.changes)
 

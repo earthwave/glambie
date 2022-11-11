@@ -105,3 +105,12 @@ def test_load_all_data(example_catalogue_small):
     example_catalogue_small.load_all_data()
     # now data should be loaded
     assert example_catalogue_small.datasets[0].is_data_loaded
+
+
+def test_datasets_are_same_unit(example_catalogue):
+    # all test datasets are in m
+    assert example_catalogue.datasets_are_same_unit()
+
+    # change first datasets unit
+    example_catalogue.datasets[0].unit = "gt"
+    assert not example_catalogue.datasets_are_same_unit()

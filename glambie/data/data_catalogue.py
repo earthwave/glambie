@@ -140,6 +140,18 @@ class DataCatalogue():
             if not dataset.is_data_loaded:
                 dataset.load_data()
 
+    def datasets_are_same_unit(self):
+        """
+        Checks if all datasets within catalogue have the same unit
+
+        Returns
+        -------
+        bool
+            True if all dataset units are the same, False otherwise
+        """
+        unit = self.datasets[0].unit
+        return all(dataset.unit == unit for dataset in self.datasets)
+
     def __len__(self) -> int:
         return len(self._datasets)
 

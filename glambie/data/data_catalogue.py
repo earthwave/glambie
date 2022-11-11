@@ -53,11 +53,11 @@ class DataCatalogue():
         DataCatalogue
             data catalogue containing the metadata of datasets, the actual timeseries data will lazy loaded
         """
-        basepath = os.path.join(*meta_data_dict['basepath'])
+        base_path = os.path.join(*meta_data_dict['basepath'])
         datasets_dict = meta_data_dict['datasets']
         datasets = []
         for ds_dict in datasets_dict:
-            fp = os.path.join(basepath, ds_dict['filename'])
+            fp = os.path.join(base_path, ds_dict['filename'])
             region = REGIONS[ds_dict['region']]
             data_group = GLAMBIE_DATA_GROUPS[ds_dict['data_group']]
             user_group = ds_dict['user_group']
@@ -65,7 +65,27 @@ class DataCatalogue():
             datasets.append(Timeseries(data_filepath=fp, region=region, data_group=data_group, user_group=user_group,
                                        unit=unit))
 
-        return DataCatalogue(basepath, datasets)
+        return DataCatalogue(base_path, datasets)
+
+    @staticmethod
+    def from_list(datasets_list: list[Timeseries], base_path: str = "") -> DataCatalogue:
+        """
+        Loads a catalogue from a list of Timeseries datasets
+
+        Parameters
+        ----------
+        datasets_list : list
+            list of Timeseries objects
+        basepath : str
+            basepath for loading the actual data, default is an empty string ''
+            Note that if the data is already loaded there is no need to set this parameter.
+
+        Returns
+        -------
+        DataCatalogue
+            data catalogue containing the metadata of datasets
+        """
+        return DataCatalogue(base_path, datasets_list)
 
     @property
     def datasets(self) -> list[Timeseries]:

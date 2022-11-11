@@ -81,6 +81,25 @@ def meters_water_equivalent_to_meters(variables: Iterable, density_of_water: flo
     return [_meters_water_equivalent_to_meters(i, density_of_water, density_of_ice) for i in variables]
 
 
+def meters_water_equivalent_to_gigatonnes(variables: Iterable, area: float, density_of_water: float = 997) -> list:
+    """Function to convert a list of measurements of ice mass loss in meters water equivalent to gigatonnes.
+
+    Parameters
+    ----------
+    variables : Iterable
+        A list of measurements in meters water equivalent
+    area : float
+        The area of the region in km2
+    density_of_water : float, optional
+        The density of water in Gt per m3, by default 997
+
+    Returns
+    -------
+    A list of measurements in gigatonnes
+    """
+    return [_meters_water_equivalent_to_gigatonnes(i, area, density_of_water) for i in variables]
+
+
 def gigatonnes_to_meters_water_equivalent(variables: Iterable, area: float, density_of_water: float = 997) -> list:
     """Function to convert a list of measurements of ice mass loss in gigatonnes into meters water equivalent.
 
@@ -213,6 +232,25 @@ def _gigatonnes_to_meters_water_equivalent(variable: float, area: float, density
     Input variable converted into meters water equivalent
     """
     return (1e6 * variable) / (area * density_of_water)  # 1e6 to convert area from km2 to m2
+
+
+def _meters_water_equivalent_to_gigatonnes(variable: float, area: float, density_of_water: float = 997) -> float:
+    """Function to convert a measurement of ice mass loss in meters water equivalent into gigatonnes
+
+    Parameters
+    ----------
+    variable : float
+        The variable to be converted, with input units of mwe
+    area : float
+        The area of the region in km2
+    density_of_water : float, optional
+        The density of water in Gt per m3, by default 997
+
+    Returns
+    -------
+    Input variable converted into gigatonnes
+    """
+    return variable * density_of_water * (area / 1e6)  # 1e6 to convert area from km2 to m2
 
 
 def _gigatonnes_to_sea_level_rise(variable: float, ocean_area: float = 3.625e8) -> float:

@@ -4,6 +4,7 @@ from glambie.util.mass_height_conversions import _meters_to_meters_water_equival
 from glambie.util.mass_height_conversions import _meters_water_equivalent_to_meters
 from glambie.util.mass_height_conversions import _gigatonnes_to_sea_level_rise
 from glambie.util.mass_height_conversions import _gigatonnes_to_meters_water_equivalent
+from glambie.util.mass_height_conversions import _meters_water_equivalent_to_gigatonnes
 
 from glambie.util.mass_height_conversions import meters_to_gigatonnes
 from glambie.util.mass_height_conversions import gigatonnes_to_meters
@@ -11,6 +12,7 @@ from glambie.util.mass_height_conversions import meters_to_meters_water_equivale
 from glambie.util.mass_height_conversions import meters_water_equivalent_to_meters
 from glambie.util.mass_height_conversions import gigatonnes_to_sea_level_rise
 from glambie.util.mass_height_conversions import gigatonnes_to_meters_water_equivalent
+from glambie.util.mass_height_conversions import meters_water_equivalent_to_gigatonnes
 
 
 def test_meters2gigatonnes():
@@ -67,6 +69,16 @@ def test_gigatonnes2mwe():
         test_variable_in_gt, test_area, density_of_water=test_density_of_water) == (1e6 * 50) / (1000 * 950)
 
 
+def test_mwe2gt():
+    area = 10
+    mwe = 0.2
+
+    # circular test: should give same as first converting to meters and then to Gt
+    m = _meters_water_equivalent_to_meters(mwe)
+    gt = _meters_to_gigatonnes(m, area=area)
+    assert _meters_water_equivalent_to_gigatonnes(mwe, area=area) == gt
+
+
 def test_gigatonnes2slr():
     test_variable_in_gt = 50
     assert _gigatonnes_to_sea_level_rise(test_variable_in_gt) == abs(50 / 3.625e8) * 1e6
@@ -105,3 +117,13 @@ def test_gigatonnes_to_meters_water_equivalent():
 def test_gigatonnes_to_sea_level_rise():
     gigatonnes_list = [50, 60]
     assert gigatonnes_to_sea_level_rise(gigatonnes_list) == [abs(50 / 3.625e8) * 1e6, abs(60 / 3.625e8) * 1e6]
+
+
+def test_meters_water_equivalent_to_gigatonnes():
+    area = 10
+    mwe = [0.2, 0.4, 0.6, 0.006]
+
+    # circular test: should give same as first converting to meters and then to Gt
+    m = meters_water_equivalent_to_meters(mwe)
+    gt = meters_to_gigatonnes(m, area=area)
+    assert meters_water_equivalent_to_gigatonnes(mwe, area=area) == gt

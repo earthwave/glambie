@@ -10,7 +10,7 @@ import warnings
 from glambie.const.data_groups import GlambieDataGroup
 from glambie.const.regions import RGIRegion
 from glambie.util.mass_height_conversions import \
-    meters_to_meters_water_equivalent
+    meters_to_meters_water_equivalent, meters_water_equivalent_to_gigatonnes
 from glambie.util.timeseries_helpers import derivative_to_cumulative
 import numpy as np
 import pandas as pd
@@ -230,12 +230,6 @@ class Timeseries():
         NotImplementedError
             For units to be converted that are not implemented yet
         """
-
-        # if self.unit is None:  # unit of dataset is not known
-        #     warnings.warn("The unit information of Timeseries object is None and can not be converted to m.we. "
-        #                   "region={} , data_group={}, user_group={}".format(self.region.name, self.data_group.name,
-        #                                                                     self.user_group))
-        #     return self.deepcopy()
         if self.unit == "mwe":  # no conversion needed as already in mwe
             return copy.deepcopy(self)
         else:
@@ -245,7 +239,74 @@ class Timeseries():
                 object_copy.data.changes = np.array(meters_to_meters_water_equivalent(object_copy.data.changes,
                                                                                       density_of_water=density_of_water,
                                                                                       density_of_ice=density_of_ice))
+                return object_copy
             else:
                 raise NotImplementedError(
                     "Conversion to mwe not implemented yet for Timeseries with unit '{}'".format(self.unit))
-            return object_copy
+
+    def convert_timeseries_to_unit_gt(self, include_area_change: bool = True,
+                                      density_of_water: float = 997, rgi_area_version=6) -> Timeseries:
+        """
+        Converts a Timeseries object to the unit of Gigatonnes.
+        Returns a copy of itself with the converted glacier changes.
+
+        Parameters
+        ----------
+        include_area_change : bool, optional
+            Flag to determine if glacier area changes are taking into account
+            Set to True, the area change and area change reference year are retrieved for the region of the timeseries
+            From the constants and used to calculate Gt for a changing area
+            Note that this will not work that well if the time resolution is low (e.g. multiple years),
+            as it just uses the average between start and end date to determine the area change since
+            the reference year, by default True
+        density_of_water: float, optional
+            The density of water in Gt per m3, by default 997
+        rgi_area_version: int, optional
+            The version of RGI glacier masks to be used to determine the glacier area within the region, 
+            Current options are 6 or 7, by default 6
+
+        Returns
+        -------
+        Timeseries
+            A copy of the Timeseries object containing the converted timeseries data and corrected metadata information.
+
+        Raises
+        ------
+        NotImplementedError
+            For units to be converted that are not implemented yet
+        """
+        # get area
+        if rgi_area_version == 6:
+            glacier_area = self.region.rgi6_area
+        elif rgi_area_version == 7:
+            glacier_area = self.region.rgi7_area
+        else:
+            warnings.warn("RGI version {} is not a valid version. As a default of version 6 is used."
+                          .format(rgi_area_version))
+            glacier_area = self.region.rgi6_area
+
+        object_copy = copy.deepcopy(self)
+        object_copy.unit = "gt"
+
+        if self.unit == "gt":  # no conversion needed as already in gt
+            return copy.deepcopy(self)
+        elif self.unit == "mwe":  # @TODO: convert uncertainties as well
+            if not include_area_change:
+                object_copy.data.changes = meters_water_equivalent_to_gigatonnes(
+                    self.data.changes, area=glacier_area, density_of_water=density_of_water)
+                return object_copy
+            else:
+                # conversion with area change
+                t_0 = self.region.area_change_reference_year
+                area_change = self.region.area_change
+                gt_adjusted_changes = []
+                for _, row in self.data.as_dataframe().iterrows():
+                    t_i = (row["start_dates"] + row["end_dates"]) / 2
+                    adjusted_area = glacier_area + (t_i - t_0) * (area_change / 100) * glacier_area
+                    gt_adjusted_changes.append(meters_water_equivalent_to_gigatonnes(
+                        [row.changes], area=adjusted_area, density_of_water=density_of_water)[0])
+                object_copy.data.changes = gt_adjusted_changes
+                return object_copy
+        else:
+            raise NotImplementedError(
+                "Conversion to Gt not implemented yet for Timeseries with unit '{}'".format(self.unit))

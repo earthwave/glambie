@@ -1,6 +1,7 @@
 import os
 
 from glambie.const.data_groups import GLAMBIE_DATA_GROUPS
+from glambie.const.regions import REGIONS
 from glambie.data.timeseries import Timeseries
 from glambie.data.timeseries import TimeseriesData
 import numpy as np
@@ -138,3 +139,35 @@ def test_convert_timeseries_to_unit_mwe_no_conversion_when_already_in_mwe(exampl
     example_timeseries_ingested.unit = "mwe"
     converted_timeseries = example_timeseries_ingested.convert_timeseries_to_unit_mwe()
     assert np.array_equal(converted_timeseries.data.changes, example_timeseries_ingested.data.changes)
+
+
+def test_convert_timeseries_to_unit_gt_no_area_change_rate(example_timeseries_ingested):
+    example_timeseries_ingested.unit = "mwe"
+    example_timeseries_ingested.region = REGIONS["iceland"]
+    converted_timeseries = example_timeseries_ingested.convert_timeseries_to_unit_gt(include_area_change=False)
+    assert converted_timeseries.unit == "gt"
+    assert example_timeseries_ingested.unit == "mwe"
+    assert not np.array_equal(converted_timeseries.data.changes, example_timeseries_ingested.data.changes)
+    area = example_timeseries_ingested.region.rgi6_area
+    expected_converted_changes = example_timeseries_ingested.data.changes * 997 * (area / 1e6)
+    assert np.array_equal(converted_timeseries.data.changes, expected_converted_changes)
+
+
+def test_convert_timeseries_with_area_change_rate(example_timeseries_ingested):
+    example_timeseries_ingested.unit = "mwe"
+    example_timeseries_ingested.region = REGIONS["iceland"]
+    # calculate without area change (ac)
+    converted_timeseries_no_ac = example_timeseries_ingested.convert_timeseries_to_unit_gt(include_area_change=False)
+    # setting area change rate to 0, so this should give same result as setting include_area_change=False
+    example_timeseries_ingested.region.area_change = 0
+    converted_timeseries_ac_0 = example_timeseries_ingested.convert_timeseries_to_unit_gt(include_area_change=True)
+    
+    # no area change rate and area change rate = 0 should give same result
+    assert np.array_equal(converted_timeseries_no_ac.data.changes, converted_timeseries_ac_0.data.changes)
+
+    # now with actual area change
+    example_timeseries_ingested.region.area_change = -2  # 2% loss per year
+    converted_timeseries_with_ac = example_timeseries_ingested.convert_timeseries_to_unit_gt(include_area_change=True)
+    assert not np.array_equal(converted_timeseries_no_ac.data.changes, converted_timeseries_with_ac.data.changes)
+    # the timeseries with no area change should have higher values as the area change is negative
+    assert (converted_timeseries_no_ac.data.changes > converted_timeseries_with_ac.data.changes).all()

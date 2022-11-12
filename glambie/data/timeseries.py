@@ -213,6 +213,45 @@ class Timeseries():
                              'unit': self.unit
                              }, index=[0])
 
+    def timeseries_is_monthly_grid(self):
+        """
+        Returns True if all values in the self.data.start_dates and self.data.end_dates are on
+        the monthly grid defined by glambie.util.timeseries_helpers.timeseries_as_months.
+        Also returns Trues if the resolution is not monthly, but all dates are using the monthly grid.
+
+        Returns
+        -------
+        bool
+            True if in monthly grid, False otherwise.
+        """
+        return timeseries_is_monthly_grid(self.data.start_dates) and timeseries_is_monthly_grid(self.data.end_dates)
+
+    def timeseries_is_annual_grid(self, year_type: str = "calendar"):
+        """
+        Returns True if all values in the self.data.start_dates and self.data.end_dates are on
+        the annual grid (e.g. 2010.0 wouls be on annual calendar year grid, 2010.1 would not)
+        Also returns Trues if the resolution is not annual, but all dates are using the annual grid.
+
+        Parameters
+        ----------
+        year_type : str, optional
+            which year to use, options are 'calendar' (January to January) or 'glaciological' (Whatever year
+            is defined for the region), by default "calendar"
+
+        Returns
+        -------
+        bool
+            True if in annual grid, False otherwise.
+        """
+        if year_type == "calendar":
+            year_start = 0
+        elif year_type == "glaciological":
+            year_start = self.region.glaciological_year_start
+        else:
+            raise NotImplementedError("Year type '{}' is not implemented yet.".format(year_type))
+        return all(s % 1 == year_start for s in self.data.start_dates) and all(s % 1 == year_start
+                                                                               for s in self.data.end_dates)
+
     def convert_timeseries_to_unit_mwe(self, density_of_water: float = 997,
                                        density_of_ice: float = 850) -> Timeseries:
         """
@@ -349,15 +388,38 @@ class Timeseries():
                 object_copy.data.changes = changes
         return object_copy  # return copy of itself
 
-    def timeseries_is_monthly_grid(self):
+    def convert_timeseries_to_annual_trends(self, year_type="calendar") -> Timeseries:
         """
-        Returns True if all values in the self.data.start_dates and self.data.end_dates are on
-        the monthly grid defined by glambie.util.timeseries_helpers.timeseries_as_months.
-        Also returns Trues if the resolution is not monthly, but all dates are using the monthly grid.
+        _summary_
+
+        Parameters
+        ----------
+        year_type : str, optional
+            which year to use, options are 'calendar' (January to January) or 'glaciological' (Whatever year 
+            is defined for the region), by default "calendar"
 
         Returns
         -------
-        bool
-            True if in monthly grid, False otherwise.
+        Timeseries
+            _description_
         """
-        return timeseries_is_monthly_grid(self.data.start_dates) and timeseries_is_monthly_grid(self.data.end_dates)
+
+        # Check if on monthly grid. if not throw an error
+
+        # # make a deep copy of itself
+        # object_copy = copy.deepcopy(self)
+        # if not self.timeseries_is_monthly_grid():  # if already in monthly grid there is no need to convert
+        #     # check resolution
+        #     if self.data.max_temporal_resolution >= 0.5:  # resolution above half a year: shift to closest month
+        #         start_dates = timeseries_as_months(self.data.start_dates, downsample_to_month=False)
+        #         end_dates = timeseries_as_months(self.data.end_dates, downsample_to_month=False)
+        #         object_copy.data.start_dates = start_dates
+        #         object_copy.data.end_dates = end_dates
+        #     else:  # resolution below half a year: resample timeseries to monthly grid
+        #         start_dates, end_dates, changes = resample_derivative_timeseries_to_monthly_grid(self.data.start_dates,
+        #                                                                                          self.data.end_dates,
+        #                                                                                          self.data.changes)
+        #         object_copy.data.start_dates = start_dates
+        #         object_copy.data.end_dates = end_dates
+        #         object_copy.data.changes = changes
+        # return object_copy  # return copy of itself

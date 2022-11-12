@@ -1,7 +1,7 @@
 import os
 
 from glambie.const.data_groups import GLAMBIE_DATA_GROUPS
-from glambie.const.regions import REGIONS
+from glambie.const.regions import REGIONS, RGIRegion
 from glambie.data.timeseries import Timeseries
 from glambie.data.timeseries import TimeseriesData
 import numpy as np
@@ -198,3 +198,23 @@ def test_convert_timeseries_to_monthly_grid(example_timeseries_ingested):
     assert np.array_equal(example_timeseries_ingested.data.changes, example_timeseries_converted2.data.changes)
     assert np.array_equal(example_timeseries_converted2.data.start_dates, np.array([2010 + 1 / 12, 2011 + 1 / 12]))
     assert np.array_equal(example_timeseries_converted2.data.end_dates, np.array([2011 + 1 / 12, 2012 + 1 / 12]))
+
+
+def test_timeseries_is_annual_grid(example_timeseries_ingested):
+    assert not example_timeseries_ingested.timeseries_is_annual_grid(year_type="calendar")
+    example_timeseries_ingested.data.start_dates = [2010, 2011]
+    example_timeseries_ingested.data.end_dates = [2011, 2012]
+    assert example_timeseries_ingested.timeseries_is_annual_grid(year_type="calendar")
+    example_timeseries_ingested.data.end_dates = [2011, 2012.1]
+    assert not example_timeseries_ingested.timeseries_is_annual_grid(year_type="calendar")
+
+
+def test_timeseries_is_annual_grid_glaciological_year(example_timeseries_ingested):
+    example_timeseries_ingested.region = REGIONS["iceland"]
+    example_timeseries_ingested.region.glaciological_year_start = 0.75
+    assert not example_timeseries_ingested.timeseries_is_annual_grid(year_type="glaciological")
+    example_timeseries_ingested.data.start_dates = [2010.75, 2011.75]
+    example_timeseries_ingested.data.end_dates = [2011.75, 2012.75]
+    assert example_timeseries_ingested.timeseries_is_annual_grid(year_type="glaciological")
+    example_timeseries_ingested.data.end_dates = [2011.75, 2012.76]
+    assert not example_timeseries_ingested.timeseries_is_annual_grid(year_type="glaciological")

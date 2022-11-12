@@ -1,6 +1,6 @@
 import datetime
 
-from glambie.util.date_helpers import datetime2year, get_glaciological_years
+from glambie.util.date_helpers import datetime2year, get_years
 from glambie.util.date_helpers import datetime_dates_to_fractional_years
 from glambie.util.date_helpers import fractional_years_to_datetime_dates
 from glambie.util.date_helpers import get_year_timedelta
@@ -47,7 +47,7 @@ def test_get_glaciological_years():
     min_date = 2009.5
     max_date = 2010.8
     glaciological_year = 0.75
-    start_dates, end_dates = get_glaciological_years(glaciological_year, min_date=min_date,
+    start_dates, end_dates = get_years(glaciological_year, min_date=min_date,
                                                      max_date=max_date, return_type="arrays")
 
     assert start_dates[0] == 2009 + 0.75
@@ -59,7 +59,7 @@ def test_get_glaciological_years_southern_hemisphere():
     min_date = 2009.7
     max_date = 2015.8
     glaciological_year = 0.25
-    start_dates, end_dates = get_glaciological_years(glaciological_year, min_date=min_date,
+    start_dates, end_dates = get_years(glaciological_year, min_date=min_date,
                                                      max_date=max_date, return_type="arrays")
 
     assert start_dates[0] == 2010 + 0.25

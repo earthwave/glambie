@@ -89,14 +89,14 @@ def get_year_timedelta(year: int) -> timedelta:
     return year_length
 
 
-def get_glaciological_years(glaciological_year_start: float, min_date: float, max_date: float, return_type="arrays"):
+def get_years(desired_year_start: float, min_date: float, max_date: float, return_type="arrays"):
     """
-    Returns start and end dates of glaciological years within a timespan (min_date to max_date).
+    Returns start and end dates of years within a timespan (min_date to max_date).
     Only full years within the min_date - max_date time period are included.
 
     Parameters
     ----------
-    glaciological_year_start : float
+    desired_year_start : float
         a floating point number of when the glaciological year should start (between 0 and 1), e.g. 0.75 for October
     min_date : float
         minimum date to be calculated for, in fractional years
@@ -118,17 +118,17 @@ def get_glaciological_years(glaciological_year_start: float, min_date: float, ma
     for year in years:
         # if glaciological year is closer to the end of the year
         # the glaciological year is starting around the end of the previous year
-        if round(glaciological_year_start) == 1:
-            start_date = year - 1 + glaciological_year_start
-            end_date = year + glaciological_year_start
+        if round(desired_year_start) == 1:
+            start_date = year - 1 + desired_year_start
+            end_date = year + desired_year_start
             if (start_date >= min_date) & (end_date <= max_date):
                 start_dates.append(start_date)
                 end_dates.append(end_date)
         # if glaciological year is closer to the start of the year
         # the glaciological year is starting around start of the current year
-        elif round(glaciological_year_start) == 0:
-            start_date = year + glaciological_year_start
-            end_date = year + 1 + glaciological_year_start
+        elif round(desired_year_start) == 0:
+            start_date = year + desired_year_start
+            end_date = year + 1 + desired_year_start
             if (start_date >= min_date) & (end_date <= max_date):
                 start_dates.append(start_date)
                 end_dates.append(end_date)

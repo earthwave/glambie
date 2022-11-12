@@ -1,7 +1,7 @@
 
 from __future__ import annotations
-import copy
 
+import copy
 from dataclasses import dataclass
 from decimal import Decimal
 from decimal import getcontext
@@ -10,8 +10,14 @@ import warnings
 from glambie.const.data_groups import GlambieDataGroup
 from glambie.const.regions import RGIRegion
 from glambie.util.mass_height_conversions import \
-    meters_to_meters_water_equivalent, meters_water_equivalent_to_gigatonnes
+    meters_to_meters_water_equivalent
+from glambie.util.mass_height_conversions import \
+    meters_water_equivalent_to_gigatonnes
 from glambie.util.timeseries_helpers import derivative_to_cumulative
+from glambie.util.timeseries_helpers import \
+    resample_derivative_timeseries_to_monthly_grid
+from glambie.util.timeseries_helpers import timeseries_as_months
+from glambie.util.timeseries_helpers import timeseries_is_monthly_grid
 import numpy as np
 import pandas as pd
 
@@ -310,3 +316,48 @@ class Timeseries():
         else:
             raise NotImplementedError(
                 "Conversion to Gt not implemented yet for Timeseries with unit '{}'".format(self.unit))
+
+    def convert_timeseries_to_monthly_grid(self) -> Timeseries:
+        """
+        Converts a Timeseries object to follow the monthly grid. Two different approaches are used depending on
+        time resolution of the timeseries:
+
+        1.) Resolution over half a year: Timeseries is shifted to the closest month within the monthly grid
+            This method cannot be applied for monthly resolution as it may lead to empty months.
+        2.) Resolution under half a year: Timeseries is resampled to the monthly grid
+
+        Returns
+        -------
+        Timeseries
+            A copy of the Timeseries object containing the converted timeseries data to the monthly grid.
+        """
+        # make a deep copy of itself
+        object_copy = copy.deepcopy(self)
+        if not self.timeseries_is_monthly_grid():  # if already in monthly grid there is no need to convert
+            # check resolution
+            if self.data.max_temporal_resolution >= 0.5:  # resolution above half a year: shift to closest month
+                start_dates = timeseries_as_months(self.data.start_dates, downsample_to_month=False)
+                end_dates = timeseries_as_months(self.data.end_dates, downsample_to_month=False)
+                object_copy.data.start_dates = start_dates
+                object_copy.data.end_dates = end_dates
+            else:  # resolution below half a year: resample timeseries to monthly grid
+                start_dates, end_dates, changes = resample_derivative_timeseries_to_monthly_grid(self.data.start_dates,
+                                                                                                 self.data.end_dates,
+                                                                                                 self.data.changes)
+                object_copy.data.start_dates = start_dates
+                object_copy.data.end_dates = end_dates
+                object_copy.data.changes = changes
+        return object_copy  # return copy of itself
+
+    def timeseries_is_monthly_grid(self):
+        """
+        Returns True if all values in the self.data.start_dates and self.data.end_dates are on
+        the monthly grid defined by glambie.util.timeseries_helpers.timeseries_as_months.
+        Also returns Trues if the resolution is not monthly, but all dates are using the monthly grid.
+
+        Returns
+        -------
+        bool
+            True if in monthly grid, False otherwise.
+        """
+        return timeseries_is_monthly_grid(self.data.start_dates) and timeseries_is_monthly_grid(self.data.end_dates)

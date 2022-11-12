@@ -171,3 +171,30 @@ def test_convert_timeseries_with_area_change_rate(example_timeseries_ingested):
     assert not np.array_equal(converted_timeseries_no_ac.data.changes, converted_timeseries_with_ac.data.changes)
     # the timeseries with no area change should have higher values as the area change is negative
     assert (converted_timeseries_no_ac.data.changes > converted_timeseries_with_ac.data.changes).all()
+
+
+def test_timeseries_is_monthly_grid(example_timeseries_ingested):
+    assert not example_timeseries_ingested.timeseries_is_monthly_grid()
+    example_timeseries_ingested.data.start_dates = [2010, 2010 + 1 / 12]
+    example_timeseries_ingested.data.end_dates = [2010 + 1 / 12, 2010 + 2 / 12]
+    assert example_timeseries_ingested.timeseries_is_monthly_grid()
+
+
+def test_convert_timeseries_to_monthly_grid(example_timeseries_ingested):
+    # 1) the case where we are resampling since it is monthly resolution
+    example_timeseries_converted = example_timeseries_ingested.convert_timeseries_to_monthly_grid()
+    assert example_timeseries_converted.timeseries_is_monthly_grid()
+    assert not np.array_equal(example_timeseries_ingested.data.changes, example_timeseries_converted.data.changes)
+    assert example_timeseries_ingested.data.changes.sum() == example_timeseries_converted.data.changes.sum()
+    # 2) the case where we are shifting since it is less high
+    example_timeseries_ingested.data.start_dates = [2010.1, 2011.1]
+    example_timeseries_ingested.data.end_dates = [2011.1, 2012.1]
+    example_timeseries_converted2 = example_timeseries_ingested.convert_timeseries_to_monthly_grid()
+    assert not np.array_equal(example_timeseries_ingested.data.start_dates,
+                              example_timeseries_converted2.data.start_dates)
+    assert not np.array_equal(example_timeseries_ingested.data.end_dates,
+                              example_timeseries_converted2.data.end_dates)
+    # changes should still be the same as it was shifted
+    assert np.array_equal(example_timeseries_ingested.data.changes, example_timeseries_converted2.data.changes)
+    assert np.array_equal(example_timeseries_converted2.data.start_dates, np.array([2010 + 1 / 12, 2011 + 1 / 12]))
+    assert np.array_equal(example_timeseries_converted2.data.end_dates, np.array([2011 + 1 / 12, 2012 + 1 / 12]))

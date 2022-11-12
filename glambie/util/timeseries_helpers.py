@@ -255,7 +255,7 @@ def timeseries_is_monthly_grid(fractional_year_array: np.array) -> bool:
     """
     monthly_grid = timeseries_as_months(fractional_year_array, downsample_to_month=False)
     try:
-        np.testing.assert_equal(monthly_grid, fractional_year_array)
+        np.testing.assert_almost_equal(monthly_grid, fractional_year_array)
     except AssertionError:
         return False
     return True

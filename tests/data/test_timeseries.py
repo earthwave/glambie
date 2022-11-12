@@ -1,7 +1,7 @@
 import os
 
 from glambie.const.data_groups import GLAMBIE_DATA_GROUPS
-from glambie.const.regions import REGIONS, RGIRegion
+from glambie.const.regions import REGIONS
 from glambie.data.timeseries import Timeseries
 from glambie.data.timeseries import TimeseriesData
 import numpy as np
@@ -198,6 +198,50 @@ def test_convert_timeseries_to_monthly_grid(example_timeseries_ingested):
     assert np.array_equal(example_timeseries_ingested.data.changes, example_timeseries_converted2.data.changes)
     assert np.array_equal(example_timeseries_converted2.data.start_dates, np.array([2010 + 1 / 12, 2011 + 1 / 12]))
     assert np.array_equal(example_timeseries_converted2.data.end_dates, np.array([2011 + 1 / 12, 2012 + 1 / 12]))
+
+
+def test_convert_timeseries_to_annual_trends_down_sampling(example_timeseries_ingested):
+    # we are resampling since it is monthly resolution
+    example_timeseries_ingested.data.start_dates = np.linspace(2010, 2011, 13)[:-1]
+    example_timeseries_ingested.data.end_dates = np.linspace(2010, 2011, 13)[1:]
+    example_timeseries_ingested.data.changes = np.linspace(1, 11, 12)
+    assert not example_timeseries_ingested.timeseries_is_annual_grid()
+    example_timeseries_converted = example_timeseries_ingested.convert_timeseries_to_annual_trends()
+    assert example_timeseries_converted.timeseries_is_annual_grid()
+    assert len(example_timeseries_converted.data.changes) == 1
+    assert example_timeseries_converted.data.changes[0] == example_timeseries_ingested.data.changes.sum()
+
+    # add one more month and check it's still the same
+    np.append(example_timeseries_ingested.data.start_dates, 2011)
+    np.append(example_timeseries_ingested.data.end_dates, 2011 + 1 / 12)
+    np.append(example_timeseries_ingested.data.changes, 5)
+    example_timeseries_converted2 = example_timeseries_ingested.convert_timeseries_to_annual_trends()
+    # should be the same now, and last element is ignored as its not a full year
+    assert np.array_equal(example_timeseries_converted.data.changes, example_timeseries_converted2.data.changes)
+    assert np.array_equal(example_timeseries_converted.data.start_dates, example_timeseries_converted2.data.start_dates)
+
+    # now we pop 2 elements and should get back no result as not a full year anymore
+    example_timeseries_ingested.data.start_dates = example_timeseries_ingested.data.start_dates[:-2]
+    example_timeseries_ingested.data.end_dates = example_timeseries_ingested.data.end_dates[:-2]
+    example_timeseries_ingested.data.changes = example_timeseries_ingested.data.changes[:-2]
+    example_timeseries_converted2 = example_timeseries_ingested.convert_timeseries_to_annual_trends()
+    assert example_timeseries_converted2.timeseries_is_annual_grid()
+    assert len(example_timeseries_converted2.data.changes) == 0
+
+
+def test_convert_timeseries_to_annual_trends_down_sampling_glaciological_year(example_timeseries_ingested):
+    # we are resampling since it is monthly resolution
+    example_timeseries_ingested.region = REGIONS["iceland"]
+    example_timeseries_ingested.region.glaciological_year_start = 0.75
+    example_timeseries_ingested.data.start_dates = np.linspace(2010.75, 2011.75, 13)[:-1]
+    example_timeseries_ingested.data.end_dates = np.linspace(2010.75, 2011.75, 13)[1:]
+    example_timeseries_ingested.data.changes = np.linspace(1, 11, 12)
+    assert not example_timeseries_ingested.timeseries_is_annual_grid(year_type="glaciological")
+    example_timeseries_converted = example_timeseries_ingested.convert_timeseries_to_annual_trends(
+        year_type="glaciological")
+    assert example_timeseries_converted.timeseries_is_annual_grid(year_type="glaciological")
+    assert len(example_timeseries_converted.data.changes) == 1
+    assert example_timeseries_converted.data.changes[0] == example_timeseries_ingested.data.changes.sum()
 
 
 def test_timeseries_is_annual_grid(example_timeseries_ingested):

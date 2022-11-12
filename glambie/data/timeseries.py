@@ -18,6 +18,9 @@ from glambie.util.timeseries_helpers import \
     resample_derivative_timeseries_to_monthly_grid
 from glambie.util.timeseries_helpers import timeseries_as_months
 from glambie.util.timeseries_helpers import timeseries_is_monthly_grid
+from glambie.util.timeseries_helpers import get_average_trends_over_new_time_periods
+from glambie.util.date_helpers import get_years
+
 import numpy as np
 import pandas as pd
 
@@ -395,31 +398,43 @@ class Timeseries():
         Parameters
         ----------
         year_type : str, optional
-            which year to use, options are 'calendar' (January to January) or 'glaciological' (Whatever year 
+            which year to use, options are 'calendar' (January to January) or 'glaciological' (Whatever year
             is defined for the region), by default "calendar"
 
         Returns
         -------
         Timeseries
             _description_
+
+        Raises
+        ------
+        AssertionError
+            Thrown if timeseries is not on monthly grid.
         """
+        # Check if on monthly grid. if not throw an exception
+        if not self.timeseries_is_monthly_grid():
+            raise AssertionError("Timeseries needs to be converted to monthly grid before performing this operation.")
 
-        # Check if on monthly grid. if not throw an error
+        if year_type == "calendar":
+            year_start = 0
+        elif year_type == "glaciological":
+            year_start = self.region.glaciological_year_start
+        else:
+            raise NotImplementedError("Year type '{}' is not implemented yet.".format(year_type))
 
-        # # make a deep copy of itself
-        # object_copy = copy.deepcopy(self)
-        # if not self.timeseries_is_monthly_grid():  # if already in monthly grid there is no need to convert
-        #     # check resolution
-        #     if self.data.max_temporal_resolution >= 0.5:  # resolution above half a year: shift to closest month
-        #         start_dates = timeseries_as_months(self.data.start_dates, downsample_to_month=False)
-        #         end_dates = timeseries_as_months(self.data.end_dates, downsample_to_month=False)
-        #         object_copy.data.start_dates = start_dates
-        #         object_copy.data.end_dates = end_dates
-        #     else:  # resolution below half a year: resample timeseries to monthly grid
-        #         start_dates, end_dates, changes = resample_derivative_timeseries_to_monthly_grid(self.data.start_dates,
-        #                                                                                          self.data.end_dates,
-        #                                                                                          self.data.changes)
-        #         object_copy.data.start_dates = start_dates
-        #         object_copy.data.end_dates = end_dates
-        #         object_copy.data.changes = changes
-        # return object_copy  # return copy of itself
+        object_copy = copy.deepcopy(self)
+
+        # 1) Case where resolution is < 1 year
+        if self.data.max_temporal_resolution <= 1:  # resolution higher than a year
+            min_date, max_date = self.data.start_dates.min(), self.data.end_dates.max()
+            new_start_dates, new_end_dates = get_years(year_start, min_date=min_date,
+                                                       max_date=max_date, return_type="arrays")
+            df_annual = get_average_trends_over_new_time_periods(start_dates=self.data.start_dates,
+                                                                 end_dates=self.data.end_dates,
+                                                                 changes=self.data.changes,
+                                                                 new_start_dates=new_start_dates,
+                                                                 new_end_dates=new_end_dates)
+            object_copy.data.start_dates = df_annual["start_dates"]
+            object_copy.data.end_dates = df_annual["end_dates"]
+            object_copy.data.changes = df_annual["changes"]
+        return object_copy  # return copy of itself

@@ -393,7 +393,8 @@ class Timeseries():
 
     def convert_timeseries_to_annual_trends(self, year_type="calendar") -> Timeseries:
         """
-        _summary_
+        Converts a timeseries to annual trends. Note that this assumes that the timeseries is already using the annual
+        grid for resolutions >= 1 year and the monthly grid for resolutions <= 1 year.
 
         Parameters
         ----------
@@ -404,12 +405,13 @@ class Timeseries():
         Returns
         -------
         Timeseries
-            _description_
+            A copy of the Timeseries object containing the converted timeseries data to annual trends.
 
         Raises
         ------
         AssertionError
-            Thrown if timeseries is not on monthly grid.
+            Thrown if timeseries is not on monthly grid. 
+            Also thrown for resolutions > 1 year if timeseries is not on annual grid.
         """
         # Check if on monthly grid. if not throw an exception
         if not self.timeseries_is_monthly_grid():
@@ -458,3 +460,4 @@ class Timeseries():
             object_copy.data.changes = np.array(new_changes)
 
         return object_copy  # return copy of itself
+

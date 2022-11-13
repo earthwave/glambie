@@ -88,6 +88,18 @@ def test_combine_calibrated_timeseries(example_calibrated_series, example_distan
     assert abs(1.0 - calibrated_mean_series[0]) < abs(2.0 - calibrated_mean_series[1])
 
 
+def test_combine_calibrated_timeseries_p_value_0(example_calibrated_series, example_distance_matrix):
+    p_value = 0
+    calibrated_series = combine_calibrated_timeseries(
+        example_calibrated_series, example_distance_matrix, p_value=p_value)
+    assert np.array_equal(np.array([1., 2., 3.66666667, 2.66666667, 1.66666667]), calibrated_series)
+    #  essentially a really high p-value should give the same result as p=0, when floating points don't matter anymore
+    p_value = 100000000000000
+    calibrated_series2 = combine_calibrated_timeseries(
+        example_calibrated_series, example_distance_matrix, p_value=p_value)
+    assert np.array_equal(calibrated_series2, calibrated_series)
+
+
 def test_combine_calibrated_timeseries_high_p_value(example_calibrated_series, example_distance_matrix):
     # when setting a high p-value the weighting matrix will be 0 everywhere outside the covered time period
     p_value = 200000

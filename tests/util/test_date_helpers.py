@@ -48,7 +48,7 @@ def test_get_glaciological_years():
     max_date = 2010.8
     glaciological_year = 0.75
     start_dates, end_dates = get_years(glaciological_year, min_date=min_date,
-                                                     max_date=max_date, return_type="arrays")
+                                       max_date=max_date, return_type="arrays")
 
     assert start_dates[0] == 2009 + 0.75
     assert end_dates[0] == 2010 + 0.75
@@ -60,7 +60,7 @@ def test_get_glaciological_years_southern_hemisphere():
     max_date = 2015.8
     glaciological_year = 0.25
     start_dates, end_dates = get_years(glaciological_year, min_date=min_date,
-                                                     max_date=max_date, return_type="arrays")
+                                       max_date=max_date, return_type="arrays")
 
     assert start_dates[0] == 2010 + 0.25
     assert end_dates[0] == 2011 + 0.25

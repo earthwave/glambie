@@ -244,6 +244,49 @@ def test_convert_timeseries_to_annual_trends_down_sampling_glaciological_year(ex
     assert example_timeseries_converted.data.changes[0] == example_timeseries_ingested.data.changes.sum()
 
 
+def test_convert_timeseries_to_annual_trends_up_sampling(example_timeseries_ingested):
+    # we are resampling since it is monthly resolution
+    example_timeseries_ingested.data.start_dates = np.array([2010.0])
+    example_timeseries_ingested.data.end_dates = np.array([2015.0])
+    example_timeseries_ingested.data.changes = np.array([5.0])
+    example_timeseries_ingested.data.errors = None
+    example_timeseries_ingested.data.glacier_area_reference = None
+    example_timeseries_ingested.data.glacier_area_observed = None
+
+    example_timeseries_converted = example_timeseries_ingested.convert_timeseries_to_annual_trends()
+    assert example_timeseries_converted.timeseries_is_annual_grid()
+    assert len(example_timeseries_converted.data.changes) == 5
+    assert np.array_equal(example_timeseries_converted.data.start_dates, np.linspace(2010, 2014, 5))
+    assert np.array_equal(example_timeseries_converted.data.end_dates, np.linspace(2011, 2015, 5))
+    assert example_timeseries_converted.data.changes.sum() == example_timeseries_ingested.data.changes.sum()
+    assert np.array_equal(example_timeseries_converted.data.changes, np.linspace(1, 1, 5))
+
+
+def test_convert_timeseries_to_annual_trends_up_sampling_throws_exception(example_timeseries_ingested):
+    # we are resampling since it is monthly resolution
+    example_timeseries_ingested.data.start_dates = np.array([2010.1])  # not in annual grid
+    example_timeseries_ingested.data.end_dates = np.array([2015.0])
+    example_timeseries_ingested.data.changes = np.array([5.0])
+    assert not example_timeseries_ingested.timeseries_is_annual_grid()
+    with pytest.raises(AssertionError):
+        example_timeseries_ingested.convert_timeseries_to_annual_trends()
+
+
+def test_convert_timeseries_to_annual_trends_up_annual_should_return_same_as_input(example_timeseries_ingested):
+    example_timeseries_ingested.region = REGIONS["iceland"]
+    example_timeseries_ingested.region.glaciological_year_start = 0.75
+    example_timeseries_ingested.data.start_dates = np.linspace(2010.75, 2015.75, 6)
+    example_timeseries_ingested.data.end_dates = np.linspace(2011.75, 2016.75, 6)
+    example_timeseries_ingested.data.changes = np.linspace(1, 6, 6)
+    assert example_timeseries_ingested.timeseries_is_annual_grid(year_type="glaciological")
+    example_timeseries_converted = example_timeseries_ingested \
+        .convert_timeseries_to_annual_trends(year_type="glaciological")
+    assert example_timeseries_converted.timeseries_is_annual_grid(year_type="glaciological")
+    assert np.array_equal(example_timeseries_converted.data.start_dates, example_timeseries_ingested.data.start_dates)
+    assert np.array_equal(example_timeseries_converted.data.end_dates, example_timeseries_ingested.data.end_dates)
+    assert np.array_equal(example_timeseries_converted.data.changes, example_timeseries_ingested.data.changes)
+
+
 def test_timeseries_is_annual_grid(example_timeseries_ingested):
     assert not example_timeseries_ingested.timeseries_is_annual_grid(year_type="calendar")
     example_timeseries_ingested.data.start_dates = [2010, 2011]

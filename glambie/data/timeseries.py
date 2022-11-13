@@ -340,8 +340,8 @@ class Timeseries():
             return copy.deepcopy(self)
         elif self.unit == "mwe":  # @TODO: convert uncertainties as well
             if not include_area_change:
-                object_copy.data.changes = meters_water_equivalent_to_gigatonnes(
-                    self.data.changes, area=glacier_area, density_of_water=density_of_water)
+                object_copy.data.changes = np.array(meters_water_equivalent_to_gigatonnes(
+                    self.data.changes, area=glacier_area, density_of_water=density_of_water))
                 return object_copy
             else:
                 # conversion with area change
@@ -353,7 +353,7 @@ class Timeseries():
                     adjusted_area = glacier_area + (t_i - t_0) * (area_change / 100) * glacier_area
                     gt_adjusted_changes.append(meters_water_equivalent_to_gigatonnes(
                         [row.changes], area=adjusted_area, density_of_water=density_of_water)[0])
-                object_copy.data.changes = gt_adjusted_changes
+                object_copy.data.changes = np.array(gt_adjusted_changes)
                 return object_copy
         else:
             raise NotImplementedError(
@@ -380,15 +380,15 @@ class Timeseries():
             if self.data.max_temporal_resolution >= 0.5:  # resolution above half a year: shift to closest month
                 start_dates = timeseries_as_months(self.data.start_dates, downsample_to_month=False)
                 end_dates = timeseries_as_months(self.data.end_dates, downsample_to_month=False)
-                object_copy.data.start_dates = start_dates
-                object_copy.data.end_dates = end_dates
+                object_copy.data.start_dates = np.array(start_dates)
+                object_copy.data.end_dates = np.array(end_dates)
             else:  # resolution below half a year: resample timeseries to monthly grid
                 start_dates, end_dates, changes = resample_derivative_timeseries_to_monthly_grid(self.data.start_dates,
                                                                                                  self.data.end_dates,
                                                                                                  self.data.changes)
-                object_copy.data.start_dates = start_dates
-                object_copy.data.end_dates = end_dates
-                object_copy.data.changes = changes
+                object_copy.data.start_dates = np.array(start_dates)
+                object_copy.data.end_dates = np.array(end_dates)
+                object_copy.data.changes = np.array(changes)
         return object_copy  # return copy of itself
 
     def convert_timeseries_to_annual_trends(self, year_type="calendar") -> Timeseries:
@@ -424,9 +424,9 @@ class Timeseries():
 
         object_copy = copy.deepcopy(self)
 
-        # 1) Case where resolution is < 1 year
+        # 1) Case where resolution is < 1 year: we upsample and take the average from e.g. all the months within a year
         if self.data.max_temporal_resolution <= 1:  # resolution higher than a year
-            min_date, max_date = self.data.start_dates.min(), self.data.end_dates.max()
+            min_date, max_date = np.array(self.data.start_dates).min(), np.array(self.data.end_dates).max()
             new_start_dates, new_end_dates = get_years(year_start, min_date=min_date,
                                                        max_date=max_date, return_type="arrays")
             df_annual = get_average_trends_over_new_time_periods(start_dates=self.data.start_dates,
@@ -434,7 +434,27 @@ class Timeseries():
                                                                  changes=self.data.changes,
                                                                  new_start_dates=new_start_dates,
                                                                  new_end_dates=new_end_dates)
-            object_copy.data.start_dates = df_annual["start_dates"]
-            object_copy.data.end_dates = df_annual["end_dates"]
-            object_copy.data.changes = df_annual["changes"]
+            object_copy.data.start_dates = np.array(df_annual["start_dates"])
+            object_copy.data.end_dates = np.array(df_annual["end_dates"])
+            object_copy.data.changes = np.array(df_annual["changes"])
+
+        # 2) Case where resolution is >= a year: we upsample and take the average from the longterm trend
+        else:
+            if not self.timeseries_is_annual_grid():  # make sure that the trends don't start in the middle of the year
+                raise AssertionError("Timeseries needs be at to fit into annual grid before \
+                                     up-sampling to annual changes.")
+            min_date, max_date = self.data.start_dates.min(), self.data.end_dates.max()
+            new_start_dates, new_end_dates = get_years(year_start, min_date=min_date,
+                                                       max_date=max_date, return_type="arrays")
+            new_changes = []
+            for _, row in self.data.as_dataframe().iterrows():
+                time_period = row["end_dates"] - row["start_dates"]
+                annual_trend = row["changes"] / time_period
+                # add annual trend times number of years to the new changes
+                new_changes.extend([annual_trend for _ in range(0, int(time_period))])
+            assert len(new_changes) == len(new_start_dates) == len(new_end_dates)
+            object_copy.data.start_dates = np.array(new_start_dates)
+            object_copy.data.end_dates = np.array(new_end_dates)
+            object_copy.data.changes = np.array(new_changes)
+
         return object_copy  # return copy of itself

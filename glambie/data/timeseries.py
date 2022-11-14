@@ -20,6 +20,8 @@ from glambie.util.timeseries_helpers import timeseries_as_months
 from glambie.util.timeseries_helpers import timeseries_is_monthly_grid
 from glambie.util.timeseries_helpers import get_average_trends_over_new_time_periods
 from glambie.util.date_helpers import get_years
+from glambie.util.timeseries_combination_helpers import calibrate_timeseries_with_trends
+from glambie.util.timeseries_combination_helpers import combine_calibrated_timeseries
 
 import numpy as np
 import pandas as pd
@@ -410,8 +412,9 @@ class Timeseries():
         Raises
         ------
         AssertionError
-            Thrown if timeseries is not on monthly grid. 
-            Also thrown for resolutions > 1 year if timeseries is not on annual grid.
+            Thrown if timeseries is not on monthly grid.
+        AssertionError
+            Thrown for resolutions > 1 year if timeseries is not on annual grid.
         """
         # Check if on monthly grid. if not throw an exception
         if not self.timeseries_is_monthly_grid():
@@ -441,19 +444,18 @@ class Timeseries():
             object_copy.data.changes = np.array(df_annual["changes"])
 
         # 2) Case where resolution is >= a year: we upsample and take the average from the longterm trend
-        else:
-            if not self.timeseries_is_annual_grid():  # make sure that the trends don't start in the middle of the year
+        else:  # make sure that the trends don't start in the middle of the year
+            if not self.timeseries_is_annual_grid(year_type=year_type):
                 raise AssertionError("Timeseries needs be at to fit into annual grid before \
                                      up-sampling to annual changes.")
-            min_date, max_date = self.data.start_dates.min(), self.data.end_dates.max()
-            new_start_dates, new_end_dates = get_years(year_start, min_date=min_date,
-                                                       max_date=max_date, return_type="arrays")
+            new_start_dates, new_end_dates = get_years(year_start, min_date=self.data.start_dates.min(),
+                                                       max_date=self.data.end_dates.max(), return_type="arrays")
             new_changes = []
             for _, row in self.data.as_dataframe().iterrows():
                 time_period = row["end_dates"] - row["start_dates"]
                 annual_trend = row["changes"] / time_period
                 # add annual trend times number of years to the new changes
-                new_changes.extend([annual_trend for _ in range(0, int(time_period))])
+                new_changes.extend([annual_trend for _ in range(int(time_period))])
             assert len(new_changes) == len(new_start_dates) == len(new_end_dates)
             object_copy.data.start_dates = np.array(new_start_dates)
             object_copy.data.end_dates = np.array(new_end_dates)
@@ -461,3 +463,109 @@ class Timeseries():
 
         return object_copy  # return copy of itself
 
+    def convert_timeseries_using_seasonal_homogenization(self, seasonal_calibration_dataset: Timeseries,
+                                                         year_type: str = "calendar", p_value: int = 0) -> Timeseries:
+        """
+        Converts a timeseries to a specific annual grid using seasonal homogenization.
+        A high resolution timeseries with seasonal information is used to 'shift' and correct the current
+        timesteps to the desired annual grid (e.g. calendar or glaciological).
+
+        For more information check the Glambie algorithm description document.
+
+        Parameters
+        ----------
+        seasonal_calibration_dataset : Timeseries
+            High resolution dataset to be used for calibration
+        year_type : str, optional
+            annual grid to which the tiemseries will be homogenized to, options are 'calendar', 'glaciological'
+            by default "calendar"
+        p_value : int, optional
+            p value for distance weight during seasonal homogenization,
+            by default 0, meaning that no distance weight is applied
+
+        Returns
+        -------
+        Timeseries
+            A copy of the Timeseries object containing the converted timeseries data to annual trends.
+            The timeseries will have the same temporal resolution as the input timeseries, but will be shifted
+            and corrected to the annual grid (which is defined through year_type).
+
+        Raises
+        ------
+        AssertionError
+            Thrown if timeseries is not on monthly grid.
+        AssertionError
+            Thrown if calibration dataset is not on monthly grid.
+        AssertionError
+            Thrown if timeseries resolution below a year.
+        """
+        # first some checks if inputs area valid
+        if not self.timeseries_is_monthly_grid():
+            raise AssertionError("Timeseries needs to be converted to monthly grid before performing this operation.")
+        if not seasonal_calibration_dataset.timeseries_is_monthly_grid():
+            raise AssertionError("Seasonal calibration dataset needs to be converted to monthly grid"
+                                 "before performing this operation.")
+        if self.data.max_temporal_resolution < 1:
+            raise AssertionError("Resolution of timeseries is below a year. No seasonal homogenization possible.")
+
+        if year_type == "calendar":
+            year_start = 0
+        elif year_type == "glaciological":
+            year_start = self.region.glaciological_year_start
+        else:
+            raise NotImplementedError("Year type '{}' is not implemented yet.".format(year_type))
+
+        object_copy = copy.deepcopy(self)
+        if not self.timeseries_is_annual_grid():  # if already annual then no need to homogenize
+            # 1) calibrate calibration series with trends from timeseries
+            calibrated_s, dist_mat = calibrate_timeseries_with_trends(self.data.as_dataframe(),
+                                                                      seasonal_calibration_dataset.data.as_dataframe())
+            # 2) caliculate mean calibration timeseries from all the different curves
+            mean_calibrated_ts = combine_calibrated_timeseries(calibrated_s, dist_mat, p_value=p_value)
+            df_mean_calibrated = pd.DataFrame({"start_dates": seasonal_calibration_dataset.data
+                                               .as_dataframe().start_dates,
+                                               "end_dates": seasonal_calibration_dataset.data
+                                               .as_dataframe().end_dates, "changes": mean_calibrated_ts})
+            # 3) remove nan values where timeseries didn't cover
+            df_mean_calibrated = df_mean_calibrated[~df_mean_calibrated.isna()].reset_index()
+
+            # 4) read out homogenized values
+            # get desired annual grid, buffer 2 years to work with start and end dates and include rounded years
+            annual_grid = get_years(year_start, min_date=self.data.start_dates.min() - 2,
+                                    max_date=self.data.end_dates.max() + 3, return_type="arrays")[0]
+            new_start_dates, new_end_dates, new_changes = [], [], []
+            for start_date, end_date in zip(self.data.start_dates, self.data.end_dates):
+                # get dates from annual grid
+                new_start_date = annual_grid[np.abs(annual_grid - start_date).argmin()]
+                new_end_date = annual_grid[np.abs(annual_grid - end_date).argmin()]
+                # read the new changes from the calibrated timeseries
+                df_filtered_year = df_mean_calibrated[(df_mean_calibrated.start_dates >= new_start_date)
+                                                      & (df_mean_calibrated.end_dates <= new_end_date)]
+                # handle case when timeseries is outside the calibration timeseries
+                if df_filtered_year.shape[0] == 0:
+                    new_change = None
+                else:  # this case tests if we actually cover the full period or only part of the period
+                    if df_filtered_year.start_dates.min() == new_start_date \
+                            and df_filtered_year.end_dates.max() == new_end_date:
+                        new_change = df_filtered_year["changes"].sum()
+                    else:
+                        new_change = None
+                new_changes.append(new_change)
+                new_start_dates.append(new_start_date)
+                new_end_dates.append(new_end_date)
+
+            # apply new arrays to object copy
+            object_copy.data.start_dates = np.array(new_start_dates)
+            object_copy.data.end_dates = np.array(new_end_dates)
+            object_copy.data.changes = np.array(new_changes)
+
+            # remove nan values
+            df_nan_removed = object_copy.data.as_dataframe()[~object_copy.data.as_dataframe()["changes"].isna()]
+            object_copy.data.start_dates = np.array(df_nan_removed["start_dates"])
+            object_copy.data.end_dates = np.array(df_nan_removed["end_dates"])
+            object_copy.data.changes = np.array(df_nan_removed["changes"])
+            object_copy.data.errors = np.array(df_nan_removed["errors"])
+            object_copy.data.glacier_area_observed = np.array(df_nan_removed["glacier_area_observed"])
+            object_copy.data.glacier_area_reference = np.array(df_nan_removed["glacier_area_reference"])
+
+        return object_copy

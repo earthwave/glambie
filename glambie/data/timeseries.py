@@ -217,7 +217,7 @@ class Timeseries():
         """
         Returns True if all values in the self.data.start_dates and self.data.end_dates are on
         the monthly grid defined by glambie.util.timeseries_helpers.timeseries_as_months.
-        Also returns Trues if the resolution is not monthly, but all dates are using the monthly grid.
+        Also returns True if the resolution is not monthly, but all dates are using the monthly grid.
 
         Returns
         -------
@@ -229,7 +229,7 @@ class Timeseries():
     def timeseries_is_annual_grid(self, year_type: str = "calendar"):
         """
         Returns True if all values in the self.data.start_dates and self.data.end_dates are on
-        the annual grid (e.g. 2010.0 wouls be on annual calendar year grid, 2010.1 would not)
+        the annual grid (e.g. 2010.0 would be on annual calendar year grid, 2010.1 would not)
         Also returns Trues if the resolution is not annual, but all dates are using the annual grid.
 
         Parameters
@@ -326,8 +326,7 @@ class Timeseries():
         elif rgi_area_version == 7:
             glacier_area = self.region.rgi7_area
         else:
-            warnings.warn("RGI version {} is not a valid version. As a default of version 6 is used."
-                          .format(rgi_area_version))
+            raise NotImplementedError("Version '{}' of RGI is not implemented yet.".format(rgi_area_version))
             glacier_area = self.region.rgi6_area
 
         object_copy = copy.deepcopy(self)
@@ -383,9 +382,13 @@ class Timeseries():
                 start_dates, end_dates, changes = resample_derivative_timeseries_to_monthly_grid(self.data.start_dates,
                                                                                                  self.data.end_dates,
                                                                                                  self.data.changes)
-                object_copy.data.start_dates = np.array(start_dates)
-                object_copy.data.end_dates = np.array(end_dates)
-                object_copy.data.changes = np.array(changes)
+
+                object_copy.data = TimeseriesData(start_dates=np.array(start_dates),
+                                                  end_dates=np.array(end_dates),
+                                                  changes=np.array(changes),
+                                                  errors=None, glacier_area_observed=None,
+                                                  glacier_area_reference=None)
+
         return object_copy  # return copy of itself
 
     def convert_timeseries_to_annual_trends(self, year_type="calendar") -> Timeseries:
@@ -498,7 +501,7 @@ class Timeseries():
         seasonal_calibration_dataset : Timeseries
             High resolution dataset to be used for calibration
         year_type : str, optional
-            annual grid to which the tiemseries will be homogenized to, options are 'calendar', 'glaciological'
+            annual grid to which the timeseries will be homogenized to, options are 'calendar', 'glaciological'
             by default "calendar"
         p_value : int, optional
             p value for distance weight during seasonal homogenization,
@@ -541,12 +544,12 @@ class Timeseries():
             # 1) calibrate calibration series with trends from timeseries
             calibrated_s, dist_mat = calibrate_timeseries_with_trends(self.data.as_dataframe(),
                                                                       seasonal_calibration_dataset.data.as_dataframe())
-            # 2) caliculate mean calibration timeseries from all the different curves
+            # 2) calculate mean calibration timeseries from all the different curves
             mean_calibrated_ts = combine_calibrated_timeseries(calibrated_s, dist_mat, p_value=p_value)
             df_mean_calibrated = pd.DataFrame({"start_dates": seasonal_calibration_dataset.data
                                                .as_dataframe().start_dates,
                                                "end_dates": seasonal_calibration_dataset.data
-                                               .as_dataframe().end_dates, "changes": mean_calibrated_ts})
+                                              .as_dataframe().end_dates, "changes": mean_calibrated_ts})
             # 3) remove nan values where timeseries didn't cover
             df_mean_calibrated = df_mean_calibrated[~df_mean_calibrated.isna()].reset_index()
 

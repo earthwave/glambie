@@ -6,7 +6,7 @@ import pytest
 
 @pytest.fixture()
 def example_catalogue():
-    return DataCatalogue.from_dict({"basepath": ["tests", "test_data", "datastore"],
+    return DataCatalogue.from_dict({"base_path": ["tests", "test_data", "datastore"],
                                     "datasets": [
         {
             "filename": "iceland_altimetry_sharks.csv",
@@ -33,7 +33,7 @@ def example_catalogue():
 
 @pytest.fixture()
 def example_catalogue_small():
-    return DataCatalogue.from_dict({"basepath": ["tests", "test_data", "datastore"],
+    return DataCatalogue.from_dict({"base_path": ["tests", "test_data", "datastore"],
                                     "datasets": [
         {
             "filename": "central_asia_demdiff_sharks.csv",

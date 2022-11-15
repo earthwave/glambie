@@ -53,7 +53,7 @@ class DataCatalogue():
         DataCatalogue
             data catalogue containing the metadata of datasets, the actual timeseries data will lazy loaded
         """
-        base_path = os.path.join(*meta_data_dict['basepath'])
+        base_path = os.path.join(*meta_data_dict['base_path'])
         datasets_dict = meta_data_dict['datasets']
         datasets = []
         for ds_dict in datasets_dict:
@@ -76,7 +76,7 @@ class DataCatalogue():
         ----------
         datasets_list : list
             list of Timeseries objects
-        basepath : str
+        base_path : str
             basepath for loading the actual data, default is an empty string ''
             Note that if the data is already loaded there is no need to set this parameter.
 

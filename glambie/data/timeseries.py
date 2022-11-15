@@ -327,7 +327,6 @@ class Timeseries():
             glacier_area = self.region.rgi7_area
         else:
             raise NotImplementedError("Version '{}' of RGI is not implemented yet.".format(rgi_area_version))
-            glacier_area = self.region.rgi6_area
 
         object_copy = copy.deepcopy(self)
         object_copy.unit = "gt"

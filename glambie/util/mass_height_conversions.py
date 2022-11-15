@@ -100,7 +100,7 @@ def meters_water_equivalent_to_gigatonnes(variables: Iterable, area: float, dens
     return [_meters_water_equivalent_to_gigatonnes(i, area, density_of_water) for i in variables]
 
 
-def gigatonnes_to_meters_water_equivalent(variables: Iterable, area: float, density_of_water: float = 997) -> list:
+def gigatonnes_to_meters_water_equivalent(variables: Iterable, area_km: float, density_of_water: float = 997) -> list:
     """Function to convert a list of measurements of ice mass loss in gigatonnes into meters water equivalent.
 
     Parameters
@@ -116,7 +116,7 @@ def gigatonnes_to_meters_water_equivalent(variables: Iterable, area: float, dens
     -------
     A list of measurements in meters water equivalent
     """
-    return [_gigatonnes_to_meters_water_equivalent(i, area, density_of_water) for i in variables]
+    return [_gigatonnes_to_meters_water_equivalent(i, area_km, density_of_water) for i in variables]
 
 
 def gigatonnes_to_sea_level_rise(variables: Iterable, ocean_area: float = 3.625e8) -> list:
@@ -137,7 +137,7 @@ def gigatonnes_to_sea_level_rise(variables: Iterable, ocean_area: float = 3.625e
     return [_gigatonnes_to_sea_level_rise(i, ocean_area) for i in variables]
 
 
-def _meters_to_gigatonnes(variable: float, area: float, density_of_ice: float = 850) -> float:
+def _meters_to_gigatonnes(variable: float, area_km: float, density_of_ice: float = 850) -> float:
     """Function to convert a measurement of surface elevation change in meters into ice mass in gigatonnes
 
     Parameters
@@ -153,7 +153,7 @@ def _meters_to_gigatonnes(variable: float, area: float, density_of_ice: float = 
     ----------
     Input variable converted into gigatonnes
     """
-    return variable * density_of_ice * (area / 1e6)  # 1e6 to convert area from km2 to m2
+    return variable * density_of_ice * (area_km / 1e6)  # 1e6 to convert area from km2 to m2
 
 
 def _gigatonnes_to_meters(variable: float, area: float, density_of_ice: float = 850) -> float:
@@ -215,7 +215,7 @@ def _meters_water_equivalent_to_meters(variable: float, density_of_water: float 
     return (variable * density_of_water) / density_of_ice
 
 
-def _gigatonnes_to_meters_water_equivalent(variable: float, area: float, density_of_water: float = 997) -> float:
+def _gigatonnes_to_meters_water_equivalent(variable: float, area_km2: float, density_of_water: float = 997) -> float:
     """Function to convert a measurement of ice mass loss in gigatonnes into meters water equivalent
 
     Parameters
@@ -231,10 +231,10 @@ def _gigatonnes_to_meters_water_equivalent(variable: float, area: float, density
     -------
     Input variable converted into meters water equivalent
     """
-    return (1e6 * variable) / (area * density_of_water)  # 1e6 to convert area from km2 to m2
+    return (1e6 * variable) / (area_km2 * density_of_water)  # 1e6 to convert area from km2 to m2
 
 
-def _meters_water_equivalent_to_gigatonnes(variable: float, area: float, density_of_water: float = 997) -> float:
+def _meters_water_equivalent_to_gigatonnes(variable: float, area_km2: float, density_of_water: float = 997) -> float:
     """Function to convert a measurement of ice mass loss in meters water equivalent into gigatonnes
 
     Parameters
@@ -250,10 +250,10 @@ def _meters_water_equivalent_to_gigatonnes(variable: float, area: float, density
     -------
     Input variable converted into gigatonnes
     """
-    return variable * density_of_water * (area / 1e6)  # 1e6 to convert area from km2 to m2
+    return variable * density_of_water * (area_km2 / 1e6)  # 1e6 to convert area from km2 to m2
 
 
-def _gigatonnes_to_sea_level_rise(variable: float, ocean_area: float = 3.625e8) -> float:
+def _gigatonnes_to_sea_level_rise(variable: float, ocean_area_km2: float = 3.625e8) -> float:
     """Function to convert a measurement of ice mass loss in gigatonnes into sea level rise (millimeters).
 
     Parameters
@@ -267,4 +267,4 @@ def _gigatonnes_to_sea_level_rise(variable: float, ocean_area: float = 3.625e8) 
     ----------
     Input variable converted into sea level rise (millimeters)
     """
-    return abs(variable / ocean_area) * 1e6  # 1e6 to convert area from km2 to m2
+    return abs(variable / ocean_area_km2) * 1e6  # 1e6 to convert area from km2 to m2

@@ -75,8 +75,8 @@ def test_mwe2gt():
 
     # circular test: should give same as first converting to meters and then to Gt
     m = _meters_water_equivalent_to_meters(mwe)
-    gt = _meters_to_gigatonnes(m, area=area)
-    assert _meters_water_equivalent_to_gigatonnes(mwe, area=area) == gt
+    gt = _meters_to_gigatonnes(m, area_km=area)
+    assert _meters_water_equivalent_to_gigatonnes(mwe, area_km2=area) == gt
 
 
 def test_gigatonnes2slr():
@@ -85,7 +85,7 @@ def test_gigatonnes2slr():
     # if non-default ocean area is used
     test_ocean_area = 3.8e8
     assert _gigatonnes_to_sea_level_rise(test_variable_in_gt,
-                                         ocean_area=test_ocean_area) == abs(50 / 3.8e8) * 1e6
+                                         ocean_area_km2=test_ocean_area) == abs(50 / 3.8e8) * 1e6
 
 
 def test_meters_to_gigatonnes():

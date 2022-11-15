@@ -126,12 +126,14 @@ def test_as_cumulative_timeseries_raises_warning(example_timeseries_ingested):
 
 
 def test_convert_timeseries_to_unit_mwe(example_timeseries_ingested):
-
-    converted_timeseries = example_timeseries_ingested.convert_timeseries_to_unit_mwe()
+    density_of_water = 997
+    density_of_ice = 850
+    converted_timeseries = example_timeseries_ingested.convert_timeseries_to_unit_mwe(
+        density_of_water=density_of_water, density_of_ice=density_of_ice)
     assert converted_timeseries.unit == "mwe"
     assert example_timeseries_ingested.unit == "m"
     assert not np.array_equal(converted_timeseries.data.changes, example_timeseries_ingested.data.changes)
-    expected_converted_changes = example_timeseries_ingested.data.changes / 997 * 850
+    expected_converted_changes = example_timeseries_ingested.data.changes / density_of_water * density_of_ice
     assert np.array_equal(converted_timeseries.data.changes, expected_converted_changes)
 
 

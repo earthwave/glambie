@@ -13,7 +13,7 @@ from glambie.util.mass_height_conversions import \
     meters_to_meters_water_equivalent
 from glambie.util.mass_height_conversions import \
     meters_water_equivalent_to_gigatonnes
-from glambie.util.timeseries_helpers import derivative_to_cumulative
+from glambie.util.timeseries_helpers import derivative_to_cumulative, get_total_trend
 from glambie.util.timeseries_helpers import \
     resample_derivative_timeseries_to_monthly_grid
 from glambie.util.timeseries_helpers import timeseries_as_months
@@ -110,15 +110,10 @@ class TimeseriesData():
             warnings.warn("Cumulative timeseries may be invalid. This may be due to the timeseries containing "
                           "gaps or overlapping periods.")
         dates, changes = derivative_to_cumulative(self.start_dates, self.end_dates, self.changes)
-        errors = np.array([0, *self.errors])  # need to handle errors in the future too
+        # errors = np.array([0, *self.errors])  # need to handle errors in the future too
         df_cumulative = pd.DataFrame({'dates': dates,
-                                      'changes': changes,
-                                      'errors': errors,
-                                      'glacier_area_reference': np.array([self.glacier_area_reference[0],
-                                                                          *self.glacier_area_reference]),
-                                      'glacier_area_observed': np.array([0, *self.glacier_area_observed]),
+                                      'changes': changes
                                       })
-
         return df_cumulative
 
     def is_cumulative_valid(self):
@@ -442,6 +437,9 @@ class Timeseries():
             object_copy.data.start_dates = np.array(df_annual["start_dates"])
             object_copy.data.end_dates = np.array(df_annual["end_dates"])
             object_copy.data.changes = np.array(df_annual["changes"])
+            object_copy.data.errors = None
+            object_copy.data.glacier_area_observed = None
+            object_copy.data.glacier_area_reference = None
 
         # 2) Case where resolution is >= a year: we upsample and take the average from the longterm trend
         else:  # make sure that the trends don't start in the middle of the year
@@ -460,6 +458,29 @@ class Timeseries():
             object_copy.data.start_dates = np.array(new_start_dates)
             object_copy.data.end_dates = np.array(new_end_dates)
             object_copy.data.changes = np.array(new_changes)
+            object_copy.data.errors = None
+            object_copy.data.glacier_area_observed = None
+            object_copy.data.glacier_area_reference = None
+
+        return object_copy  # return copy of itself
+
+    def convert_timeseries_to_longterm_trend(self) -> Timeseries:
+        """
+        Converts a timeseries to a longterm trend.
+        The calculated longterm trend will be the overall trend from min(start_dates) to max(end_dates)).
+
+        Returns
+        -------
+        Timeseries
+            A copy of the Timeseries object containing the converted timeseries data to a longterm trend.
+        """
+        object_copy = copy.deepcopy(self)
+        trend = get_total_trend(self.data.start_dates, self.data.end_dates, self.data.changes, return_type="dataframe")
+        object_copy.data = TimeseriesData(start_dates=np.array(trend["start_dates"]),
+                                          end_dates=np.array(trend["end_dates"]),
+                                          changes=np.array(trend["changes"]),
+                                          errors=None, glacier_area_observed=None,
+                                          glacier_area_reference=None)
 
         return object_copy  # return copy of itself
 
@@ -551,8 +572,8 @@ class Timeseries():
                     else:
                         new_change = None
                 new_changes.append(new_change)
-                new_start_dates.append(new_start_date)
-                new_end_dates.append(new_end_date)
+                new_start_dates.append(float(new_start_date))
+                new_end_dates.append(float(new_end_date))
 
             # apply new arrays to object copy
             object_copy.data.start_dates = np.array(new_start_dates)

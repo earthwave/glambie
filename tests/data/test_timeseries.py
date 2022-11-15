@@ -305,3 +305,14 @@ def test_timeseries_is_annual_grid_glaciological_year(example_timeseries_ingeste
     assert example_timeseries_ingested.timeseries_is_annual_grid(year_type="glaciological")
     example_timeseries_ingested.data.end_dates = [2011.75, 2012.76]
     assert not example_timeseries_ingested.timeseries_is_annual_grid(year_type="glaciological")
+
+
+def test_convert_timeseries_to_longterm_trend(example_timeseries_ingested):
+    example_timeseries_converted = example_timeseries_ingested.convert_timeseries_to_longterm_trend()
+    assert len(example_timeseries_converted.data.changes) == 1
+    assert np.array_equal(example_timeseries_converted.data.changes,
+                          np.array([example_timeseries_ingested.data.changes.sum()]))
+    assert np.array_equal(example_timeseries_converted.data.start_dates,
+                          np.array([example_timeseries_ingested.data.start_dates[0]]))
+    assert np.array_equal(example_timeseries_converted.data.end_dates,
+                          np.array([example_timeseries_ingested.data.end_dates[1]]))

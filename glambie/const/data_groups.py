@@ -11,7 +11,7 @@ GLAMBIE_DATA_GROUPS = {
     'altimetry': GlambieDataGroup(name='altimetry', long_name='Altimetry'),
     'demdiff': GlambieDataGroup(name='demdiff', long_name='DEM differencing'),
     'gravimetry': GlambieDataGroup(name='gravimetry', long_name='Gravimetry'),
-    # Here, 'Glaciological' refers to measurements of the glacier's surface from seasonal or annual in-situ campaigns.
     'glaciological': GlambieDataGroup(name='glaciological', long_name='Glaciological'),
-    'combined': GlambieDataGroup(name='combined', long_name='Combination of methods')
+    'combined': GlambieDataGroup(name='combined', long_name='Combination of methods'),
+    'consensus': GlambieDataGroup(name='consensus', long_name='Consensus of a combination of data sets')
 }

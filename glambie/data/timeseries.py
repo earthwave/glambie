@@ -1,14 +1,31 @@
 
+from __future__ import annotations
+
+import copy
 from dataclasses import dataclass
 from decimal import Decimal
 from decimal import getcontext
+import warnings
 
 from glambie.const.data_groups import GlambieDataGroup
 from glambie.const.regions import RGIRegion
+from glambie.util.mass_height_conversions import \
+    meters_to_meters_water_equivalent
+from glambie.util.mass_height_conversions import \
+    meters_water_equivalent_to_gigatonnes
+from glambie.util.timeseries_helpers import derivative_to_cumulative, get_total_trend
+from glambie.util.timeseries_helpers import \
+    resample_derivative_timeseries_to_monthly_grid
+from glambie.util.timeseries_helpers import timeseries_as_months
+from glambie.util.timeseries_helpers import timeseries_is_monthly_grid
+from glambie.util.timeseries_helpers import get_average_trends_over_new_time_periods
+from glambie.util.date_helpers import get_years
+from glambie.util.timeseries_combination_helpers import calibrate_timeseries_with_trends
+from glambie.util.timeseries_combination_helpers import combine_calibrated_timeseries
+from glambie.const import constants
+
 import numpy as np
 import pandas as pd
-import warnings
-from glambie.util.timeseries_helpers import derivative_to_cumulative
 
 
 @dataclass
@@ -94,15 +111,10 @@ class TimeseriesData():
             warnings.warn("Cumulative timeseries may be invalid. This may be due to the timeseries containing "
                           "gaps or overlapping periods.")
         dates, changes = derivative_to_cumulative(self.start_dates, self.end_dates, self.changes)
-        errors = np.array([0, *self.errors])  # need to handle errors in the future too
+        # errors = np.array([0, *self.errors])  # need to handle errors in the future too
         df_cumulative = pd.DataFrame({'dates': dates,
-                                      'changes': changes,
-                                      'errors': errors,
-                                      'glacier_area_reference': np.array([self.glacier_area_reference[0],
-                                                                          *self.glacier_area_reference]),
-                                      'glacier_area_observed': np.array([0, *self.glacier_area_observed]),
+                                      'changes': changes
                                       })
-
         return df_cumulative
 
     def is_cumulative_valid(self):
@@ -153,7 +165,7 @@ class Timeseries():
         rgi_version : int, optional
             which version of rgi has been used, e.g. 6 or 7, by default None
         unit : str, optional
-            unit the timeseries is in, e.g. m or mwe, by default None
+            unit the timeseries is in, e.g. m, mwe or gt, by default None
         """
         self.user = user
         self.user_group = user_group
@@ -201,3 +213,381 @@ class Timeseries():
                              'rgi_version': self.rgi_version,
                              'unit': self.unit
                              }, index=[0])
+
+    def timeseries_is_monthly_grid(self):
+        """
+        Returns True if all values in the self.data.start_dates and self.data.end_dates are on
+        the monthly grid defined by glambie.util.timeseries_helpers.timeseries_as_months.
+        Also returns True if the resolution is not monthly, but all dates are using the monthly grid.
+
+        Returns
+        -------
+        bool
+            True if in monthly grid, False otherwise.
+        """
+        return timeseries_is_monthly_grid(self.data.start_dates) and timeseries_is_monthly_grid(self.data.end_dates)
+
+    def timeseries_is_annual_grid(self, year_type: constants.YearType = constants.YearType.CALENDAR):
+        """
+        Returns True if all values in the self.data.start_dates and self.data.end_dates are on
+        the annual grid (e.g. 2010.0 would be on annual calendar year grid, 2010.1 would not)
+        Also returns Trues if the resolution is not annual, but all dates are using the annual grid.
+
+        Parameters
+        ----------
+        year_type : constants.YearType, optional
+            annual grid to which the timeseries will be homogenized to, options are 'calendar', 'glaciological'
+            by default "calendar"
+
+        Returns
+        -------
+        bool
+            True if in annual grid, False otherwise.
+        """
+        if year_type == constants.YearType.CALENDAR:
+            year_start = 0
+        elif year_type == constants.YearType.GLACIOLOGICAL:
+            year_start = self.region.glaciological_year_start
+
+        return all(s % 1 == year_start for s in self.data.start_dates) and all(s % 1 == year_start
+                                                                               for s in self.data.end_dates)
+
+    def convert_timeseries_to_unit_mwe(self, density_of_water: float = constants.DENSITY_OF_WATER_KG_PER_M3,
+                                       density_of_ice: float = constants.DENSITY_OF_ICE_KG_PER_M3) -> Timeseries:
+        """
+        Converts a Timeseries object to the unit of meters water equivalent.
+        Returns a copy of itself with the converted glacier changes.
+
+        Parameters
+        ----------
+        density_of_water: float, optional
+            The density of water in Gt per m3, by default constants.DENSITY_OF_WATER_KG_PER_M3
+        density_of_ice : float, optional
+            The density of ice in Gt per m3, by default constants.DENSITY_OF_ICE_KG_PER_M3
+
+        Returns
+        -------
+        Timeseries
+            A copy of the Timeseries object containing the converted timeseries data and corrected metadata information.
+
+        Raises
+        ------
+        NotImplementedError
+            For units to be converted that are not implemented yet
+        """
+        if self.unit == "mwe":  # no conversion needed as already in mwe
+            return copy.deepcopy(self)
+        else:
+            object_copy = copy.deepcopy(self)
+            object_copy.unit = "mwe"
+            if self.unit == "m":  # @TODO: convert uncertainties as well
+                object_copy.data.changes = np.array(meters_to_meters_water_equivalent(object_copy.data.changes,
+                                                                                      density_of_water=density_of_water,
+                                                                                      density_of_ice=density_of_ice))
+                return object_copy
+            else:
+                raise NotImplementedError(
+                    "Conversion to mwe not implemented yet for Timeseries with unit '{}'".format(self.unit))
+
+    def convert_timeseries_to_unit_gt(self, include_area_change: bool = True,
+                                      density_of_water: float = constants.DENSITY_OF_WATER_KG_PER_M3,
+                                      rgi_area_version=6) -> Timeseries:
+        """
+        Converts a Timeseries object to the unit of Gigatonnes.
+        Returns a copy of itself with the converted glacier changes.
+
+        Parameters
+        ----------
+        include_area_change : bool, optional
+            Flag to determine if glacier area changes are taking into account
+            Set to True, the area change and area change reference year are retrieved for the region of the timeseries
+            From the constants and used to calculate Gt for a changing area
+            Note that this will not work that well if the time resolution is low (e.g. multiple years),
+            as it just uses the average between start and end date to determine the area change since
+            the reference year, by default True
+        density_of_water: float, optional
+            The density of water in Gt per m3, by default constants.DENSITY_OF_WATER_KG_PER_M3
+        rgi_area_version: int, optional
+            The version of RGI glacier masks to be used to determine the glacier area within the region,
+            Current options are 6 or 7, by default 6
+
+        Returns
+        -------
+        Timeseries
+            A copy of the Timeseries object containing the converted timeseries data and corrected metadata information.
+
+        Raises
+        ------
+        NotImplementedError
+            For units to be converted that are not implemented yet
+        """
+        # get area
+        if rgi_area_version == 6:
+            glacier_area = self.region.rgi6_area
+        elif rgi_area_version == 7:
+            glacier_area = self.region.rgi7_area
+        else:
+            raise NotImplementedError("Version '{}' of RGI is not implemented yet.".format(rgi_area_version))
+
+        object_copy = copy.deepcopy(self)
+        object_copy.unit = "gt"
+
+        if self.unit == "gt":  # no conversion needed as already in gt
+            return copy.deepcopy(self)
+        elif self.unit == "mwe":  # @TODO: convert uncertainties as well
+            if not include_area_change:
+                object_copy.data.changes = np.array(meters_water_equivalent_to_gigatonnes(
+                    self.data.changes, area_km2=glacier_area, density_of_water=density_of_water))
+                return object_copy
+            else:
+                # conversion with area change
+                t_0 = self.region.area_change_reference_year
+                area_change = self.region.area_change
+                gt_adjusted_changes = []
+                for _, row in self.data.as_dataframe().iterrows():
+                    t_i = (row["start_dates"] + row["end_dates"]) / 2
+                    adjusted_area = glacier_area + (t_i - t_0) * (area_change / 100) * glacier_area
+                    gt_adjusted_changes.append(meters_water_equivalent_to_gigatonnes(
+                        [row.changes], area_km2=adjusted_area, density_of_water=density_of_water)[0])
+                object_copy.data.changes = np.array(gt_adjusted_changes)
+                return object_copy
+        else:
+            raise NotImplementedError(
+                "Conversion to Gt not implemented yet for Timeseries with unit '{}'".format(self.unit))
+
+    def convert_timeseries_to_monthly_grid(self) -> Timeseries:
+        """
+        Converts a Timeseries object to follow the monthly grid. Two different approaches are used depending on
+        time resolution of the timeseries:
+
+        1.) Resolution over half a year: Timeseries is shifted to the closest month within the monthly grid
+            This method cannot be applied for monthly resolution as it may lead to empty months.
+        2.) Resolution under half a year: Timeseries is resampled to the monthly grid
+
+        Returns
+        -------
+        Timeseries
+            A copy of the Timeseries object containing the converted timeseries data to the monthly grid.
+        """
+        # make a deep copy of itself
+        object_copy = copy.deepcopy(self)
+        if not self.timeseries_is_monthly_grid():  # if already in monthly grid there is no need to convert
+            # check resolution
+            if self.data.max_temporal_resolution >= 0.5:  # resolution above half a year: shift to closest month
+                start_dates = timeseries_as_months(self.data.start_dates, downsample_to_month=False)
+                end_dates = timeseries_as_months(self.data.end_dates, downsample_to_month=False)
+                object_copy.data.start_dates = np.array(start_dates)
+                object_copy.data.end_dates = np.array(end_dates)
+            else:  # resolution below half a year: resample timeseries to monthly grid
+                start_dates, end_dates, changes = resample_derivative_timeseries_to_monthly_grid(self.data.start_dates,
+                                                                                                 self.data.end_dates,
+                                                                                                 self.data.changes)
+
+                object_copy.data = TimeseriesData(start_dates=np.array(start_dates),
+                                                  end_dates=np.array(end_dates),
+                                                  changes=np.array(changes),
+                                                  errors=None, glacier_area_observed=None,
+                                                  glacier_area_reference=None)
+
+        return object_copy  # return copy of itself
+
+    def convert_timeseries_to_annual_trends(self,
+                                            year_type: constants.YearType = constants.YearType.CALENDAR) -> Timeseries:
+        """
+        Converts a timeseries to annual trends. Note that this assumes that the timeseries is already using the annual
+        grid for resolutions >= 1 year and the monthly grid for resolutions <= 1 year.
+
+        Parameters
+        ----------
+        year_type : constants.YearType, optional
+            annual grid to which the timeseries will be homogenized to, options are 'calendar', 'glaciological'
+            by default "calendar"
+
+        Returns
+        -------
+        Timeseries
+            A copy of the Timeseries object containing the converted timeseries data to annual trends.
+
+        Raises
+        ------
+        AssertionError
+            Thrown if timeseries is not on monthly grid.
+        AssertionError
+            Thrown for resolutions > 1 year if timeseries is not on annual grid.
+        """
+        # Check if on monthly grid. if not throw an exception
+        if not self.timeseries_is_monthly_grid():
+            raise AssertionError("Timeseries needs to be converted to monthly grid before performing this operation.")
+
+        if year_type == constants.YearType.CALENDAR:
+            year_start = 0
+        elif year_type == constants.YearType.GLACIOLOGICAL:
+            year_start = self.region.glaciological_year_start
+
+        object_copy = copy.deepcopy(self)
+
+        # 1) Case where resolution is < 1 year: we upsample and take the average from e.g. all the months within a year
+        if self.data.max_temporal_resolution <= 1:  # resolution higher than a year
+            min_date, max_date = np.array(self.data.start_dates).min(), np.array(self.data.end_dates).max()
+            new_start_dates, new_end_dates = get_years(year_start, min_date=min_date,
+                                                       max_date=max_date, return_type="arrays")
+            df_annual = get_average_trends_over_new_time_periods(start_dates=self.data.start_dates,
+                                                                 end_dates=self.data.end_dates,
+                                                                 changes=self.data.changes,
+                                                                 new_start_dates=new_start_dates,
+                                                                 new_end_dates=new_end_dates)
+            object_copy.data.start_dates = np.array(df_annual["start_dates"])
+            object_copy.data.end_dates = np.array(df_annual["end_dates"])
+            object_copy.data.changes = np.array(df_annual["changes"])
+            object_copy.data.errors = None
+            object_copy.data.glacier_area_observed = None
+            object_copy.data.glacier_area_reference = None
+
+        # 2) Case where resolution is >= a year: we upsample and take the average from the longterm trend
+        else:  # make sure that the trends don't start in the middle of the year
+            if not self.timeseries_is_annual_grid(year_type=year_type):
+                raise AssertionError("Timeseries needs be at to fit into annual grid before \
+                                     up-sampling to annual changes.")
+            new_start_dates, new_end_dates = get_years(year_start, min_date=self.data.start_dates.min(),
+                                                       max_date=self.data.end_dates.max(), return_type="arrays")
+            new_changes = []
+            for _, row in self.data.as_dataframe().iterrows():
+                time_period = row["end_dates"] - row["start_dates"]
+                annual_trend = row["changes"] / time_period
+                # add annual trend times number of years to the new changes
+                new_changes.extend([annual_trend for _ in range(int(time_period))])
+            assert len(new_changes) == len(new_start_dates) == len(new_end_dates)
+            object_copy.data.start_dates = np.array(new_start_dates)
+            object_copy.data.end_dates = np.array(new_end_dates)
+            object_copy.data.changes = np.array(new_changes)
+            object_copy.data.errors = None
+            object_copy.data.glacier_area_observed = None
+            object_copy.data.glacier_area_reference = None
+
+        return object_copy  # return copy of itself
+
+    def convert_timeseries_to_longterm_trend(self) -> Timeseries:
+        """
+        Converts a timeseries to a longterm trend.
+        The calculated longterm trend will be the overall trend from min(start_dates) to max(end_dates)).
+
+        Returns
+        -------
+        Timeseries
+            A copy of the Timeseries object containing the converted timeseries data to a longterm trend.
+        """
+        object_copy = copy.deepcopy(self)
+        trend = get_total_trend(self.data.start_dates, self.data.end_dates, self.data.changes, return_type="dataframe")
+        object_copy.data = TimeseriesData(start_dates=np.array(trend["start_dates"]),
+                                          end_dates=np.array(trend["end_dates"]),
+                                          changes=np.array(trend["changes"]),
+                                          errors=None, glacier_area_observed=None,
+                                          glacier_area_reference=None)
+
+        return object_copy  # return copy of itself
+
+    def convert_timeseries_using_seasonal_homogenization(self, seasonal_calibration_dataset: Timeseries,
+                                                         year_type: constants.YearType = constants.YearType.CALENDAR,
+                                                         p_value: int = 0) -> Timeseries:
+        """
+        Converts a timeseries to a specific annual grid using seasonal homogenization.
+        A high resolution timeseries with seasonal information is used to 'shift' and correct the current
+        timesteps to the desired annual grid (e.g. calendar or glaciological).
+
+        For more information check the Glambie algorithm description document.
+
+        Parameters
+        ----------
+        seasonal_calibration_dataset : Timeseries
+            High resolution dataset to be used for calibration
+        year_type : constants.YearType, optional
+            annual grid to which the timeseries will be homogenized to, options are 'calendar', 'glaciological'
+            by default "calendar"
+        p_value : int, optional
+            p value for distance weight during seasonal homogenization,
+            by default 0, meaning that no distance weight is applied
+
+        Returns
+        -------
+        Timeseries
+            A copy of the Timeseries object containing the converted timeseries data to annual trends.
+            The timeseries will have the same temporal resolution as the input timeseries, but will be shifted
+            and corrected to the annual grid (which is defined through year_type).
+
+        Raises
+        ------
+        AssertionError
+            Thrown if timeseries is not on monthly grid.
+        AssertionError
+            Thrown if calibration dataset is not on monthly grid.
+        AssertionError
+            Thrown if timeseries resolution below a year.
+        """
+        # first some checks if inputs area valid
+        if not self.timeseries_is_monthly_grid():
+            raise AssertionError("Timeseries needs to be converted to monthly grid before performing this operation.")
+        if not seasonal_calibration_dataset.timeseries_is_monthly_grid():
+            raise AssertionError("Seasonal calibration dataset needs to be converted to monthly grid"
+                                 "before performing this operation.")
+        if self.data.max_temporal_resolution < 1:
+            raise AssertionError("Resolution of timeseries is below a year. No seasonal homogenization possible.")
+
+        if year_type == constants.YearType.CALENDAR:
+            year_start = 0
+        elif year_type == constants.YearType.GLACIOLOGICAL:
+            year_start = self.region.glaciological_year_start
+
+        object_copy = copy.deepcopy(self)
+        if not self.timeseries_is_annual_grid():  # if already annual then no need to homogenize
+            # 1) calibrate calibration series with trends from timeseries
+            calibrated_s, dist_mat = calibrate_timeseries_with_trends(self.data.as_dataframe(),
+                                                                      seasonal_calibration_dataset.data.as_dataframe())
+            # 2) calculate mean calibration timeseries from all the different curves
+            mean_calibrated_ts = combine_calibrated_timeseries(calibrated_s, dist_mat, p_value=p_value)
+            df_mean_calibrated = pd.DataFrame({"start_dates": seasonal_calibration_dataset.data
+                                               .as_dataframe().start_dates,
+                                               "end_dates": seasonal_calibration_dataset.data
+                                              .as_dataframe().end_dates, "changes": mean_calibrated_ts})
+            # 3) remove nan values where timeseries didn't cover
+            df_mean_calibrated = df_mean_calibrated[~df_mean_calibrated.isna()].reset_index()
+
+            # 4) read out homogenized values
+            # get desired annual grid, buffer 2 years to work with start and end dates and include rounded years
+            annual_grid = get_years(year_start, min_date=self.data.start_dates.min() - 2,
+                                    max_date=self.data.end_dates.max() + 3, return_type="arrays")[0]
+            new_start_dates, new_end_dates, new_changes = [], [], []
+            for start_date, end_date in zip(self.data.start_dates, self.data.end_dates):
+                # get dates from annual grid
+                new_start_date = annual_grid[np.abs(annual_grid - start_date).argmin()]
+                new_end_date = annual_grid[np.abs(annual_grid - end_date).argmin()]
+                # read the new changes from the calibrated timeseries
+                df_filtered_year = df_mean_calibrated[(df_mean_calibrated.start_dates >= new_start_date)
+                                                      & (df_mean_calibrated.end_dates <= new_end_date)]
+                # handle case when timeseries is outside the calibration timeseries
+                if df_filtered_year.shape[0] == 0:
+                    new_change = None
+                else:  # this case tests if we actually cover the full period or only part of the period
+                    if df_filtered_year.start_dates.min() == new_start_date \
+                            and df_filtered_year.end_dates.max() == new_end_date:
+                        new_change = df_filtered_year["changes"].sum()
+                    else:
+                        new_change = None
+                new_changes.append(new_change)
+                new_start_dates.append(float(new_start_date))
+                new_end_dates.append(float(new_end_date))
+
+            # apply new arrays to object copy
+            object_copy.data.start_dates = np.array(new_start_dates)
+            object_copy.data.end_dates = np.array(new_end_dates)
+            object_copy.data.changes = np.array(new_changes)
+
+            # remove nan values
+            df_nan_removed = object_copy.data.as_dataframe()[~object_copy.data.as_dataframe()["changes"].isna()]
+            object_copy.data.start_dates = np.array(df_nan_removed["start_dates"])
+            object_copy.data.end_dates = np.array(df_nan_removed["end_dates"])
+            object_copy.data.changes = np.array(df_nan_removed["changes"])
+            object_copy.data.errors = np.array(df_nan_removed["errors"])
+            object_copy.data.glacier_area_observed = np.array(df_nan_removed["glacier_area_observed"])
+            object_copy.data.glacier_area_reference = np.array(df_nan_removed["glacier_area_reference"])
+
+        return object_copy

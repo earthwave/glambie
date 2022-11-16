@@ -233,7 +233,7 @@ def timeseries_as_months(fractional_year_array: np.array, downsample_to_month: b
 
     if contains_duplicates(monthly_array):
         warnings.warn("The rounded dates contain duplicates. "
-                      "To avoid this, use the function with data at lower temporal resolution than monthly")
+                      "To avoid this, use the function with data at lower temporal resolution than monthly.")
 
     return monthly_array
 
@@ -253,9 +253,11 @@ def timeseries_is_monthly_grid(fractional_year_array: np.array) -> bool:
     Boolean
         True if input series is on monthly grid, False otherwise
     """
-    monthly_grid = timeseries_as_months(fractional_year_array, downsample_to_month=False)
+    with warnings.catch_warnings():  # ignore warning about duplicates
+        warnings.simplefilter("ignore")
+        monthly_grid = timeseries_as_months(fractional_year_array, downsample_to_month=False)
     try:
-        np.testing.assert_equal(monthly_grid, fractional_year_array)
+        np.testing.assert_almost_equal(monthly_grid, fractional_year_array)
     except AssertionError:
         return False
     return True

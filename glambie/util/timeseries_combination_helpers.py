@@ -86,7 +86,9 @@ def combine_calibrated_timeseries(calibrated_series: np.array, distance_matrix: 
         2D array with distance matrix to the timeperiod of the trend dataset,
         e.g. return from calibrate_timeseries_with_trends()
     p_value : int, optional
-        p value to calculate distance weight, higher values equal higher slope from the time period/
+        p value to calculate distance weight, higher values equal higher slope from the time period
+        if p value is 0, we only use the exact time periods and no weight left and right of each time period is applied,
+        In this case, the values which are not covered by the calibration matrix will be returned as nan values.
         by default 2
 
     Returns
@@ -94,10 +96,21 @@ def combine_calibrated_timeseries(calibrated_series: np.array, distance_matrix: 
     np.array
         Mean calibrated series
     """
-    # calculate inverse distance weight
-    distance_weight = [(1 / np.array(x))**p_value for x in distance_matrix]
-    # convert to percentages
-    distance_weight_perc = np.array(distance_weight) / [sum(x) for x in zip(*distance_weight)]
+    if p_value > 0:
+        # calculate inverse distance weight
+        distance_weight = [(1 / np.array(x))**p_value for x in distance_matrix]
+        # convert to percentages
+        distance_weight_perc = np.array(distance_weight) / [sum(x) for x in zip(*distance_weight)]
+    else:  # when p-value is zero we only use the exact time periods and no weight left and right of time period
+        distance_matrix = distance_matrix.copy()
+        distance_matrix[distance_matrix > 1] = 0  # set all distances outside covered time period to 0
+        # convert to percentages
+        with warnings.catch_warnings():  # ignore RuntimeWarning: invalid value encountered in true_divide
+            # we just get nan values when this happens (for periods in the calibration dataset that are not covered
+            # with any of the calibrated series datasets), This is exactly the behaviour we want in this case.
+            warnings.simplefilter("ignore", category=RuntimeWarning)
+            distance_weight_perc = np.array(distance_matrix) / [sum(x) for x in zip(*distance_matrix)]
+
     # apply distance weight
     weighted_calibrated_series = np.array(calibrated_series) * np.array(distance_weight_perc)
     # return sum of all distance weighted series (= mean timeseries)

@@ -1,7 +1,9 @@
 from typing import Iterable
+from glambie.const import constants
 
 
-def meters_to_gigatonnes(variables: Iterable, area_km2: float, density_of_ice: float = 850) -> list:
+def meters_to_gigatonnes(variables: Iterable, area_km2: float,
+                         density_of_ice: float = constants.DENSITY_OF_ICE_GT_PER_M3) -> list:
     """Function to convert a list of measurements of surface elevation change in meters into ice mass in gigatonnes,
     using the area of a region and the density of ice.
 
@@ -12,7 +14,7 @@ def meters_to_gigatonnes(variables: Iterable, area_km2: float, density_of_ice: f
     area_km2 : float
         The area of a region in km2
     density_of_ice : float, optional
-        The density of ice in Gt per m3, by default 850
+        The density of ice in Gt per m3, by default constants.DENSITY_OF_ICE_GT_PER_M3
 
     Returns
     -------
@@ -21,7 +23,8 @@ def meters_to_gigatonnes(variables: Iterable, area_km2: float, density_of_ice: f
     return [i * density_of_ice * (area_km2 / 1e6) for i in variables]  # 1e6 to convert area from km2 to m2
 
 
-def gigatonnes_to_meters(variables: Iterable, area_km2: float, density_of_ice: float = 850) -> list:
+def gigatonnes_to_meters(variables: Iterable, area_km2: float,
+                         density_of_ice: float = constants.DENSITY_OF_ICE_GT_PER_M3) -> list:
     """Function to convert a list of measurements of ice mass in gigatonnes into surface elevation change in meters,
     using the area of a region and the density of ice.
 
@@ -32,7 +35,7 @@ def gigatonnes_to_meters(variables: Iterable, area_km2: float, density_of_ice: f
     area_km2 : float
         The area of the region in km2
     density_of_ice : float, optional
-        The density of ice in Gt per m3, by default 850
+        The density of ice in Gt per m3, by default constants.DENSITY_OF_ICE_GT_PER_M3
 
     Returns
     -------
@@ -41,8 +44,9 @@ def gigatonnes_to_meters(variables: Iterable, area_km2: float, density_of_ice: f
     return [(1e6 * variable) / (area_km2 * density_of_ice) for variable in variables]
 
 
-def meters_to_meters_water_equivalent(variables: Iterable, density_of_water: float = 997,
-                                      density_of_ice: float = 850) -> list:
+def meters_to_meters_water_equivalent(variables: Iterable,
+                                      density_of_water: float = constants.DENSITY_OF_WATER_GT_PER_M3,
+                                      density_of_ice: float = constants.DENSITY_OF_ICE_GT_PER_M3) -> list:
     """Function to convert a list of measurements of surface elevation change in meters into meters water equivalent.
 
     Parameters
@@ -50,9 +54,9 @@ def meters_to_meters_water_equivalent(variables: Iterable, density_of_water: flo
     variables : Iterable
         A list of measurements in meters
     density_of_water : float, optional
-        The density of water in Gt per m3, by default 997
+        The density of water in Gt per m3, by default constants.DENSITY_OF_WATER_GT_PER_M3
     density_of_ice : float, optional
-        The density of ice in Gt per m3, by default 850
+        The density of ice in Gt per m3, by default constants.DENSITY_OF_ICE_GT_PER_M3
 
     Returns
     -------
@@ -61,8 +65,9 @@ def meters_to_meters_water_equivalent(variables: Iterable, density_of_water: flo
     return [(variable / density_of_water) * density_of_ice for variable in variables]
 
 
-def meters_water_equivalent_to_meters(variables: Iterable, density_of_water: float = 997,
-                                      density_of_ice: float = 850) -> list:
+def meters_water_equivalent_to_meters(variables: Iterable,
+                                      density_of_water: float = constants.DENSITY_OF_WATER_GT_PER_M3,
+                                      density_of_ice: float = constants.DENSITY_OF_ICE_GT_PER_M3) -> list:
     """Function to convert a list of measurements of surface elevation change in meters water equivalent into meters.
 
     Parameters
@@ -70,9 +75,9 @@ def meters_water_equivalent_to_meters(variables: Iterable, density_of_water: flo
     variables : Iterable
         A list of measurements in meters water equivalent
     density_of_water : float, optional
-        The density of water in Gt per m3, by default 997
+        The density of water in Gt per m3, by default constants.DENSITY_OF_WATER_GT_PER_M3
     density_of_ice : float, optional
-        The density of ice in Gt per m3, by default 850
+        The density of ice in Gt per m3, by default constants.DENSITY_OF_ICE_GT_PER_M3
 
     Returns
     -------
@@ -81,7 +86,8 @@ def meters_water_equivalent_to_meters(variables: Iterable, density_of_water: flo
     return [(variable * density_of_water) / density_of_ice for variable in variables]
 
 
-def meters_water_equivalent_to_gigatonnes(variables: Iterable, area_km2: float, density_of_water: float = 997) -> list:
+def meters_water_equivalent_to_gigatonnes(variables: Iterable, area_km2: float,
+                                          density_of_water: float = constants.DENSITY_OF_WATER_GT_PER_M3) -> list:
     """Function to convert a list of measurements of ice mass loss in meters water equivalent to gigatonnes.
 
     Parameters
@@ -91,7 +97,7 @@ def meters_water_equivalent_to_gigatonnes(variables: Iterable, area_km2: float, 
     area_km2 : float
         The area of the region in km2
     density_of_water : float, optional
-        The density of water in Gt per m3, by default 997
+        The density of water in Gt per m3, by default constants.DENSITY_OF_WATER_GT_PER_M3
 
     Returns
     -------
@@ -100,7 +106,8 @@ def meters_water_equivalent_to_gigatonnes(variables: Iterable, area_km2: float, 
     return [i * density_of_water * (area_km2 / 1e6) for i in variables]  # 1e6 to convert area from km2 to m2
 
 
-def gigatonnes_to_meters_water_equivalent(variables: Iterable, area_km2: float, density_of_water: float = 997) -> list:
+def gigatonnes_to_meters_water_equivalent(variables: Iterable, area_km2: float,
+                                          density_of_water: float = constants.DENSITY_OF_WATER_GT_PER_M3) -> list:
     """Function to convert a list of measurements of ice mass loss in gigatonnes into meters water equivalent.
 
     Parameters
@@ -110,7 +117,7 @@ def gigatonnes_to_meters_water_equivalent(variables: Iterable, area_km2: float, 
     area_km2 : float
         The area of the region in km2
     density_of_water : float, optional
-        The density of water in Gt per m3, by default 997
+        The density of water in Gt per m3, by default constants.DENSITY_OF_WATER_GT_PER_M3
 
     Returns
     -------
@@ -119,7 +126,7 @@ def gigatonnes_to_meters_water_equivalent(variables: Iterable, area_km2: float, 
     return [(1e6 * variable) / (area_km2 * density_of_water) for variable in variables]
 
 
-def gigatonnes_to_sea_level_rise(variables: Iterable, ocean_area_km2: float = 3.625e8) -> list:
+def gigatonnes_to_sea_level_rise(variables: Iterable, ocean_area_km2: float = constants.OCEAN_AREA_IN_KM2) -> list:
     """Function to convert a list of measurements of ice mass loss in gigatonnes into sea level rise (millimeters). We
     assume a value for the area of the ocean, and that all measured mass loss contributes to sea level change.
 
@@ -128,7 +135,7 @@ def gigatonnes_to_sea_level_rise(variables: Iterable, ocean_area_km2: float = 3.
     variables : Iterable
         A List of measurements in gigatonnes
     ocean_area_km2 : float, optional
-        The assumed area of the ocean in km2, by default 3.625e8
+        The assumed area of the ocean in km2, by default constants.OCEAN_AREA_IN_KM2
 
     Returns
     -------

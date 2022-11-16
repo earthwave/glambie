@@ -252,8 +252,8 @@ class Timeseries():
         return all(s % 1 == year_start for s in self.data.start_dates) and all(s % 1 == year_start
                                                                                for s in self.data.end_dates)
 
-    def convert_timeseries_to_unit_mwe(self, density_of_water: float = constants.DENSITY_OF_WATER_GT_PER_M3,
-                                       density_of_ice: float = constants.DENSITY_OF_ICE_GT_PER_M3) -> Timeseries:
+    def convert_timeseries_to_unit_mwe(self, density_of_water: float = constants.DENSITY_OF_WATER_KG_PER_M3,
+                                       density_of_ice: float = constants.DENSITY_OF_ICE_KG_PER_M3) -> Timeseries:
         """
         Converts a Timeseries object to the unit of meters water equivalent.
         Returns a copy of itself with the converted glacier changes.
@@ -261,9 +261,9 @@ class Timeseries():
         Parameters
         ----------
         density_of_water: float, optional
-            The density of water in Gt per m3, by default constants.DENSITY_OF_WATER_GT_PER_M3
+            The density of water in Gt per m3, by default constants.DENSITY_OF_WATER_KG_PER_M3
         density_of_ice : float, optional
-            The density of ice in Gt per m3, by default constants.DENSITY_OF_ICE_GT_PER_M3
+            The density of ice in Gt per m3, by default constants.DENSITY_OF_ICE_KG_PER_M3
 
         Returns
         -------
@@ -290,7 +290,7 @@ class Timeseries():
                     "Conversion to mwe not implemented yet for Timeseries with unit '{}'".format(self.unit))
 
     def convert_timeseries_to_unit_gt(self, include_area_change: bool = True,
-                                      density_of_water: float = constants.DENSITY_OF_WATER_GT_PER_M3,
+                                      density_of_water: float = constants.DENSITY_OF_WATER_KG_PER_M3,
                                       rgi_area_version=6) -> Timeseries:
         """
         Converts a Timeseries object to the unit of Gigatonnes.
@@ -306,7 +306,7 @@ class Timeseries():
             as it just uses the average between start and end date to determine the area change since
             the reference year, by default True
         density_of_water: float, optional
-            The density of water in Gt per m3, by default constants.DENSITY_OF_WATER_GT_PER_M3
+            The density of water in Gt per m3, by default constants.DENSITY_OF_WATER_KG_PER_M3
         rgi_area_version: int, optional
             The version of RGI glacier masks to be used to determine the glacier area within the region,
             Current options are 6 or 7, by default 6

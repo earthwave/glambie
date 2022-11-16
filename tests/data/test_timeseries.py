@@ -4,6 +4,7 @@ from glambie.const.data_groups import GLAMBIE_DATA_GROUPS
 from glambie.const.regions import REGIONS
 from glambie.data.timeseries import Timeseries
 from glambie.data.timeseries import TimeseriesData
+from glambie.const import constants
 import numpy as np
 import pytest
 import pandas as pd
@@ -238,10 +239,10 @@ def test_convert_timeseries_to_annual_trends_down_sampling_glaciological_year(ex
     example_timeseries_ingested.data.start_dates = np.linspace(2010.75, 2011.75, 13)[:-1]
     example_timeseries_ingested.data.end_dates = np.linspace(2010.75, 2011.75, 13)[1:]
     example_timeseries_ingested.data.changes = np.linspace(1, 11, 12)
-    assert not example_timeseries_ingested.timeseries_is_annual_grid(year_type="glaciological")
+    assert not example_timeseries_ingested.timeseries_is_annual_grid(year_type=constants.YearType.GLACIOLOGICAL)
     example_timeseries_converted = example_timeseries_ingested.convert_timeseries_to_annual_trends(
-        year_type="glaciological")
-    assert example_timeseries_converted.timeseries_is_annual_grid(year_type="glaciological")
+        year_type=constants.YearType.GLACIOLOGICAL)
+    assert example_timeseries_converted.timeseries_is_annual_grid(year_type=constants.YearType.GLACIOLOGICAL)
     assert len(example_timeseries_converted.data.changes) == 1
     assert example_timeseries_converted.data.changes[0] == example_timeseries_ingested.data.changes.sum()
 
@@ -280,33 +281,33 @@ def test_convert_timeseries_to_annual_trends_up_annual_should_return_same_as_inp
     example_timeseries_ingested.data.start_dates = np.linspace(2010.75, 2015.75, 6)
     example_timeseries_ingested.data.end_dates = np.linspace(2011.75, 2016.75, 6)
     example_timeseries_ingested.data.changes = np.linspace(1, 6, 6)
-    assert example_timeseries_ingested.timeseries_is_annual_grid(year_type="glaciological")
+    assert example_timeseries_ingested.timeseries_is_annual_grid(year_type=constants.YearType.GLACIOLOGICAL)
     example_timeseries_converted = example_timeseries_ingested \
-        .convert_timeseries_to_annual_trends(year_type="glaciological")
-    assert example_timeseries_converted.timeseries_is_annual_grid(year_type="glaciological")
+        .convert_timeseries_to_annual_trends(year_type=constants.YearType.GLACIOLOGICAL)
+    assert example_timeseries_converted.timeseries_is_annual_grid(year_type=constants.YearType.GLACIOLOGICAL)
     assert np.array_equal(example_timeseries_converted.data.start_dates, example_timeseries_ingested.data.start_dates)
     assert np.array_equal(example_timeseries_converted.data.end_dates, example_timeseries_ingested.data.end_dates)
     assert np.array_equal(example_timeseries_converted.data.changes, example_timeseries_ingested.data.changes)
 
 
 def test_timeseries_is_annual_grid(example_timeseries_ingested):
-    assert not example_timeseries_ingested.timeseries_is_annual_grid(year_type="calendar")
+    assert not example_timeseries_ingested.timeseries_is_annual_grid(year_type=constants.YearType.CALENDAR)
     example_timeseries_ingested.data.start_dates = [2010, 2011]
     example_timeseries_ingested.data.end_dates = [2011, 2012]
-    assert example_timeseries_ingested.timeseries_is_annual_grid(year_type="calendar")
+    assert example_timeseries_ingested.timeseries_is_annual_grid(year_type=constants.YearType.CALENDAR)
     example_timeseries_ingested.data.end_dates = [2011, 2012.1]
-    assert not example_timeseries_ingested.timeseries_is_annual_grid(year_type="calendar")
+    assert not example_timeseries_ingested.timeseries_is_annual_grid(year_type=constants.YearType.CALENDAR)
 
 
 def test_timeseries_is_annual_grid_glaciological_year(example_timeseries_ingested):
     example_timeseries_ingested.region = REGIONS["iceland"]
     example_timeseries_ingested.region.glaciological_year_start = 0.75
-    assert not example_timeseries_ingested.timeseries_is_annual_grid(year_type="glaciological")
+    assert not example_timeseries_ingested.timeseries_is_annual_grid(year_type=constants.YearType.GLACIOLOGICAL)
     example_timeseries_ingested.data.start_dates = [2010.75, 2011.75]
     example_timeseries_ingested.data.end_dates = [2011.75, 2012.75]
-    assert example_timeseries_ingested.timeseries_is_annual_grid(year_type="glaciological")
+    assert example_timeseries_ingested.timeseries_is_annual_grid(year_type=constants.YearType.GLACIOLOGICAL)
     example_timeseries_ingested.data.end_dates = [2011.75, 2012.76]
-    assert not example_timeseries_ingested.timeseries_is_annual_grid(year_type="glaciological")
+    assert not example_timeseries_ingested.timeseries_is_annual_grid(year_type=constants.YearType.GLACIOLOGICAL)
 
 
 def test_convert_timeseries_to_longterm_trend(example_timeseries_ingested):

@@ -22,6 +22,7 @@ from glambie.util.timeseries_helpers import get_average_trends_over_new_time_per
 from glambie.util.date_helpers import get_years
 from glambie.util.timeseries_combination_helpers import calibrate_timeseries_with_trends
 from glambie.util.timeseries_combination_helpers import combine_calibrated_timeseries
+from glambie.const import constants
 
 import numpy as np
 import pandas as pd
@@ -226,7 +227,7 @@ class Timeseries():
         """
         return timeseries_is_monthly_grid(self.data.start_dates) and timeseries_is_monthly_grid(self.data.end_dates)
 
-    def timeseries_is_annual_grid(self, year_type: str = "calendar"):
+    def timeseries_is_annual_grid(self, year_type: constants.YearType = constants.YearType.CALENDAR):
         """
         Returns True if all values in the self.data.start_dates and self.data.end_dates are on
         the annual grid (e.g. 2010.0 would be on annual calendar year grid, 2010.1 would not)
@@ -234,26 +235,25 @@ class Timeseries():
 
         Parameters
         ----------
-        year_type : str, optional
-            which year to use, options are 'calendar' (January to January) or 'glaciological' (Whatever year
-            is defined for the region), by default "calendar"
+        year_type : constants.YearType, optional
+            annual grid to which the timeseries will be homogenized to, options are 'calendar', 'glaciological'
+            by default "calendar"
 
         Returns
         -------
         bool
             True if in annual grid, False otherwise.
         """
-        if year_type == "calendar":
+        if year_type == constants.YearType.CALENDAR:
             year_start = 0
-        elif year_type == "glaciological":
+        elif year_type == constants.YearType.GLACIOLOGICAL:
             year_start = self.region.glaciological_year_start
-        else:
-            raise NotImplementedError("Year type '{}' is not implemented yet.".format(year_type))
+
         return all(s % 1 == year_start for s in self.data.start_dates) and all(s % 1 == year_start
                                                                                for s in self.data.end_dates)
 
-    def convert_timeseries_to_unit_mwe(self, density_of_water: float = 997,
-                                       density_of_ice: float = 850) -> Timeseries:
+    def convert_timeseries_to_unit_mwe(self, density_of_water: float = constants.DENSITY_OF_WATER_GT_PER_M3,
+                                       density_of_ice: float = constants.DENSITY_OF_ICE_GT_PER_M3) -> Timeseries:
         """
         Converts a Timeseries object to the unit of meters water equivalent.
         Returns a copy of itself with the converted glacier changes.
@@ -261,9 +261,9 @@ class Timeseries():
         Parameters
         ----------
         density_of_water: float, optional
-            The density of water in Gt per m3, by default 997
+            The density of water in Gt per m3, by default constants.DENSITY_OF_WATER_GT_PER_M3
         density_of_ice : float, optional
-            The density of ice in Gt per m3, by default 850
+            The density of ice in Gt per m3, by default constants.DENSITY_OF_ICE_GT_PER_M3
 
         Returns
         -------
@@ -290,7 +290,8 @@ class Timeseries():
                     "Conversion to mwe not implemented yet for Timeseries with unit '{}'".format(self.unit))
 
     def convert_timeseries_to_unit_gt(self, include_area_change: bool = True,
-                                      density_of_water: float = 997, rgi_area_version=6) -> Timeseries:
+                                      density_of_water: float = constants.DENSITY_OF_WATER_GT_PER_M3,
+                                      rgi_area_version=6) -> Timeseries:
         """
         Converts a Timeseries object to the unit of Gigatonnes.
         Returns a copy of itself with the converted glacier changes.
@@ -305,7 +306,7 @@ class Timeseries():
             as it just uses the average between start and end date to determine the area change since
             the reference year, by default True
         density_of_water: float, optional
-            The density of water in Gt per m3, by default 997
+            The density of water in Gt per m3, by default constants.DENSITY_OF_WATER_GT_PER_M3
         rgi_area_version: int, optional
             The version of RGI glacier masks to be used to determine the glacier area within the region,
             Current options are 6 or 7, by default 6
@@ -336,7 +337,7 @@ class Timeseries():
         elif self.unit == "mwe":  # @TODO: convert uncertainties as well
             if not include_area_change:
                 object_copy.data.changes = np.array(meters_water_equivalent_to_gigatonnes(
-                    self.data.changes, area=glacier_area, density_of_water=density_of_water))
+                    self.data.changes, area_km2=glacier_area, density_of_water=density_of_water))
                 return object_copy
             else:
                 # conversion with area change
@@ -347,7 +348,7 @@ class Timeseries():
                     t_i = (row["start_dates"] + row["end_dates"]) / 2
                     adjusted_area = glacier_area + (t_i - t_0) * (area_change / 100) * glacier_area
                     gt_adjusted_changes.append(meters_water_equivalent_to_gigatonnes(
-                        [row.changes], area=adjusted_area, density_of_water=density_of_water)[0])
+                        [row.changes], area_km2=adjusted_area, density_of_water=density_of_water)[0])
                 object_copy.data.changes = np.array(gt_adjusted_changes)
                 return object_copy
         else:
@@ -390,16 +391,17 @@ class Timeseries():
 
         return object_copy  # return copy of itself
 
-    def convert_timeseries_to_annual_trends(self, year_type="calendar") -> Timeseries:
+    def convert_timeseries_to_annual_trends(self,
+                                            year_type: constants.YearType = constants.YearType.CALENDAR) -> Timeseries:
         """
         Converts a timeseries to annual trends. Note that this assumes that the timeseries is already using the annual
         grid for resolutions >= 1 year and the monthly grid for resolutions <= 1 year.
 
         Parameters
         ----------
-        year_type : str, optional
-            which year to use, options are 'calendar' (January to January) or 'glaciological' (Whatever year
-            is defined for the region), by default "calendar"
+        year_type : constants.YearType, optional
+            annual grid to which the timeseries will be homogenized to, options are 'calendar', 'glaciological'
+            by default "calendar"
 
         Returns
         -------
@@ -417,12 +419,10 @@ class Timeseries():
         if not self.timeseries_is_monthly_grid():
             raise AssertionError("Timeseries needs to be converted to monthly grid before performing this operation.")
 
-        if year_type == "calendar":
+        if year_type == constants.YearType.CALENDAR:
             year_start = 0
-        elif year_type == "glaciological":
+        elif year_type == constants.YearType.GLACIOLOGICAL:
             year_start = self.region.glaciological_year_start
-        else:
-            raise NotImplementedError("Year type '{}' is not implemented yet.".format(year_type))
 
         object_copy = copy.deepcopy(self)
 
@@ -487,7 +487,8 @@ class Timeseries():
         return object_copy  # return copy of itself
 
     def convert_timeseries_using_seasonal_homogenization(self, seasonal_calibration_dataset: Timeseries,
-                                                         year_type: str = "calendar", p_value: int = 0) -> Timeseries:
+                                                         year_type: constants.YearType = constants.YearType.CALENDAR,
+                                                         p_value: int = 0) -> Timeseries:
         """
         Converts a timeseries to a specific annual grid using seasonal homogenization.
         A high resolution timeseries with seasonal information is used to 'shift' and correct the current
@@ -499,7 +500,7 @@ class Timeseries():
         ----------
         seasonal_calibration_dataset : Timeseries
             High resolution dataset to be used for calibration
-        year_type : str, optional
+        year_type : constants.YearType, optional
             annual grid to which the timeseries will be homogenized to, options are 'calendar', 'glaciological'
             by default "calendar"
         p_value : int, optional
@@ -531,12 +532,10 @@ class Timeseries():
         if self.data.max_temporal_resolution < 1:
             raise AssertionError("Resolution of timeseries is below a year. No seasonal homogenization possible.")
 
-        if year_type == "calendar":
+        if year_type == constants.YearType.CALENDAR:
             year_start = 0
-        elif year_type == "glaciological":
+        elif year_type == constants.YearType.GLACIOLOGICAL:
             year_start = self.region.glaciological_year_start
-        else:
-            raise NotImplementedError("Year type '{}' is not implemented yet.".format(year_type))
 
         object_copy = copy.deepcopy(self)
         if not self.timeseries_is_annual_grid():  # if already annual then no need to homogenize

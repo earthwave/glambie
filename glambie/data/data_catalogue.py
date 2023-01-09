@@ -8,6 +8,7 @@ from glambie.const.regions import REGIONS
 from glambie.const.regions import RGIRegion
 from glambie.data.timeseries import Timeseries
 import pandas as pd
+import copy
 
 
 class DataCatalogue():
@@ -130,6 +131,17 @@ class DataCatalogue():
         if user_group is not None:  # filter by user group
             datasets = [s for s in datasets if s.user_group.lower() == user_group.lower()]
         return self.__class__(self.base_path, datasets)
+
+    def copy(self):
+        """
+        Copy the catalogue
+
+        Returns
+        -------
+        DataCatalogue
+            Deep copy of itslef
+        """
+        return copy.deepcopy(self)
 
     def load_all_data(self):
         """

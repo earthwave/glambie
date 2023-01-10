@@ -121,4 +121,4 @@ def test_data_catalogue_copy(example_catalogue_small):
     example_catalogue_copy = example_catalogue_small.copy()
     example_catalogue_copy.datasets[0].data.changes = [-4]
     assert example_catalogue_copy.datasets[0].data.changes[0] == -4
-    assert not example_catalogue_small.datasets[0].data.changes[0] == -4
+    assert example_catalogue_small.datasets[0].data.changes[0] != -4

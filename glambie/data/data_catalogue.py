@@ -2,13 +2,17 @@ from __future__ import annotations
 
 import json
 import os
+from typing import Tuple
+import warnings
 
-from glambie.const.data_groups import GLAMBIE_DATA_GROUPS
+from glambie.const.data_groups import GLAMBIE_DATA_GROUPS, GlambieDataGroup
 from glambie.const.regions import REGIONS
 from glambie.const.regions import RGIRegion
-from glambie.data.timeseries import Timeseries
+from glambie.data.timeseries import Timeseries, TimeseriesData
 import pandas as pd
+import numpy as np
 import copy
+from functools import reduce
 
 
 class DataCatalogue():
@@ -163,6 +167,78 @@ class DataCatalogue():
         """
         unit = self.datasets[0].unit
         return all(dataset.unit == unit for dataset in self.datasets)
+
+    def average_timeseries_in_catalogue(self, remove_trend: bool = True, add_trend_after_averaging: bool = False,
+                                        out_data_group: GlambieDataGroup = GLAMBIE_DATA_GROUPS["consensus"]) \
+            -> Tuple[Timeseries, DataCatalogue]:
+        """
+        Calculates a simple average of all timeseries within the catalogue, with the option to remove trends
+        and calculate the average on the anomalies
+
+        Parameters
+        ----------
+        remove_trend : bool, optional
+            if set to True, the trend over a shared time period is removed, by default True
+        add_trend_after_averaging : bool, optional
+            this will add the average trends from all the input solutions in the catalogue to the averaged solution
+            this flag is only active when remove_trend is set to True.
+            by default False
+        out_data_group : GlambieDataGroup, optional
+            data group to be assigned to combined output Timeseries metadata,
+            by default GLAMBIE_DATA_GROUPS["consensus"]
+
+
+        Returns
+        -------
+        Tuple[Timeseries, DataCatalogue]
+            1. Timeseries object, containing the new combined solution
+            2. DataCatalogue, containing the catalogue the operation was performed on.
+               For remove_trend set to False, this is an exact copy of self.
+               For remove_trend set to True, this contains the altered datasets with the trends removed
+        """
+
+        # merge all dataframes
+        catalogue_dfs = [ds.data.as_dataframe() for ds in self.datasets]
+
+        data_catalogue_out = self.copy()  # DataCatalogue object for returning
+
+        # remove trend / calculate beta instead of B
+        if remove_trend:
+            means_over_period = []  # keep track of the means for adding back in case add_trend_after_averaging=True
+            start_ref_period = np.max([df.start_dates.min() for df in catalogue_dfs])
+            end_ref_period = np.min([df.end_dates.max() for df in catalogue_dfs])
+
+            if not start_ref_period < end_ref_period:
+                warnings.warn("Warning when removing trends. No common period detected.")
+            for idx, df in enumerate(catalogue_dfs):
+                df_sub = df[(df["start_dates"] >= start_ref_period) & (df["end_dates"] <= end_ref_period)]
+                df["changes"] = df["changes"] - df_sub["changes"].mean()
+                data_catalogue_out.datasets[idx].data.changes = np.array(df["changes"])
+                means_over_period.append(df_sub["changes"].mean())
+
+        df = reduce(lambda left, right: left.merge(right, how="outer", on=["start_dates", "end_dates"]), catalogue_dfs)
+        df = df.sort_values(by="start_dates")
+        start_dates, end_dates = np.array(df["start_dates"]), np.array(df["end_dates"])
+        mean_changes = np.array(df[df.columns.intersection(
+            df.filter(regex=("changes*")).columns.to_list())].mean(axis=1))
+
+        df_mean_annual = pd.DataFrame(pd.DataFrame(
+            {"start_dates": start_dates, "end_dates": end_dates, "changes": mean_changes}))
+
+        if add_trend_after_averaging and remove_trend:
+            # add mean changes back which have been removed over the common period
+            df_mean_annual["changes"] = df_mean_annual["changes"] + np.mean(means_over_period)
+
+        # make Timeseries object with combined solution
+        ts_data = TimeseriesData(start_dates=np.array(df_mean_annual["start_dates"]),
+                                 end_dates=np.array(df_mean_annual["end_dates"]),
+                                 changes=np.array(df_mean_annual["changes"]),
+                                 errors=np.linspace(0, 0, df_mean_annual.shape[0]), glacier_area_reference=None,
+                                 glacier_area_observed=None)
+        reference_dataset_for_metadata = self.datasets[0]  # use this as a reference for filling metadata
+
+        return Timeseries(region=reference_dataset_for_metadata.region, data_group=out_data_group,
+                          data=ts_data, unit=reference_dataset_for_metadata.unit), data_catalogue_out
 
     def __len__(self) -> int:
         return len(self._datasets)

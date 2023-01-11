@@ -197,6 +197,10 @@ class DataCatalogue():
                For remove_trend set to True, this contains the altered datasets with the trends removed
         """
 
+        if not self.datasets_are_same_unit():
+            warnings.warn("Warning: Trends within catalogue are not all the same unit. \
+                This might lead to false results.")
+
         # merge all dataframes
         catalogue_dfs = [ds.data.as_dataframe() for ds in self.datasets]
 

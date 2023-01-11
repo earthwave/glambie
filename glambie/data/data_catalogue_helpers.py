@@ -4,6 +4,7 @@ import numpy as np
 from glambie.util.timeseries_combination_helpers import calibrate_timeseries_with_trends, combine_calibrated_timeseries
 from glambie.data.timeseries import TimeseriesData, Timeseries
 import copy
+import warnings
 
 
 def calibrate_timeseries_with_trends_catalogue(catalogue_with_trends: DataCatalogue,
@@ -23,6 +24,9 @@ def calibrate_timeseries_with_trends_catalogue(catalogue_with_trends: DataCatalo
     DataCatalogue
         Containing all the calibrated Timeseries. Contains the same length of datasets as catalogue_with_trends.
     """
+
+    if not catalogue_with_trends.datasets_are_same_unit():
+        warnings.warn("Warning: Trends within catalogue are not all the same unit. This might lead to false results.")
 
     # calibrate annual trends with longterm trend
     calibrated_series = []

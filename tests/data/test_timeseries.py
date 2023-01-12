@@ -159,8 +159,8 @@ def test_convert_timeseries_to_unit_test_uncertainties(example_timeseries_ingest
     errors_mw = np.array(meters_to_meters_water_equivalent(df.errors, density_of_water=density_of_water,
                                                            density_of_ice=density_of_ice))
     density_unc = get_density_uncertainty_over_survey_period(0.1)  # over one month
-    expected_errors_mwe_with_density_error = np.abs(changes_mwe) * ((errors_mw / changes_mwe)**2 +
-                                                                    (density_unc / density_of_ice)**2)**0.5
+    expected_errors_mwe_with_density_error = np.abs(changes_mwe) * ((errors_mw / changes_mwe)**2
+                                                                    + (density_unc / density_of_ice)**2)**0.5
     assert np.array_equal(converted_timeseries.data.errors, expected_errors_mwe_with_density_error)
 
 

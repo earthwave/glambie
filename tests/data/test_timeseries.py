@@ -5,10 +5,13 @@ from glambie.const.regions import REGIONS
 from glambie.data.timeseries import Timeseries
 from glambie.data.timeseries import TimeseriesData
 from glambie.const import constants
+from glambie.const.density_uncertainty import get_density_uncertainty_over_survey_period
+from glambie.util.mass_height_conversions import meters_to_meters_water_equivalent
 import numpy as np
 import pytest
 import pandas as pd
 import warnings
+import math
 
 
 @pytest.fixture()
@@ -142,6 +145,24 @@ def test_convert_timeseries_to_unit_mwe_no_conversion_when_already_in_mwe(exampl
     example_timeseries_ingested.unit = "mwe"
     converted_timeseries = example_timeseries_ingested.convert_timeseries_to_unit_mwe()
     assert np.array_equal(converted_timeseries.data.changes, example_timeseries_ingested.data.changes)
+
+
+def test_convert_timeseries_to_unit_test_uncertainties(example_timeseries_ingested):
+    density_of_water = 997
+    density_of_ice = 850
+    converted_timeseries = example_timeseries_ingested.convert_timeseries_to_unit_mwe(
+        density_of_water=density_of_water, density_of_ice=density_of_ice)
+    assert not np.array_equal(converted_timeseries.data.errors, example_timeseries_ingested.data.errors)
+    #
+    df = example_timeseries_ingested.data.as_dataframe()
+    changes_mwe = np.array(meters_to_meters_water_equivalent(df.changes, density_of_water=density_of_water,
+                                                             density_of_ice=density_of_ice))
+    errors_mw = np.array(meters_to_meters_water_equivalent(df.errors, density_of_water=density_of_water,
+                                                           density_of_ice=density_of_ice))
+    density_unc = get_density_uncertainty_over_survey_period(0.1)  # over one month
+    expected_errors_mwe_with_density_error = np.abs(changes_mwe) * ((errors_mw / changes_mwe)**2 +
+                                                                    (density_unc / density_of_ice)**2)**0.5
+    assert np.array_equal(converted_timeseries.data.errors, expected_errors_mwe_with_density_error)
 
 
 def test_convert_timeseries_to_unit_gt_no_area_change_rate(example_timeseries_ingested):

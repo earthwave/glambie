@@ -23,6 +23,8 @@ from glambie.util.date_helpers import get_years
 from glambie.util.timeseries_combination_helpers import calibrate_timeseries_with_trends
 from glambie.util.timeseries_combination_helpers import combine_calibrated_timeseries
 from glambie.const import constants
+from glambie.const.density_uncertainty import get_density_uncertainty_over_survey_period
+
 
 import numpy as np
 import pandas as pd
@@ -256,6 +258,7 @@ class Timeseries():
                                        density_of_ice: float = constants.DENSITY_OF_ICE_KG_PER_M3) -> Timeseries:
         """
         Converts a Timeseries object to the unit of meters water equivalent.
+        Errors are calculated using different density uncertainties depending on time resolution of timeseries.
         Returns a copy of itself with the converted glacier changes.
 
         Parameters
@@ -280,10 +283,21 @@ class Timeseries():
         else:
             object_copy = copy.deepcopy(self)
             object_copy.unit = "mwe"
-            if self.unit == "m":  # @TODO: convert uncertainties as well
+            if self.unit == "m":
                 object_copy.data.changes = np.array(meters_to_meters_water_equivalent(object_copy.data.changes,
                                                                                       density_of_water=density_of_water,
                                                                                       density_of_ice=density_of_ice))
+                # Uncertainties
+                # First, convert elevation change error in m to mwe
+                object_copy.data.errors = np.array(meters_to_meters_water_equivalent(object_copy.data.errors,
+                                                                                     density_of_water=density_of_water,
+                                                                                     density_of_ice=density_of_ice))
+                # Second, include density uncertainty in error
+                density_unc = get_density_uncertainty_over_survey_period(self.data.max_temporal_resolution)
+                df = object_copy.data.as_dataframe()
+                # also see formula in Glambie Assessment Algorithm document, section 5.2 Homogenization of data
+                errors_mwe = df.changes.abs() * ((df.errors / df.changes)**2 + (density_unc / density_of_ice)**2)**0.5
+                object_copy.data.errors = errors_mwe
                 return object_copy
             else:
                 raise NotImplementedError(

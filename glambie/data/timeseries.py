@@ -396,11 +396,15 @@ class Timeseries():
                 start_dates, end_dates, changes = resample_derivative_timeseries_to_monthly_grid(self.data.start_dates,
                                                                                                  self.data.end_dates,
                                                                                                  self.data.changes)
+                # resample errors
+                _, _, errors = resample_derivative_timeseries_to_monthly_grid(self.data.start_dates,
+                                                                              self.data.end_dates,
+                                                                              self.data.errors)
 
                 object_copy.data = TimeseriesData(start_dates=np.array(start_dates),
                                                   end_dates=np.array(end_dates),
                                                   changes=np.array(changes),
-                                                  errors=None, glacier_area_observed=None,
+                                                  errors=np.array(errors), glacier_area_observed=None,
                                                   glacier_area_reference=None)
 
         return object_copy  # return copy of itself
@@ -569,8 +573,9 @@ class Timeseries():
             # get desired annual grid, buffer 2 years to work with start and end dates and include rounded years
             annual_grid = get_years(year_start, min_date=self.data.start_dates.min() - 2,
                                     max_date=self.data.end_dates.max() + 3, return_type="arrays")[0]
-            new_start_dates, new_end_dates, new_changes = [], [], []
-            for start_date, end_date in zip(self.data.start_dates, self.data.end_dates):
+            new_start_dates, new_end_dates, new_changes, new_errors = [], [], [], []
+            for start_date, end_date, error \
+                    in zip(self.data.start_dates, self.data.end_dates, self.data.errors):
                 # get dates from annual grid
                 new_start_date = annual_grid[np.abs(annual_grid - start_date).argmin()]
                 new_end_date = annual_grid[np.abs(annual_grid - end_date).argmin()]
@@ -580,13 +585,44 @@ class Timeseries():
                 # handle case when timeseries is outside the calibration timeseries
                 if df_filtered_year.shape[0] == 0:
                     new_change = None
+                    new_error = None
                 else:  # this case tests if we actually cover the full period or only part of the period
                     if df_filtered_year.start_dates.min() == new_start_date \
                             and df_filtered_year.end_dates.max() == new_end_date:
                         new_change = df_filtered_year["changes"].sum()
+
+                        # CALCULATE ERROR
+                        # 1 calculate temporal homogenization error
+                        # make cumulative timeseries of calibrated high resolution dataset for start and end balances
+                        df_mean_calibrated_cumulative = df_mean_calibrated.copy()
+                        df_mean_calibrated_cumulative.changes = df_mean_calibrated.changes.cumsum()
+                        df_filtered_year_cum_initial_dates = df_mean_calibrated_cumulative[
+                            (df_mean_calibrated_cumulative.start_dates >= start_date)
+                            & (df_mean_calibrated_cumulative.end_dates <= end_date)]
+                        df_filtered_year_cum_new_dates = df_mean_calibrated_cumulative[
+                            (df_mean_calibrated_cumulative.start_dates >= new_start_date)
+                            & (df_mean_calibrated_cumulative.end_dates <= new_end_date)]
+                        # temporal error is 0.5 * (|delta_B_start_date| + |delta_B_end_date|)
+                        # For more info see glambie Assessment Algorithm Document
+                        # i.e. the correction at start and end date
+                        delta_balance_start = abs(
+                            df_filtered_year_cum_initial_dates.changes.iloc[0]
+                            - df_filtered_year_cum_new_dates.changes.iloc[0])
+                        delta_balance_end = abs(
+                            df_filtered_year_cum_initial_dates.changes.iloc[-1]
+                            - df_filtered_year_cum_new_dates.changes.iloc[-1])
+                        error_temp = 0.5 * (delta_balance_start + delta_balance_end)
+
+                        # 2. combine errors assuming random error propagation
+                        new_error = (error**2 + error_temp**2)**0.5
+
                     else:
                         new_change = None
+                        new_error = None
+
+                # Append
                 new_changes.append(new_change)
+                new_errors.append(new_error)
                 new_start_dates.append(float(new_start_date))
                 new_end_dates.append(float(new_end_date))
 
@@ -594,6 +630,7 @@ class Timeseries():
             object_copy.data.start_dates = np.array(new_start_dates)
             object_copy.data.end_dates = np.array(new_end_dates)
             object_copy.data.changes = np.array(new_changes)
+            object_copy.data.errors = np.array(new_errors)
 
             # remove nan values
             df_nan_removed = object_copy.data.as_dataframe()[~object_copy.data.as_dataframe()["changes"].isna()]

@@ -502,10 +502,14 @@ class Timeseries():
         """
         object_copy = copy.deepcopy(self)
         trend = get_total_trend(self.data.start_dates, self.data.end_dates, self.data.changes, return_type="dataframe")
+
+        trend_errors = get_total_trend(self.data.start_dates, self.data.end_dates,
+                                       self.data.errors, return_type="value", calculate_as_errors=True)
+
         object_copy.data = TimeseriesData(start_dates=np.array(trend["start_dates"]),
                                           end_dates=np.array(trend["end_dates"]),
                                           changes=np.array(trend["changes"]),
-                                          errors=None, glacier_area_observed=None,
+                                          errors=np.array([trend_errors]), glacier_area_observed=None,
                                           glacier_area_reference=None)
 
         return object_copy  # return copy of itself

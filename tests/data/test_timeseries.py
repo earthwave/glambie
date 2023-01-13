@@ -345,6 +345,9 @@ def test_convert_timeseries_to_longterm_trend(example_timeseries_ingested):
     assert len(example_timeseries_converted.data.changes) == 1
     assert np.array_equal(example_timeseries_converted.data.changes,
                           np.array([example_timeseries_ingested.data.changes.sum()]))
+    # will need to be changed in future when error calculation adapted
+    assert np.array_equal(example_timeseries_converted.data.errors,
+                          np.array([example_timeseries_ingested.data.errors.std()]))
     assert np.array_equal(example_timeseries_converted.data.start_dates,
                           np.array([example_timeseries_ingested.data.start_dates[0]]))
     assert np.array_equal(example_timeseries_converted.data.end_dates,

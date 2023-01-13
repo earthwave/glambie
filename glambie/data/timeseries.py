@@ -298,7 +298,7 @@ class Timeseries():
                 df = object_copy.data.as_dataframe()
                 # also see formula in Glambie Assessment Algorithm document, section 5.2 Homogenization of data
                 errors_mwe = df.changes.abs() * ((df.errors / df.changes)**2 + (density_unc / density_of_ice)**2)**0.5
-                object_copy.data.errors = errors_mwe
+                object_copy.data.errors = np.array(errors_mwe)
                 return object_copy
             else:
                 raise NotImplementedError(
@@ -349,23 +349,41 @@ class Timeseries():
 
         if self.unit == "gt":  # no conversion needed as already in gt
             return copy.deepcopy(self)
-        elif self.unit == "mwe":  # @TODO: convert uncertainties as well
+        elif self.unit == "mwe":
             if not include_area_change:
                 object_copy.data.changes = np.array(meters_water_equivalent_to_gigatonnes(
                     self.data.changes, area_km2=glacier_area, density_of_water=density_of_water))
-                return object_copy
+                # variables for uncertainty calculation
+                area_unc = glacier_area * self.region.area_uncertainty_percentage  # use individual glacier unc
+                area = glacier_area
             else:
                 # conversion with area change
                 t_0 = self.region.area_change_reference_year
                 area_change = self.region.area_change
                 gt_adjusted_changes = []
+                adjusted_areas = []
                 for _, row in self.data.as_dataframe().iterrows():
                     t_i = (row["start_dates"] + row["end_dates"]) / 2
                     adjusted_area = glacier_area + (t_i - t_0) * (area_change / 100) * glacier_area
                     gt_adjusted_changes.append(meters_water_equivalent_to_gigatonnes(
                         [row.changes], area_km2=adjusted_area, density_of_water=density_of_water)[0])
+                    adjusted_areas.append(adjusted_area)
                 object_copy.data.changes = np.array(gt_adjusted_changes)
-                return object_copy
+                # variables for uncertainty calculation
+                area = np.array(adjusted_areas)
+                area_unc = area * self.region.area_uncertainty_percentage  # use individual glacier unc
+
+            # Uncertainties
+            # First, convert elevation change error in mwe to Gt
+            object_copy.data.errors = np.array(meters_water_equivalent_to_gigatonnes(
+                self.data.errors, area_km2=glacier_area, density_of_water=density_of_water))
+            # Second, include density uncertainty in error
+            df = object_copy.data.as_dataframe()
+            # also see formula in Glambie Assessment Algorithm document, section 5.2 Homogenization of data
+            errors_gt = df.changes.abs() * ((df.errors / df.changes)**2 + (area_unc / area)**2)**0.5
+            object_copy.data.errors = np.array(errors_gt)
+            return object_copy
+
         else:
             raise NotImplementedError(
                 "Conversion to Gt not implemented yet for Timeseries with unit '{}'".format(self.unit))

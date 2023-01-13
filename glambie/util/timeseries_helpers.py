@@ -494,7 +494,7 @@ def resample_derivative_timeseries_to_monthly_grid(start_dates, end_dates, chang
         return pd.DataFrame({"start_dates": start_dates, "end_dates": end_dates, "changes": changes})
 
 
-def get_total_trend(start_dates, end_dates, changes, return_type="dataframe"):
+def get_total_trend(start_dates, end_dates, changes, calculate_as_errors=False, return_type="dataframe"):
     """
     Calculates the full longterm trend of a derivatives timeseries
 
@@ -506,6 +506,9 @@ def get_total_trend(start_dates, end_dates, changes, return_type="dataframe"):
         input end dates of each time period
     changes : np.array or list
         input changes between start and end date
+    calculate_as_errors : bool
+        if set to True, the error of the trend will be calculaterd instead, assuming 'changes' are uncertainties
+        by default False
     return_type : str, optional
         type in which the result is returned. Current options are: 'value' and 'dataframe', by default 'dataframe'
 
@@ -517,15 +520,20 @@ def get_total_trend(start_dates, end_dates, changes, return_type="dataframe"):
         'value': longerm trend in input unit
 
     """
+    if calculate_as_errors:
+        result = np.nanstd(changes)  # @TODO: placeholder calculation. Update this, once we decide how to do it
+    else:
+        result = np.nansum(changes)
     if return_type == "value":
-        return np.nansum(changes)
+        return result
     elif return_type == "dataframe":
         return pd.DataFrame({"start_dates": [np.nanmin(start_dates)],
                              "end_dates": [np.nanmax(end_dates)],
-                             "changes": [np.nansum(changes)]})
+                             "changes": [result]})
 
 
-def get_average_trends_over_new_time_periods(start_dates, end_dates, changes, new_start_dates, new_end_dates):
+def get_average_trends_over_new_time_periods(start_dates, end_dates, changes, new_start_dates, new_end_dates,
+                                             calculate_as_errors=False):
     """
     Returns average trend over new time periods.
     Note that this can not be used for upsampling, only for downsampling (e.g. from months to annual averages)
@@ -544,6 +552,9 @@ def get_average_trends_over_new_time_periods(start_dates, end_dates, changes, ne
     new_end_dates : np.array
         Array with dates of new timeseries end dates (in fractional years)
         All within new_end_dates values should exist within end_dates or the result may be invalid
+    calculate_as_errors : bool
+        if set to True, the error of the trend will be calculaterd instead, assuming 'changes' are uncertainties
+        by default False
 
     Returns
     -------
@@ -565,7 +576,9 @@ def get_average_trends_over_new_time_periods(start_dates, end_dates, changes, ne
     for start_date, end_date in zip(new_start_dates, new_end_dates):
         df_sub = timeseries_df[(timeseries_df["start_dates"] >= start_date) & (timeseries_df["end_dates"] <= end_date)]
         annual_changes.append(get_total_trend(df_sub["start_dates"],
-                              df_sub["end_dates"], df_sub["changes"], return_type="value"))
+                              df_sub["end_dates"], df_sub["changes"], return_type="value",
+                              calculate_as_errors=calculate_as_errors))
+    
     return pd.DataFrame({"start_dates": new_start_dates,
                          "end_dates": new_end_dates,
                          "changes": annual_changes})

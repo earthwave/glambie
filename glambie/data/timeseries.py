@@ -454,10 +454,16 @@ class Timeseries():
                                                                  changes=self.data.changes,
                                                                  new_start_dates=new_start_dates,
                                                                  new_end_dates=new_end_dates)
+            df_annual_errors = get_average_trends_over_new_time_periods(start_dates=self.data.start_dates,
+                                                                        end_dates=self.data.end_dates,
+                                                                        changes=self.data.errors,
+                                                                        new_start_dates=new_start_dates,
+                                                                        new_end_dates=new_end_dates,
+                                                                        calculate_as_errors=True)
             object_copy.data.start_dates = np.array(df_annual["start_dates"])
             object_copy.data.end_dates = np.array(df_annual["end_dates"])
             object_copy.data.changes = np.array(df_annual["changes"])
-            object_copy.data.errors = None
+            object_copy.data.errors = np.array(df_annual_errors["changes"])
             object_copy.data.glacier_area_observed = None
             object_copy.data.glacier_area_reference = None
 

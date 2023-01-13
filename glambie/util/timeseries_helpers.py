@@ -527,8 +527,8 @@ def get_total_trend(start_dates, end_dates, changes, calculate_as_errors=False, 
     if return_type == "value":
         return result
     elif return_type == "dataframe":
-        return pd.DataFrame({"start_dates": [np.nanmin(start_dates)],
-                             "end_dates": [np.nanmax(end_dates)],
+        return pd.DataFrame({"start_dates": [float(np.nanmin(start_dates))],
+                             "end_dates": [float(np.nanmax(end_dates))],
                              "changes": [result]})
 
 
@@ -578,7 +578,7 @@ def get_average_trends_over_new_time_periods(start_dates, end_dates, changes, ne
         annual_changes.append(get_total_trend(df_sub["start_dates"],
                               df_sub["end_dates"], df_sub["changes"], return_type="value",
                               calculate_as_errors=calculate_as_errors))
-    
+
     return pd.DataFrame({"start_dates": new_start_dates,
                          "end_dates": new_end_dates,
                          "changes": annual_changes})

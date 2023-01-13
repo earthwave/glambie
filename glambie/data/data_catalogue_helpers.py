@@ -40,12 +40,34 @@ def calibrate_timeseries_with_trends_catalogue(catalogue_with_trends: DataCatalo
                                            .as_dataframe().start_dates,
                                            "end_dates": calibration_timeseries.data
                                            .as_dataframe().end_dates, "changes": mean_calibrated_ts})
-        df_mean_calibrated = df_mean_calibrated[~df_mean_calibrated["changes"].isna()]
+        df_mean_calibrated_na_removed = df_mean_calibrated[~df_mean_calibrated["changes"].isna()]
+
+        # CALCULATE UNCERTAINTIES
+        # The uncertainty of a calibrated time series is calculated by combining the uncertainties of the anomalies
+        # and of the long-term trend
+        df_trends = ds.data.as_dataframe()
+        trend_errors = df_trends.errors  # remove na lines
+        calibration_timeseries_errors = calibration_timeseries.data.errors[~df_mean_calibrated["changes"].isna()]
+        # now convert trend errors to same temporal unit as calibration_timeseries, e.g. annual
+        trend_timeperiod = np.mean(df_trends.end_dates - df_trends.start_dates)
+        desired_timeperiod = calibration_timeseries.data.max_temporal_resolution
+        trend_error_resampled = trend_errors * (desired_timeperiod / trend_timeperiod)
+        df_trends["error_resampled"] = trend_error_resampled
+        trend_errors_resampled = []
+        # add the correct errors to match the years from the calibrated timeseries
+        for _, row in df_mean_calibrated_na_removed.iterrows():
+            err = df_trends[(row.start_dates >= df_trends.start_dates)
+                            & (row.end_dates <= df_trends.end_dates)].error_resampled.iloc[0]
+            trend_errors_resampled.append(err)
+        # combine both errors following the law of random error propagation
+        errors_calibrated_series = (np.array(trend_errors_resampled)**2
+                                    + np.array(calibration_timeseries_errors)**2)**0.5
+
         ds_copy = copy.deepcopy(ds)
-        ds_copy.data = TimeseriesData(start_dates=np.array(df_mean_calibrated["start_dates"]),
-                                      end_dates=np.array(df_mean_calibrated["end_dates"]),
-                                      changes=np.array(df_mean_calibrated["changes"]),
-                                      errors=None, glacier_area_observed=None,
+        ds_copy.data = TimeseriesData(start_dates=np.array(df_mean_calibrated_na_removed["start_dates"]),
+                                      end_dates=np.array(df_mean_calibrated_na_removed["end_dates"]),
+                                      changes=np.array(df_mean_calibrated_na_removed["changes"]),
+                                      errors=np.array(errors_calibrated_series), glacier_area_observed=None,
                                       glacier_area_reference=None)
         calibrated_series.append(ds_copy)
 

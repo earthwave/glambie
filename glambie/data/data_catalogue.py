@@ -226,8 +226,21 @@ class DataCatalogue():
         mean_changes = np.array(df[df.columns.intersection(
             df.filter(regex=("changes*")).columns.to_list())].mean(axis=1))
 
+        # UNCERTAINTIES -- more information is in GlaMBIE Assessment Algorithm document
+        # propagate observational errors
+        sigma_observational_errors = ((df.filter(regex=("errors*"))**2).sum(axis=1))**0.5
+        # divide by 1/n
+        sigma_observational_errors = (1 / df.filter(regex=("errors*")).count(axis=1)) * sigma_observational_errors
+
+        # variability of change between sources, times 1.96 as we calculate sigma-2 uncertainties (95%)
+        sigma_variability = 1.96 * np.array(df[df.columns.intersection(
+            df.filter(regex=("changes*")).columns.to_list())].sem(axis=1, ddof=0))
+
+        # Combine two error sources assuming they are independent
+        errors = (sigma_observational_errors**2 + sigma_variability**2)**0.5
+
         df_mean_annual = pd.DataFrame(pd.DataFrame(
-            {"start_dates": start_dates, "end_dates": end_dates, "changes": mean_changes}))
+            {"start_dates": start_dates, "end_dates": end_dates, "changes": mean_changes, "errors": errors}))
 
         if add_trend_after_averaging and remove_trend:
             # add mean changes back which have been removed over the common period
@@ -237,7 +250,8 @@ class DataCatalogue():
         ts_data = TimeseriesData(start_dates=np.array(df_mean_annual["start_dates"]),
                                  end_dates=np.array(df_mean_annual["end_dates"]),
                                  changes=np.array(df_mean_annual["changes"]),
-                                 errors=np.linspace(0, 0, df_mean_annual.shape[0]), glacier_area_reference=None,
+                                 errors=np.array(df_mean_annual["errors"]),
+                                 glacier_area_reference=None,
                                  glacier_area_observed=None)
         reference_dataset_for_metadata = self.datasets[0]  # use this as a reference for filling metadata
 

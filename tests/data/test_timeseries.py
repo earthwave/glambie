@@ -281,7 +281,7 @@ def test_convert_timeseries_to_annual_trends_up_sampling(example_timeseries_inge
     example_timeseries_ingested.data.start_dates = np.array([2010.0])
     example_timeseries_ingested.data.end_dates = np.array([2015.0])
     example_timeseries_ingested.data.changes = np.array([5.0])
-    example_timeseries_ingested.data.errors = None
+    example_timeseries_ingested.data.errors = np.array([1.0])
     example_timeseries_ingested.data.glacier_area_reference = None
     example_timeseries_ingested.data.glacier_area_observed = None
 
@@ -292,6 +292,7 @@ def test_convert_timeseries_to_annual_trends_up_sampling(example_timeseries_inge
     assert np.array_equal(example_timeseries_converted.data.end_dates, np.linspace(2011, 2015, 5))
     assert example_timeseries_converted.data.changes.sum() == example_timeseries_ingested.data.changes.sum()
     assert np.array_equal(example_timeseries_converted.data.changes, np.linspace(1, 1, 5))
+    assert np.array_equal(example_timeseries_converted.data.errors, np.linspace(0.2, 0.2, 5))
 
 
 def test_convert_timeseries_to_annual_trends_up_sampling_throws_exception(example_timeseries_ingested):

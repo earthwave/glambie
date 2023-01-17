@@ -496,16 +496,19 @@ class Timeseries():
             new_start_dates, new_end_dates = get_years(year_start, min_date=self.data.start_dates.min(),
                                                        max_date=self.data.end_dates.max(), return_type="arrays")
             new_changes = []
+            new_uncertainties = []
             for _, row in self.data.as_dataframe().iterrows():
                 time_period = row["end_dates"] - row["start_dates"]
                 annual_trend = row["changes"] / time_period
+                annual_unc = row["errors"] / time_period
                 # add annual trend times number of years to the new changes
                 new_changes.extend([annual_trend for _ in range(int(time_period))])
+                new_uncertainties.extend([annual_unc for _ in range(int(time_period))])
             assert len(new_changes) == len(new_start_dates) == len(new_end_dates)
             object_copy.data.start_dates = np.array(new_start_dates)
             object_copy.data.end_dates = np.array(new_end_dates)
             object_copy.data.changes = np.array(new_changes)
-            object_copy.data.errors = None
+            object_copy.data.errors = np.array(new_uncertainties)
             object_copy.data.glacier_area_observed = None
             object_copy.data.glacier_area_reference = None
 

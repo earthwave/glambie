@@ -119,16 +119,16 @@ def get_years(desired_year_start: float, min_date: float, max_date: float, retur
         # if glaciological year is closer to the end of the year
         # the glaciological year is starting around the end of the previous year
         if round(desired_year_start) == 1:
-            start_date = year - 1 + desired_year_start
-            end_date = year + desired_year_start
+            start_date = float(year - 1 + desired_year_start)
+            end_date = float(year + desired_year_start)
             if (start_date >= min_date) & (end_date <= max_date):
                 start_dates.append(start_date)
                 end_dates.append(end_date)
         # if glaciological year is closer to the start of the year
         # the glaciological year is starting around start of the current year
         elif round(desired_year_start) == 0:
-            start_date = year + desired_year_start
-            end_date = year + 1 + desired_year_start
+            start_date = float(year + desired_year_start)
+            end_date = float(year + 1 + desired_year_start)
             if (start_date >= min_date) & (end_date <= max_date):
                 start_dates.append(start_date)
                 end_dates.append(end_date)

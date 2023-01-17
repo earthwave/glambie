@@ -2,6 +2,8 @@ import os
 
 from glambie.data.data_catalogue import DataCatalogue
 import pytest
+import copy
+import numpy as np
 
 
 @pytest.fixture()
@@ -114,3 +116,57 @@ def test_datasets_are_same_unit(example_catalogue):
     # change first datasets unit
     example_catalogue.datasets[0].unit = "gt"
     assert not example_catalogue.datasets_are_same_unit()
+
+
+def test_data_catalogue_copy(example_catalogue_small):
+    example_catalogue_small.load_all_data()
+    example_catalogue_copy = example_catalogue_small.copy()
+    example_catalogue_copy.datasets[0].data.changes = [-4]
+    assert example_catalogue_copy.datasets[0].data.changes[0] == -4
+    assert example_catalogue_small.datasets[0].data.changes[0] != -4
+
+
+def test_average_timeseries_in_catalogue_both_same(example_catalogue_small):
+    example_catalogue_small.load_all_data()
+    example_catalogue_small.datasets.append(copy.deepcopy(example_catalogue_small.datasets[0]))
+
+    # since both timeseries are the same average should give back same as inputtimeseries
+    result_timeseries, _ = example_catalogue_small.average_timeseries_in_catalogue(remove_trend=False,
+                                                                                   add_trend_after_averaging=False)
+    assert np.array_equal(result_timeseries.data.changes, example_catalogue_small.datasets[0].data.changes)
+
+
+def test_average_timeseries_in_catalogue_example_with_doubled(example_catalogue_small):
+    example_catalogue_small.load_all_data()
+    example_catalogue_small.datasets.append(copy.deepcopy(example_catalogue_small.datasets[0]))
+
+    # double the values for the test
+    example_catalogue_small.datasets[0].data.changes = list(np.array(
+        example_catalogue_small.datasets[0].data.changes) * 2)
+    result_timeseries, _ = example_catalogue_small.average_timeseries_in_catalogue(remove_trend=False,
+                                                                                   add_trend_after_averaging=False)
+    # the result should then be 1.5 times initial timeseries
+    assert np.array_equal(result_timeseries.data.changes, np.array(
+        example_catalogue_small.datasets[1].data.changes) * 1.5)
+
+
+def test_average_timeseries_in_catalogue_example_with_trends_removed(example_catalogue_small):
+    example_catalogue_small.load_all_data()
+    example_catalogue_small.datasets.append(copy.deepcopy(example_catalogue_small.datasets[0]))
+
+    # double the values for the test
+    example_catalogue_small.datasets[0].data.changes = list(np.array(
+        example_catalogue_small.datasets[0].data.changes) * 2)
+    result_timeseries, _ = example_catalogue_small.average_timeseries_in_catalogue(remove_trend=False,
+                                                                                   add_trend_after_averaging=False)
+    # remove trends
+    result_timeseries_trend_removed, _ = example_catalogue_small \
+        .average_timeseries_in_catalogue(remove_trend=True, add_trend_after_averaging=False)
+    result_timeseries_trend_removed_added_after_averaging, _ = example_catalogue_small \
+        .average_timeseries_in_catalogue(remove_trend=True, add_trend_after_averaging=True)
+    # now we expect different results
+    assert not np.array_equal(result_timeseries.data.changes, result_timeseries_trend_removed.data.changes)
+    assert not np.array_equal(list(result_timeseries_trend_removed_added_after_averaging.data.changes),
+                              result_timeseries_trend_removed.data.changes)
+    assert np.allclose(result_timeseries_trend_removed_added_after_averaging.data.changes,
+                       result_timeseries.data.changes)

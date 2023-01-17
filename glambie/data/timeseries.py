@@ -23,6 +23,8 @@ from glambie.util.date_helpers import get_years
 from glambie.util.timeseries_combination_helpers import calibrate_timeseries_with_trends
 from glambie.util.timeseries_combination_helpers import combine_calibrated_timeseries
 from glambie.const import constants
+from glambie.const.density_uncertainty import get_density_uncertainty_over_survey_period
+
 
 import numpy as np
 import pandas as pd
@@ -111,9 +113,10 @@ class TimeseriesData():
             warnings.warn("Cumulative timeseries may be invalid. This may be due to the timeseries containing "
                           "gaps or overlapping periods.")
         dates, changes = derivative_to_cumulative(self.start_dates, self.end_dates, self.changes)
-        # errors = np.array([0, *self.errors])  # need to handle errors in the future too
+        errors = np.array([0, *self.errors])  # need to handle errors in the future too
         df_cumulative = pd.DataFrame({'dates': dates,
-                                      'changes': changes
+                                      'changes': changes,
+                                      'errors': errors
                                       })
         return df_cumulative
 
@@ -256,6 +259,7 @@ class Timeseries():
                                        density_of_ice: float = constants.DENSITY_OF_ICE_KG_PER_M3) -> Timeseries:
         """
         Converts a Timeseries object to the unit of meters water equivalent.
+        Errors are calculated using different density uncertainties depending on time resolution of timeseries.
         Returns a copy of itself with the converted glacier changes.
 
         Parameters
@@ -280,10 +284,21 @@ class Timeseries():
         else:
             object_copy = copy.deepcopy(self)
             object_copy.unit = "mwe"
-            if self.unit == "m":  # @TODO: convert uncertainties as well
+            if self.unit == "m":
                 object_copy.data.changes = np.array(meters_to_meters_water_equivalent(object_copy.data.changes,
                                                                                       density_of_water=density_of_water,
                                                                                       density_of_ice=density_of_ice))
+                # Uncertainties
+                # First, convert elevation change error in m to mwe
+                object_copy.data.errors = np.array(meters_to_meters_water_equivalent(object_copy.data.errors,
+                                                                                     density_of_water=density_of_water,
+                                                                                     density_of_ice=density_of_ice))
+                # Second, include density uncertainty in error
+                density_unc = get_density_uncertainty_over_survey_period(self.data.max_temporal_resolution)
+                df = object_copy.data.as_dataframe()
+                # also see formula in Glambie Assessment Algorithm document, section 5.2 Homogenization of data
+                errors_mwe = df.changes.abs() * ((df.errors / df.changes)**2 + (density_unc / density_of_ice)**2)**0.5
+                object_copy.data.errors = np.array(errors_mwe)
                 return object_copy
             else:
                 raise NotImplementedError(
@@ -334,23 +349,43 @@ class Timeseries():
 
         if self.unit == "gt":  # no conversion needed as already in gt
             return copy.deepcopy(self)
-        elif self.unit == "mwe":  # @TODO: convert uncertainties as well
+        elif self.unit == "mwe":
             if not include_area_change:
                 object_copy.data.changes = np.array(meters_water_equivalent_to_gigatonnes(
                     self.data.changes, area_km2=glacier_area, density_of_water=density_of_water))
-                return object_copy
+                # variables for uncertainty calculation
+                # area_unc is calculated as a % of the total area. % can be defined individually per region.
+                area_unc = glacier_area * self.region.area_uncertainty_percentage  # use individual glacier area unc
+                area = glacier_area
             else:
                 # conversion with area change
                 t_0 = self.region.area_change_reference_year
                 area_change = self.region.area_change
                 gt_adjusted_changes = []
+                adjusted_areas = []
                 for _, row in self.data.as_dataframe().iterrows():
                     t_i = (row["start_dates"] + row["end_dates"]) / 2
                     adjusted_area = glacier_area + (t_i - t_0) * (area_change / 100) * glacier_area
                     gt_adjusted_changes.append(meters_water_equivalent_to_gigatonnes(
                         [row.changes], area_km2=adjusted_area, density_of_water=density_of_water)[0])
+                    adjusted_areas.append(adjusted_area)
                 object_copy.data.changes = np.array(gt_adjusted_changes)
-                return object_copy
+                # variables for uncertainty calculation
+                area = np.array(adjusted_areas)
+                # area_unc is calculated as a % of the total area. % can be defined individually per region.
+                area_unc = area * self.region.area_uncertainty_percentage  # use individual glacier area unc
+
+            # Uncertainties
+            # First, convert elevation change uncertaintiesr in mwe to Gt
+            object_copy.data.errors = np.array(meters_water_equivalent_to_gigatonnes(
+                self.data.errors, area_km2=glacier_area, density_of_water=density_of_water))
+            # Second, include density uncertainty in uncertainty
+            df = object_copy.data.as_dataframe()
+            # also see formula in Glambie Assessment Algorithm document, section 5.2 Homogenization of data
+            uncertainties_gt = df.changes.abs() * ((df.errors / df.changes)**2 + (area_unc / area)**2)**0.5
+            object_copy.data.errors = np.array(uncertainties_gt)
+            return object_copy
+
         else:
             raise NotImplementedError(
                 "Conversion to Gt not implemented yet for Timeseries with unit '{}'".format(self.unit))
@@ -382,11 +417,15 @@ class Timeseries():
                 start_dates, end_dates, changes = resample_derivative_timeseries_to_monthly_grid(self.data.start_dates,
                                                                                                  self.data.end_dates,
                                                                                                  self.data.changes)
+                # resample uncertainties
+                _, _, errors = resample_derivative_timeseries_to_monthly_grid(self.data.start_dates,
+                                                                              self.data.end_dates,
+                                                                              self.data.errors)
 
                 object_copy.data = TimeseriesData(start_dates=np.array(start_dates),
                                                   end_dates=np.array(end_dates),
                                                   changes=np.array(changes),
-                                                  errors=None, glacier_area_observed=None,
+                                                  errors=np.array(errors), glacier_area_observed=None,
                                                   glacier_area_reference=None)
 
         return object_copy  # return copy of itself
@@ -436,10 +475,16 @@ class Timeseries():
                                                                  changes=self.data.changes,
                                                                  new_start_dates=new_start_dates,
                                                                  new_end_dates=new_end_dates)
+            df_annual_errors = get_average_trends_over_new_time_periods(start_dates=self.data.start_dates,
+                                                                        end_dates=self.data.end_dates,
+                                                                        changes=self.data.errors,
+                                                                        new_start_dates=new_start_dates,
+                                                                        new_end_dates=new_end_dates,
+                                                                        calculate_as_errors=True)
             object_copy.data.start_dates = np.array(df_annual["start_dates"])
             object_copy.data.end_dates = np.array(df_annual["end_dates"])
             object_copy.data.changes = np.array(df_annual["changes"])
-            object_copy.data.errors = None
+            object_copy.data.errors = np.array(df_annual_errors["changes"])
             object_copy.data.glacier_area_observed = None
             object_copy.data.glacier_area_reference = None
 
@@ -478,10 +523,14 @@ class Timeseries():
         """
         object_copy = copy.deepcopy(self)
         trend = get_total_trend(self.data.start_dates, self.data.end_dates, self.data.changes, return_type="dataframe")
+
+        trend_errors = get_total_trend(self.data.start_dates, self.data.end_dates,
+                                       self.data.errors, return_type="value", calculate_as_errors=True)
+
         object_copy.data = TimeseriesData(start_dates=np.array(trend["start_dates"]),
                                           end_dates=np.array(trend["end_dates"]),
                                           changes=np.array(trend["changes"]),
-                                          errors=None, glacier_area_observed=None,
+                                          errors=np.array([trend_errors]), glacier_area_observed=None,
                                           glacier_area_reference=None)
 
         return object_copy  # return copy of itself
@@ -555,8 +604,9 @@ class Timeseries():
             # get desired annual grid, buffer 2 years to work with start and end dates and include rounded years
             annual_grid = get_years(year_start, min_date=self.data.start_dates.min() - 2,
                                     max_date=self.data.end_dates.max() + 3, return_type="arrays")[0]
-            new_start_dates, new_end_dates, new_changes = [], [], []
-            for start_date, end_date in zip(self.data.start_dates, self.data.end_dates):
+            new_start_dates, new_end_dates, new_changes, new_errors = [], [], [], []
+            for start_date, end_date, error \
+                    in zip(self.data.start_dates, self.data.end_dates, self.data.errors):
                 # get dates from annual grid
                 new_start_date = annual_grid[np.abs(annual_grid - start_date).argmin()]
                 new_end_date = annual_grid[np.abs(annual_grid - end_date).argmin()]
@@ -566,13 +616,44 @@ class Timeseries():
                 # handle case when timeseries is outside the calibration timeseries
                 if df_filtered_year.shape[0] == 0:
                     new_change = None
+                    new_error = None
                 else:  # this case tests if we actually cover the full period or only part of the period
                     if df_filtered_year.start_dates.min() == new_start_date \
                             and df_filtered_year.end_dates.max() == new_end_date:
                         new_change = df_filtered_year["changes"].sum()
+
+                        # CALCULATE ERROR
+                        # 1 calculate temporal homogenization error
+                        # make cumulative timeseries of calibrated high resolution dataset for start and end balances
+                        df_mean_calibrated_cumulative = df_mean_calibrated.copy()
+                        df_mean_calibrated_cumulative.changes = df_mean_calibrated.changes.cumsum()
+                        df_filtered_year_cum_initial_dates = df_mean_calibrated_cumulative[
+                            (df_mean_calibrated_cumulative.start_dates >= start_date)
+                            & (df_mean_calibrated_cumulative.end_dates <= end_date)]
+                        df_filtered_year_cum_new_dates = df_mean_calibrated_cumulative[
+                            (df_mean_calibrated_cumulative.start_dates >= new_start_date)
+                            & (df_mean_calibrated_cumulative.end_dates <= new_end_date)]
+                        # temporal error is 0.5 * (|delta_B_start_date| + |delta_B_end_date|)
+                        # For more info see glambie Assessment Algorithm Document
+                        # i.e. the correction at start and end date
+                        delta_balance_start = abs(
+                            df_filtered_year_cum_initial_dates.changes.iloc[0]
+                            - df_filtered_year_cum_new_dates.changes.iloc[0])
+                        delta_balance_end = abs(
+                            df_filtered_year_cum_initial_dates.changes.iloc[-1]
+                            - df_filtered_year_cum_new_dates.changes.iloc[-1])
+                        error_temp = 0.5 * (delta_balance_start + delta_balance_end)
+
+                        # 2. combine errors assuming random error propagation
+                        new_error = (error**2 + error_temp**2)**0.5
+
                     else:
                         new_change = None
+                        new_error = None
+
+                # Append
                 new_changes.append(new_change)
+                new_errors.append(new_error)
                 new_start_dates.append(float(new_start_date))
                 new_end_dates.append(float(new_end_date))
 
@@ -580,6 +661,7 @@ class Timeseries():
             object_copy.data.start_dates = np.array(new_start_dates)
             object_copy.data.end_dates = np.array(new_end_dates)
             object_copy.data.changes = np.array(new_changes)
+            object_copy.data.errors = np.array(new_errors)
 
             # remove nan values
             df_nan_removed = object_copy.data.as_dataframe()[~object_copy.data.as_dataframe()["changes"].isna()]

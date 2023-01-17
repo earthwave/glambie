@@ -5,6 +5,8 @@ from glambie.const.regions import REGIONS
 from glambie.data.timeseries import Timeseries
 from glambie.data.timeseries import TimeseriesData
 from glambie.const import constants
+from glambie.const.density_uncertainty import get_density_uncertainty_over_survey_period
+from glambie.util.mass_height_conversions import meters_to_meters_water_equivalent
 import numpy as np
 import pytest
 import pandas as pd
@@ -144,6 +146,24 @@ def test_convert_timeseries_to_unit_mwe_no_conversion_when_already_in_mwe(exampl
     assert np.array_equal(converted_timeseries.data.changes, example_timeseries_ingested.data.changes)
 
 
+def test_convert_timeseries_to_unit_test_uncertainties(example_timeseries_ingested):
+    density_of_water = 997
+    density_of_ice = 850
+    converted_timeseries = example_timeseries_ingested.convert_timeseries_to_unit_mwe(
+        density_of_water=density_of_water, density_of_ice=density_of_ice)
+    assert not np.array_equal(converted_timeseries.data.errors, example_timeseries_ingested.data.errors)
+    #
+    df = example_timeseries_ingested.data.as_dataframe()
+    changes_mwe = np.array(meters_to_meters_water_equivalent(df.changes, density_of_water=density_of_water,
+                                                             density_of_ice=density_of_ice))
+    errors_mw = np.array(meters_to_meters_water_equivalent(df.errors, density_of_water=density_of_water,
+                                                           density_of_ice=density_of_ice))
+    density_unc = get_density_uncertainty_over_survey_period(0.1)  # over one month
+    expected_errors_mwe_with_density_error = np.abs(changes_mwe) * ((errors_mw / changes_mwe)**2
+                                                                    + (density_unc / density_of_ice)**2)**0.5
+    assert np.array_equal(converted_timeseries.data.errors, expected_errors_mwe_with_density_error)
+
+
 def test_convert_timeseries_to_unit_gt_no_area_change_rate(example_timeseries_ingested):
     example_timeseries_ingested.unit = "mwe"
     example_timeseries_ingested.region = REGIONS["iceland"]
@@ -208,28 +228,36 @@ def test_convert_timeseries_to_annual_trends_down_sampling(example_timeseries_in
     example_timeseries_ingested.data.start_dates = np.linspace(2010, 2011, 13)[:-1]
     example_timeseries_ingested.data.end_dates = np.linspace(2010, 2011, 13)[1:]
     example_timeseries_ingested.data.changes = np.linspace(1, 11, 12)
+    example_timeseries_ingested.data.errors = np.linspace(1, 2, 12)
     assert not example_timeseries_ingested.timeseries_is_annual_grid()
     example_timeseries_converted = example_timeseries_ingested.convert_timeseries_to_annual_trends()
     assert example_timeseries_converted.timeseries_is_annual_grid()
     assert len(example_timeseries_converted.data.changes) == 1
+    assert len(example_timeseries_converted.data.errors) == 1
     assert example_timeseries_converted.data.changes[0] == example_timeseries_ingested.data.changes.sum()
+    # current implementation of errors is stdev, test will need to be adapted once this is changed
+    assert example_timeseries_converted.data.errors[0] == example_timeseries_ingested.data.errors.std()
 
     # add one more month and check it's still the same
     np.append(example_timeseries_ingested.data.start_dates, 2011)
     np.append(example_timeseries_ingested.data.end_dates, 2011 + 1 / 12)
     np.append(example_timeseries_ingested.data.changes, 5)
+    np.append(example_timeseries_ingested.data.errors, 2.1)
     example_timeseries_converted2 = example_timeseries_ingested.convert_timeseries_to_annual_trends()
     # should be the same now, and last element is ignored as its not a full year
     assert np.array_equal(example_timeseries_converted.data.changes, example_timeseries_converted2.data.changes)
+    assert np.array_equal(example_timeseries_converted.data.errors, example_timeseries_converted2.data.errors)
     assert np.array_equal(example_timeseries_converted.data.start_dates, example_timeseries_converted2.data.start_dates)
 
     # now we pop 2 elements and should get back no result as not a full year anymore
     example_timeseries_ingested.data.start_dates = example_timeseries_ingested.data.start_dates[:-2]
     example_timeseries_ingested.data.end_dates = example_timeseries_ingested.data.end_dates[:-2]
     example_timeseries_ingested.data.changes = example_timeseries_ingested.data.changes[:-2]
+    example_timeseries_ingested.data.errors = example_timeseries_ingested.data.errors[:-2]
     example_timeseries_converted2 = example_timeseries_ingested.convert_timeseries_to_annual_trends()
     assert example_timeseries_converted2.timeseries_is_annual_grid()
     assert len(example_timeseries_converted2.data.changes) == 0
+    assert len(example_timeseries_converted2.data.errors) == 0
 
 
 def test_convert_timeseries_to_annual_trends_down_sampling_glaciological_year(example_timeseries_ingested):
@@ -239,6 +267,7 @@ def test_convert_timeseries_to_annual_trends_down_sampling_glaciological_year(ex
     example_timeseries_ingested.data.start_dates = np.linspace(2010.75, 2011.75, 13)[:-1]
     example_timeseries_ingested.data.end_dates = np.linspace(2010.75, 2011.75, 13)[1:]
     example_timeseries_ingested.data.changes = np.linspace(1, 11, 12)
+    example_timeseries_ingested.data.errors = np.linspace(1, 2, 12)
     assert not example_timeseries_ingested.timeseries_is_annual_grid(year_type=constants.YearType.GLACIOLOGICAL)
     example_timeseries_converted = example_timeseries_ingested.convert_timeseries_to_annual_trends(
         year_type=constants.YearType.GLACIOLOGICAL)
@@ -281,6 +310,7 @@ def test_convert_timeseries_to_annual_trends_up_annual_should_return_same_as_inp
     example_timeseries_ingested.data.start_dates = np.linspace(2010.75, 2015.75, 6)
     example_timeseries_ingested.data.end_dates = np.linspace(2011.75, 2016.75, 6)
     example_timeseries_ingested.data.changes = np.linspace(1, 6, 6)
+    example_timeseries_ingested.data.errors = np.linspace(1, 2, 6)
     assert example_timeseries_ingested.timeseries_is_annual_grid(year_type=constants.YearType.GLACIOLOGICAL)
     example_timeseries_converted = example_timeseries_ingested \
         .convert_timeseries_to_annual_trends(year_type=constants.YearType.GLACIOLOGICAL)
@@ -315,6 +345,9 @@ def test_convert_timeseries_to_longterm_trend(example_timeseries_ingested):
     assert len(example_timeseries_converted.data.changes) == 1
     assert np.array_equal(example_timeseries_converted.data.changes,
                           np.array([example_timeseries_ingested.data.changes.sum()]))
+    # will need to be changed in future when error calculation adapted
+    assert np.array_equal(example_timeseries_converted.data.errors,
+                          np.array([example_timeseries_ingested.data.errors.std()]))
     assert np.array_equal(example_timeseries_converted.data.start_dates,
                           np.array([example_timeseries_ingested.data.start_dates[0]]))
     assert np.array_equal(example_timeseries_converted.data.end_dates,

@@ -126,7 +126,7 @@ def test_data_catalogue_copy(example_catalogue_small):
     assert example_catalogue_small.datasets[0].data.changes[0] != -4
 
 
-def test_average_timeseries_in_catalogue(example_catalogue_small):
+def test_average_timeseries_in_catalogue_both_same(example_catalogue_small):
     example_catalogue_small.load_all_data()
     example_catalogue_small.datasets.append(copy.deepcopy(example_catalogue_small.datasets[0]))
 
@@ -135,7 +135,12 @@ def test_average_timeseries_in_catalogue(example_catalogue_small):
                                                                                    add_trend_after_averaging=False)
     assert np.array_equal(result_timeseries.data.changes, example_catalogue_small.datasets[0].data.changes)
 
-    # double the values for next test
+
+def test_average_timeseries_in_catalogue_example_with_doubled(example_catalogue_small):
+    example_catalogue_small.load_all_data()
+    example_catalogue_small.datasets.append(copy.deepcopy(example_catalogue_small.datasets[0]))
+
+    # double the values for the test
     example_catalogue_small.datasets[0].data.changes = list(np.array(
         example_catalogue_small.datasets[0].data.changes) * 2)
     result_timeseries, _ = example_catalogue_small.average_timeseries_in_catalogue(remove_trend=False,
@@ -144,7 +149,17 @@ def test_average_timeseries_in_catalogue(example_catalogue_small):
     assert np.array_equal(result_timeseries.data.changes, np.array(
         example_catalogue_small.datasets[1].data.changes) * 1.5)
 
-    # remove trends for next test
+
+def test_average_timeseries_in_catalogue_example_with_trends_removed(example_catalogue_small):
+    example_catalogue_small.load_all_data()
+    example_catalogue_small.datasets.append(copy.deepcopy(example_catalogue_small.datasets[0]))
+
+    # double the values for the test
+    example_catalogue_small.datasets[0].data.changes = list(np.array(
+        example_catalogue_small.datasets[0].data.changes) * 2)
+    result_timeseries, _ = example_catalogue_small.average_timeseries_in_catalogue(remove_trend=False,
+                                                                                   add_trend_after_averaging=False)
+    # remove trends
     result_timeseries_trend_removed, _ = example_catalogue_small \
         .average_timeseries_in_catalogue(remove_trend=True, add_trend_after_averaging=False)
     result_timeseries_trend_removed_added_after_averaging, _ = example_catalogue_small \

@@ -6,7 +6,8 @@ Density uncertainty in relation to the length of the survey period.
 def get_density_uncertainty_over_survey_period(time_period_in_fractional_years) -> int:
     """
     Lazy implementation of a density uncertainty catalogue at different time resolutions,
-    approximately following Huss (2013, Fig. 4d)
+    approximately following Huss (2013, Fig. 4d).
+    See the GlaMBIE Assessment Algorithm document for more information,
 
     Parameters
     ----------

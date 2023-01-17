@@ -354,7 +354,8 @@ class Timeseries():
                 object_copy.data.changes = np.array(meters_water_equivalent_to_gigatonnes(
                     self.data.changes, area_km2=glacier_area, density_of_water=density_of_water))
                 # variables for uncertainty calculation
-                area_unc = glacier_area * self.region.area_uncertainty_percentage  # use individual glacier unc
+                # area_unc is calculated as a % of the total area. % can be defined individually per region.
+                area_unc = glacier_area * self.region.area_uncertainty_percentage  # use individual glacier area unc
                 area = glacier_area
             else:
                 # conversion with area change
@@ -371,17 +372,18 @@ class Timeseries():
                 object_copy.data.changes = np.array(gt_adjusted_changes)
                 # variables for uncertainty calculation
                 area = np.array(adjusted_areas)
-                area_unc = area * self.region.area_uncertainty_percentage  # use individual glacier unc
+                # area_unc is calculated as a % of the total area. % can be defined individually per region.
+                area_unc = area * self.region.area_uncertainty_percentage  # use individual glacier area unc
 
             # Uncertainties
-            # First, convert elevation change error in mwe to Gt
+            # First, convert elevation change uncertaintiesr in mwe to Gt
             object_copy.data.errors = np.array(meters_water_equivalent_to_gigatonnes(
                 self.data.errors, area_km2=glacier_area, density_of_water=density_of_water))
-            # Second, include density uncertainty in error
+            # Second, include density uncertainty in uncertainty
             df = object_copy.data.as_dataframe()
             # also see formula in Glambie Assessment Algorithm document, section 5.2 Homogenization of data
-            errors_gt = df.changes.abs() * ((df.errors / df.changes)**2 + (area_unc / area)**2)**0.5
-            object_copy.data.errors = np.array(errors_gt)
+            uncertainties_gt = df.changes.abs() * ((df.errors / df.changes)**2 + (area_unc / area)**2)**0.5
+            object_copy.data.errors = np.array(uncertainties_gt)
             return object_copy
 
         else:
@@ -415,7 +417,7 @@ class Timeseries():
                 start_dates, end_dates, changes = resample_derivative_timeseries_to_monthly_grid(self.data.start_dates,
                                                                                                  self.data.end_dates,
                                                                                                  self.data.changes)
-                # resample errors
+                # resample uncertainties
                 _, _, errors = resample_derivative_timeseries_to_monthly_grid(self.data.start_dates,
                                                                               self.data.end_dates,
                                                                               self.data.errors)

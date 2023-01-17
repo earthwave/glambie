@@ -195,11 +195,15 @@ class DataCatalogue():
             2. DataCatalogue, containing the catalogue the operation was performed on.
                For remove_trend set to False, this is an exact copy of self.
                For remove_trend set to True, this contains the altered datasets with the trends removed
+
+        Raises
+        ------
+        AssertionError
+            If timeseries within catalogue are not all the same unit.
         """
 
         if not self.datasets_are_same_unit():
-            warnings.warn("Warning: Trends within catalogue are not all the same unit. \
-                This might lead to false results.")
+            raise AssertionError("Timeseries within catalogue need to be same unit before performing this operation.")
 
         # merge all dataframes
         catalogue_dfs = [ds.data.as_dataframe() for ds in self.datasets]
@@ -227,20 +231,20 @@ class DataCatalogue():
             df.filter(regex=("changes*")).columns.to_list())].mean(axis=1))
 
         # UNCERTAINTIES -- more information is in GlaMBIE Assessment Algorithm document
-        # propagate observational errors
-        sigma_observational_errors = ((df.filter(regex=("errors*"))**2).sum(axis=1))**0.5
+        # propagate observational uncertainties
+        sigma_obs_uncertainty = ((df.filter(regex=("errors*"))**2).sum(axis=1))**0.5
         # divide by 1/n
-        sigma_observational_errors = (1 / df.filter(regex=("errors*")).count(axis=1)) * sigma_observational_errors
+        sigma_obs_uncertainty = (1 / df.filter(regex=("errors*")).count(axis=1)) * sigma_obs_uncertainty
 
         # variability of change between sources, times 1.96 as we calculate sigma-2 uncertainties (95%)
-        sigma_variability = 1.96 * np.array(df[df.columns.intersection(
+        sigma_variability_uncertainty = 1.96 * np.array(df[df.columns.intersection(
             df.filter(regex=("changes*")).columns.to_list())].sem(axis=1, ddof=0))
 
-        # Combine two error sources assuming they are independent
-        errors = (sigma_observational_errors**2 + sigma_variability**2)**0.5
+        # Combine two uncertainty sources assuming they are independent
+        uncertainties = (sigma_obs_uncertainty**2 + sigma_variability_uncertainty**2)**0.5
 
         df_mean_annual = pd.DataFrame(pd.DataFrame(
-            {"start_dates": start_dates, "end_dates": end_dates, "changes": mean_changes, "errors": errors}))
+            {"start_dates": start_dates, "end_dates": end_dates, "changes": mean_changes, "errors": uncertainties}))
 
         if add_trend_after_averaging and remove_trend:
             # add mean changes back which have been removed over the common period

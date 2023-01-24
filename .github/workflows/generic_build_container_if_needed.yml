@@ -18,7 +18,9 @@ jobs:
       image: ubuntu:22.04
     defaults:
       run:
-        shell: bash -l {0}  
+        # This needs to not use pipefail everywhere because failing intermediate lines
+        # are used to check whether to build the container or not.
+        shell: bash -l {0}
     steps:
       - name: Install dependencies not included in image
         # note we need to install git first or actions/checkout@v3 will use GitHub's REST API instead.
@@ -38,23 +40,23 @@ jobs:
 
       - name: Authenticate with Google Cloud
         id: auth
-        uses: google-github-actions/auth@v0
+        uses: google-github-actions/auth@v1
         with:
           credentials_json: ${{ secrets.GLAMBIE_GCP_CREDENTIALS }}
 
       - name: Setup the Google Cloud SDK
-        uses: 'google-github-actions/setup-gcloud@v0'
+        uses: 'google-github-actions/setup-gcloud@v1'
 
       - name: Define container name
         id: name_container
         run: |
-          echo "::set-output name=image_name::europe-west1-docker.pkg.dev/glambie/dr/${{ inputs.package_name }}_$(echo "$GITHUB_REF_NAME" | awk '{print tolower($0)}')"     
+          echo "image_name=europe-west1-docker.pkg.dev/glambie/dr/${{ inputs.package_name }}_$(echo "$GITHUB_REF_NAME" | awk '{print tolower($0)}')" >> $GITHUB_OUTPUT
 
       - name: Check if container already exists
         id: check_container
         run: |
           gcloud artifacts docker images list europe-west1-docker.pkg.dev/glambie/dr | grep "${{ steps.name_container.outputs.image_name }}"
-          echo "::set-output name=exists::$?"
+          echo "exists=$?" >> $GITHUB_OUTPUT
 
       - name: Check if package requirements changed
         id: check_files
@@ -62,19 +64,17 @@ jobs:
         # this is true only when using the ubuntu image.
         run: |
           git diff --exit-code HEAD^ HEAD setup.py
-          echo "::set-output name=setup::$?"
+          echo "setup=$?" >> $GITHUB_OUTPUT
           git diff --exit-code HEAD^ HEAD requirements.txt
-          echo "::set-output name=requirements::$?"
+          echo "requirements=$?" >> $GITHUB_OUTPUT
           git diff --exit-code HEAD^ HEAD .github/test_env_dockerfile
-          echo "::set-output name=dockerfile::$?"
-          git diff --exit-code HEAD^ HEAD .github/test_requirements.txt
-          echo "::set-output name=test_requirements::$?"
+          echo "dockerfile=$?" >> $GITHUB_OUTPUT
 
       - name: Install Docker
+        shell: bash -leo pipefail {0}
         if: |
           steps.check_files.outputs.setup != 0 ||
-          steps.check_files.outputs.requirements != 0 ||
-          steps.check_files.outputs.test_requirements != 0 ||
+          steps.check_files.outputs.requirements != 0 ||   
           steps.check_files.outputs.dockerfile != 0 ||
           steps.check_container.outputs.exists != 0
         run: |
@@ -84,31 +84,35 @@ jobs:
             "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
             $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
           apt-get update
-          apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin        
+          apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin  
 
-      - name: Build container image
+      - name: Authenticate with gcloud
+        shell: bash -leo pipefail {0}      
         if: |
           steps.check_files.outputs.setup != 0 ||
           steps.check_files.outputs.requirements != 0 ||
-          steps.check_files.outputs.test_requirements != 0 ||
           steps.check_files.outputs.dockerfile != 0 ||
-          steps.check_container.outputs.exists != 0
+          steps.check_container.outputs.exists != 0      
         run: |
           cat <<EOT > GLAMBIE_GCP_CREDENTIALS.json
           ${{ secrets.GLAMBIE_GCP_CREDENTIALS }}
           EOT
-          docker build \
-            --build-arg PACKAGE_NAME=${{ inputs.package_name }} \
-            --build-arg GLAMBIE_PASSWORD=${{ secrets.GLAMBIE_PASSWORD }} \
-            -t ${{ steps.name_container.outputs.image_name }} -f .github/test_env_dockerfile .
+          gcloud auth configure-docker europe-west1-docker.pkg.dev
 
-      - name: Push image to cloud
+      - name: Build and push this package's test image
+        shell: bash -leo pipefail {0}      
         if: |
           steps.check_files.outputs.setup != 0 ||
           steps.check_files.outputs.requirements != 0 ||
-          steps.check_files.outputs.test_requirements != 0 ||
           steps.check_files.outputs.dockerfile != 0 ||
           steps.check_container.outputs.exists != 0
+        # note that we attempt to pull any existing container first - this allows us to re-use any cached steps from it.
+        # we use a multi-stage build so that ew_continuous_integration can be shared across earthwave packages.
+        # we pull the operational standard because it contains all of the build layers of the basic standard,
+        # even if we're not necessarily building that standard now.
         run: |
-          gcloud auth configure-docker europe-west1-docker.pkg.dev
-          docker push ${{ steps.name_container.outputs.image_name }}              
+          docker pull ${{ steps.name_container.outputs.image_name }} || true
+          docker build \
+            --cache-from ${{ steps.name_container.outputs.image_name }} \
+            --tag ${{ steps.name_container.outputs.image_name }} -f .github/test_env_dockerfile .
+          docker push ${{ steps.name_container.outputs.image_name }}

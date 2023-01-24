@@ -1,0 +1,20 @@
+name: auto_merge_dependabot_prs
+on: pull_request
+
+jobs:
+  auto_approve_and_merge:
+    permissions:
+      pull-requests: write
+      contents: write
+    runs-on: self-hosted
+    container:
+      image: ubuntu:22.04
+    if: ${{ github.actor == 'dependabot[bot]' }}
+    steps:
+      - uses: ahmadnassri/action-dependabot-auto-merge@v2
+        # we need to use an admin PAT because we need push permissions in order to auto-merge.
+        with:
+          # target: minor means that dependabot will automatically merge
+          # *minor* (e.g. v1.1.9 to v1.2.0) and *patch* (e.g. v1.1.9 to v1.1.10) version changes,
+          # but *major* ones (e.g. v1.3.9 to v2.0.0) will be left for manual merging.
+          target: minor

@@ -114,5 +114,6 @@ jobs:
           docker pull ${{ steps.name_container.outputs.image_name }} || true
           docker build \
             --cache-from ${{ steps.name_container.outputs.image_name }} \
+            --build-arg GLAMBIE_PASSWORD=${{ secrets.GLAMBIE_PASSWORD }} \            
             --tag ${{ steps.name_container.outputs.image_name }} -f .github/test_env_dockerfile .
           docker push ${{ steps.name_container.outputs.image_name }}

@@ -9,8 +9,8 @@ WORKDIR /home/glambie
 RUN apt-get update && apt-get install -y rsync curl
 
 # set google cloud application default credentials
-COPY GLAMBIE_GLAMBIE_GCP_CREDENTIALS.json /home/glambie/GLAMBIE_GLAMBIE_GCP_CREDENTIALS.json
-ENV GOOGLE_APPLICATION_CREDENTIALS /home/glambie/GLAMBIE_GLAMBIE_GCP_CREDENTIALS.json
+COPY GLAMBIE_GCP_CREDENTIALS.json /home/glambie/GLAMBIE_GCP_CREDENTIALS.json
+ENV GOOGLE_APPLICATION_CREDENTIALS /home/glambie/GLAMBIE_GCP_CREDENTIALS.json
 
 # create the conda environment. Note that you have to specify a particular version here
 # or the CI chain will struggle to find the python exe.

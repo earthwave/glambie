@@ -1,5 +1,5 @@
 # start from Earthwave's agreed common python starting image
-FROM continuumio/miniconda3:4.11.0
+FROM continuumio/miniconda3
 # add the glambie user, set their password and switch to their home directory
 RUN useradd -m glambie
 ARG GLAMBIE_PASSWORD
@@ -7,27 +7,24 @@ RUN echo "glambie:${GLAMBIE_PASSWORD}" | chpasswd
 WORKDIR /home/glambie
 # install rsync so that we can use it to copy files in and out of drives / buckets, and curl for the next step
 RUN apt-get update && apt-get install -y rsync curl
-# install google cloud tools (right now, just for debugging within the container)
-RUN curl -sSL https://sdk.cloud.google.com | bash
-ENV PATH $PATH:/root/google-cloud-sdk/bin
+
 # set google cloud application default credentials
 COPY GLAMBIE_GCP_CREDENTIALS.json /home/glambie/GLAMBIE_GCP_CREDENTIALS.json
 ENV GOOGLE_APPLICATION_CREDENTIALS /home/glambie/GLAMBIE_GCP_CREDENTIALS.json
-# we use PACKAGE_NAME as an argument so we can use the same dockerfile for any package
-ARG PACKAGE_NAME
+
 # create the conda environment. Note that you have to specify a particular version here
 # or the CI chain will struggle to find the python exe.
-RUN conda create --name ${PACKAGE_NAME} python=3.9.7
+RUN conda create --name test_env python=3.9.7
 # install things that are better installed by conda than by pip
-RUN conda install -c conda-forge --name ${PACKAGE_NAME} gh=2.12.1
+RUN conda install -c conda-forge --name test_env gh=2.12.1
 # install google cloud keyring backend
-RUN conda run --name ${PACKAGE_NAME} pip install keyrings.google-artifactregistry-auth
+RUN conda run --name test_env pip install keyrings.google-artifactregistry-auth
 # install the test requirements. This step goes first because they should be common to many packages.
 # note that we use pip rather than conda-forge or anaconda because this allows us to make use of the google
 # python artefact repository. Fall back to conda-forge for complex things like gdal and cupy.
 COPY .github/test_requirements.txt .github/test_requirements.txt
-RUN conda run --name ${PACKAGE_NAME} pip install -r .github/test_requirements.txt
+RUN conda run --name test_env pip install -r .github/test_requirements.txt
 # install the package's requirements, including Earthwave dependencies.
 COPY requirements.txt requirements.txt
-RUN conda run --name ${PACKAGE_NAME} pip install -r requirements.txt \
-    --extra-index-url https://europe-west1-python.pkg.dev/glambie/pr/simple/ --use-deprecated=legacy-resolver
+RUN conda run --name test_env pip install -r requirements.txt \
+    --extra-index-url https://europe-west1-python.pkg.dev/glambie/pr/simple

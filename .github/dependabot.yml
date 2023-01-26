@@ -1,0 +1,12 @@
+# Direct Dependabot to maintain dependencies for Glambie.
+version: 2
+updates:
+  # Enable package updates for pip
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "daily"
+      time: "02:00"
+      timezone: "Europe/London"
+    reviewers:
+      - "earthwave/engineering"

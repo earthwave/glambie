@@ -255,6 +255,17 @@ class Timeseries():
         return all(s % 1 == year_start for s in self.data.start_dates) and all(s % 1 == year_start
                                                                                for s in self.data.end_dates)
 
+    def copy(self) -> Timeseries:
+        """
+        Returns a deep copy of itself
+
+        Returns
+        -------
+        Timeseries
+            a copy of itself
+        """
+        return copy.deepcopy(self)
+
     def convert_timeseries_to_unit_mwe(self, density_of_water: float = constants.DENSITY_OF_WATER_KG_PER_M3,
                                        density_of_ice: float = constants.DENSITY_OF_ICE_KG_PER_M3) -> Timeseries:
         """
@@ -280,9 +291,9 @@ class Timeseries():
             For units to be converted that are not implemented yet
         """
         if self.unit == "mwe":  # no conversion needed as already in mwe
-            return copy.deepcopy(self)
+            return self.copy()
         else:
-            object_copy = copy.deepcopy(self)
+            object_copy = self.copy()
             object_copy.unit = "mwe"
             if self.unit == "m":
                 object_copy.data.changes = np.array(meters_to_meters_water_equivalent(object_copy.data.changes,
@@ -344,11 +355,11 @@ class Timeseries():
         else:
             raise NotImplementedError("Version '{}' of RGI is not implemented yet.".format(rgi_area_version))
 
-        object_copy = copy.deepcopy(self)
+        object_copy = self.copy()
         object_copy.unit = "gt"
 
         if self.unit == "gt":  # no conversion needed as already in gt
-            return copy.deepcopy(self)
+            return self.copy()
         elif self.unit == "mwe":
             if not include_area_change:
                 object_copy.data.changes = np.array(meters_water_equivalent_to_gigatonnes(
@@ -405,7 +416,7 @@ class Timeseries():
             A copy of the Timeseries object containing the converted timeseries data to the monthly grid.
         """
         # make a deep copy of itself
-        object_copy = copy.deepcopy(self)
+        object_copy = self.copy()
         if not self.timeseries_is_monthly_grid():  # if already in monthly grid there is no need to convert
             # check resolution
             if self.data.max_temporal_resolution >= 0.5:  # resolution above half a year: shift to closest month
@@ -463,7 +474,7 @@ class Timeseries():
         elif year_type == constants.YearType.GLACIOLOGICAL:
             year_start = self.region.glaciological_year_start
 
-        object_copy = copy.deepcopy(self)
+        object_copy = self.copy()
 
         # 1) Case where resolution is < 1 year: we upsample and take the average from e.g. all the months within a year
         if self.data.max_temporal_resolution <= 1:  # resolution higher than a year
@@ -524,7 +535,7 @@ class Timeseries():
         Timeseries
             A copy of the Timeseries object containing the converted timeseries data to a longterm trend.
         """
-        object_copy = copy.deepcopy(self)
+        object_copy = self.copy()
         trend = get_total_trend(self.data.start_dates, self.data.end_dates, self.data.changes, return_type="dataframe")
 
         trend_errors = get_total_trend(self.data.start_dates, self.data.end_dates,
@@ -589,7 +600,7 @@ class Timeseries():
         elif year_type == constants.YearType.GLACIOLOGICAL:
             year_start = self.region.glaciological_year_start
 
-        object_copy = copy.deepcopy(self)
+        object_copy = self.copy()
         if not self.timeseries_is_annual_grid():  # if already annual then no need to homogenize
             # 1) calibrate calibration series with trends from timeseries
             calibrated_s, dist_mat = calibrate_timeseries_with_trends(self.data.as_dataframe(),

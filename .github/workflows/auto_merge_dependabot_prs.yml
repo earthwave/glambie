@@ -18,3 +18,4 @@ jobs:
           # *minor* (e.g. v1.1.9 to v1.2.0) and *patch* (e.g. v1.1.9 to v1.1.10) version changes,
           # but *major* ones (e.g. v1.3.9 to v2.0.0) will be left for manual merging.
           target: minor
+          github-token: ${{ secrets.EARTHWAVE_ADMIN_PAT }}          

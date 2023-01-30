@@ -83,6 +83,9 @@ jobs:
         shell: bash -leo pipefail {0}
     steps:
       - uses: actions/checkout@v3
+        # we need to use the EARTHWAVE ADMIN PAT so that we have permission to push tags.
+        with:
+          token: ${{ secrets.EARTHWAVE_ADMIN_PAT }}      
 
       - name: Prepare repository for interaction
         # we have to manually set the username and email before we can commit and push

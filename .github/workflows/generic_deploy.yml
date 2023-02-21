@@ -122,6 +122,7 @@ jobs:
         with:
           body: "This is an automatically generated build release.\nPlease obtain the packaged version of this release from the python artifact repo at:\n https://console.cloud.google.com/artifacts/python/earthwave-sys-0/europe-west1/ewpr.\nInstructions on how to install packages from this repo are included in the README.md. Please view CHANGELOG.md for additional details."
           tag_name: ${{ steps.push_tags.outputs.full_version }}
+          token: ${{ secrets.EARTHWAVE_ADMIN_PAT }}
 
       - name: Deploy to Google Python Artifact Registry
         # note twine is able to upload to gcloud because a keyfile and the keyring backend was installed during image build.

@@ -315,8 +315,7 @@ class Timeseries():
                 raise NotImplementedError(
                     "Conversion to mwe not implemented yet for Timeseries with unit '{}'".format(self.unit))
 
-    def convert_timeseries_to_unit_gt(self, include_area_change: bool = True,
-                                      density_of_water: float = constants.DENSITY_OF_WATER_KG_PER_M3,
+    def convert_timeseries_to_unit_gt(self, density_of_water: float = constants.DENSITY_OF_WATER_KG_PER_M3,
                                       rgi_area_version=6) -> Timeseries:
         """
         Converts a Timeseries object to the unit of Gigatonnes.
@@ -361,30 +360,12 @@ class Timeseries():
         if self.unit == "gt":  # no conversion needed as already in gt
             return self.copy()
         elif self.unit == "mwe":
-            if not include_area_change:
-                object_copy.data.changes = np.array(meters_water_equivalent_to_gigatonnes(
-                    self.data.changes, area_km2=glacier_area, density_of_water=density_of_water))
-                # variables for uncertainty calculation
-                # area_unc is calculated as a % of the total area. % can be defined individually per region.
-                area_unc = glacier_area * self.region.area_uncertainty_percentage  # use individual glacier area unc
-                area = glacier_area
-            else:
-                # conversion with area change
-                t_0 = self.region.area_change_reference_year
-                area_change = self.region.area_change
-                gt_adjusted_changes = []
-                adjusted_areas = []
-                for _, row in self.data.as_dataframe().iterrows():
-                    t_i = (row["start_dates"] + row["end_dates"]) / 2
-                    adjusted_area = glacier_area + (t_i - t_0) * (area_change / 100) * glacier_area
-                    gt_adjusted_changes.append(meters_water_equivalent_to_gigatonnes(
-                        [row.changes], area_km2=adjusted_area, density_of_water=density_of_water)[0])
-                    adjusted_areas.append(adjusted_area)
-                object_copy.data.changes = np.array(gt_adjusted_changes)
-                # variables for uncertainty calculation
-                area = np.array(adjusted_areas)
-                # area_unc is calculated as a % of the total area. % can be defined individually per region.
-                area_unc = area * self.region.area_uncertainty_percentage  # use individual glacier area unc
+            object_copy.data.changes = np.array(meters_water_equivalent_to_gigatonnes(
+                self.data.changes, area_km2=glacier_area, density_of_water=density_of_water))
+            # variables for uncertainty calculation
+            # area_unc is calculated as a % of the total area. % can be defined individually per region.
+            area_unc = glacier_area * self.region.area_uncertainty_percentage  # use individual glacier area unc
+            area = glacier_area
 
             # Uncertainties
             # First, convert elevation change uncertaintiesr in mwe to Gt
@@ -420,6 +401,8 @@ class Timeseries():
             A copy of the Timeseries object containing the converted timeseries data.
 
         """
+        if self.unit not in ["mwe", "m"]:
+            raise AssertionError("Area change should only applied to 'm' or 'mwe'.")
         # get area
         if rgi_area_version == 6:
             glacier_area = self.region.rgi6_area

@@ -1,16 +1,17 @@
+import warnings
+import pandas as pd
+import pytest
+import numpy as np
 import os
 
 from glambie.const.data_groups import GLAMBIE_DATA_GROUPS
-from glambie.const.regions import REGIONS, RGIRegion
+from glambie.const.regions import REGIONS
 from glambie.data.timeseries import Timeseries
 from glambie.data.timeseries import TimeseriesData
 from glambie.const import constants
 from glambie.const.density_uncertainty import get_density_uncertainty_over_survey_period
 from glambie.util.mass_height_conversions import meters_to_meters_water_equivalent
-import numpy as np
-import pytest
-import pandas as pd
-import warnings
+from glambie.util.mass_height_conversions import meters_water_equivalent_to_gigatonnes
 
 
 @pytest.fixture()
@@ -357,10 +358,27 @@ def test_convert_timeseries_to_longterm_trend(example_timeseries_ingested):
 
 
 def test_apply_area_change(example_timeseries_ingested):
-
     timeseries_area_change = example_timeseries_ingested.apply_area_change(rgi_area_version=6, apply_change=True)
     assert not np.array_equal(example_timeseries_ingested.data.changes, np.array(timeseries_area_change.data.changes))
     assert timeseries_area_change.data.changes[-1] > 5.0
+
+
+def test_apply_area_change_convert_to_gt_equals_same(example_timeseries_ingested):
+    timeseries_area_change = example_timeseries_ingested.apply_area_change(rgi_area_version=6, apply_change=True)
+
+    # converting to gt should now give us the same result using the different areas
+    # 1 convert the mwe without area change to Gt
+    glacier_area = example_timeseries_ingested.region.rgi6_area
+    gt_no_area_c = meters_water_equivalent_to_gigatonnes([example_timeseries_ingested.data.changes[0]],
+                                                         area_km2=glacier_area)
+    # 2 convert the mwe with area change to Gt, using the ahjusted area
+    t_0 = timeseries_area_change.region.area_change_reference_year
+    area_change = timeseries_area_change.region.area_change
+    t_i = (timeseries_area_change.data.start_dates[0] + timeseries_area_change.data.end_dates[0]) / 2
+    adjusted_area = glacier_area + (t_i - t_0) * (area_change / 100) * glacier_area
+    gt_area_c = meters_water_equivalent_to_gigatonnes([timeseries_area_change.data.changes[0]], area_km2=adjusted_area)
+    # this should now give the same result in Gt
+    assert gt_no_area_c == gt_area_c
 
 
 def test_apply_area_change_and_remove(example_timeseries_ingested):

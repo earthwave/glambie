@@ -1,7 +1,7 @@
 import os
 
 from glambie.const.data_groups import GLAMBIE_DATA_GROUPS
-from glambie.const.regions import REGIONS
+from glambie.const.regions import REGIONS, RGIRegion
 from glambie.data.timeseries import Timeseries
 from glambie.data.timeseries import TimeseriesData
 from glambie.const import constants
@@ -33,7 +33,8 @@ def example_timeseries_ingested():
     ts = Timeseries(rgi_version=6,
                     unit='m',
                     data_group=GLAMBIE_DATA_GROUPS['demdiff'],
-                    data=data)
+                    data=data,
+                    region=REGIONS["iceland"])
     return ts
 
 
@@ -353,3 +354,17 @@ def test_convert_timeseries_to_longterm_trend(example_timeseries_ingested):
                           np.array([example_timeseries_ingested.data.start_dates[0]]))
     assert np.array_equal(example_timeseries_converted.data.end_dates,
                           np.array([example_timeseries_ingested.data.end_dates[1]]))
+
+
+def test_apply_area_change(example_timeseries_ingested):
+
+    timeseries_area_change = example_timeseries_ingested.apply_area_change(rgi_area_version=6, apply_change=True)
+    assert not np.array_equal(example_timeseries_ingested.data.changes, np.array(timeseries_area_change.data.changes))
+    assert timeseries_area_change.data.changes[-1] > 5.0
+
+
+def test_apply_area_change_and_remove(example_timeseries_ingested):
+    timeseries_area_change = example_timeseries_ingested.apply_area_change(rgi_area_version=6, apply_change=True)
+    timeseries_area_change_removed = timeseries_area_change.apply_area_change(rgi_area_version=6, apply_change=False)
+    assert np.array_equal(example_timeseries_ingested.data.changes,
+                          np.array(timeseries_area_change_removed.data.changes))

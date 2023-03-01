@@ -401,6 +401,52 @@ class Timeseries():
             raise NotImplementedError(
                 "Conversion to Gt not implemented yet for Timeseries with unit '{}'".format(self.unit))
 
+    def apply_area_change(self, rgi_area_version: int = 6, apply_change: bool = True) -> Timeseries:
+        """
+        Applies or removes a changing area to observed changes.
+        Returns a copy of itself with the converted timeseries.
+
+        Parameters
+        ----------
+        rgi_area_version : int, optional
+            version of RGI used for area change, by default 6
+        apply_change : bool, optional
+            Describes if the area change should be applied or removed
+            If set to False, the area change is removed rather than applied, by default True
+
+        Returns
+        -------
+        Timeseries
+            A copy of the Timeseries object containing the converted timeseries data.
+
+        """
+        # get area
+        if rgi_area_version == 6:
+            glacier_area = self.region.rgi6_area
+        elif rgi_area_version == 7:
+            glacier_area = self.region.rgi7_area
+
+        object_copy = self.copy()
+        # conversion with area change
+        t_0 = self.region.area_change_reference_year
+        area_change = self.region.area_change
+        adjusted_changes = []
+        adjusted_areas = []
+        for _, row in self.data.as_dataframe().iterrows():
+            t_i = (row["start_dates"] + row["end_dates"]) / 2
+            adjusted_area = glacier_area + (t_i - t_0) * (area_change / 100) * glacier_area
+            if apply_change:
+                adjusted_changes.append(glacier_area / adjusted_area * row.changes)
+            else:  # remove change
+                adjusted_changes.append(row.changes / (glacier_area / adjusted_area))
+            adjusted_areas.append(adjusted_area)
+        # @TODO: add uncertainty ?
+        # area = np.array(adjusted_areas)
+        # area_unc is calculated as a % of the total area. % can be defined individually per region.
+        # area_unc = area * self.region.area_uncertainty_percentage  # use individual glacier area unc
+        object_copy.data.changes = np.array(adjusted_changes)
+        return object_copy
+
     def convert_timeseries_to_monthly_grid(self) -> Timeseries:
         """
         Converts a Timeseries object to follow the monthly grid. Two different approaches are used depending on

@@ -32,17 +32,13 @@ jobs:
       image: ubuntu:22.04
     defaults:
       run:
-        shell: bash -l {0}    
+        shell: bash -leo pipefail {0}    
     steps:
-      - uses: actions/checkout@v3
-
-      - id: lower_case_ref
-        run: |
-          echo "::set-output name=image_name::europe-west1-docker.pkg.dev/glambie/dr/${{ inputs.package_name }}_$(echo "$GITHUB_REF_NAME" | awk '{print tolower($0)}')"
+      - uses: actions/checkout@v3    
 
       - id: specify
         run: |
-          echo "::set-output name=image_name::europe-west1-docker.pkg.dev/glambie/dr/${{ inputs.package_name }}_$(echo "$GITHUB_REF_NAME" | awk '{print tolower($0)}')"
+          echo "image_name=europe-west1-docker.pkg.dev/glambie/dr/${{ inputs.package_name }}_$(echo "$GITHUB_REF_NAME" | awk '{print tolower($0)}')" >> $GITHUB_OUTPUT
     outputs:
       image_name: ${{ steps.specify.outputs.image_name }}
 
@@ -56,7 +52,7 @@ jobs:
         password: ${{ secrets.GLAMBIE_GCP_CREDENTIALS }}
     defaults:
       run:
-        shell: bash -l {0}
+        shell: bash -leo pipefail {0}
     steps:
       - uses: actions/checkout@v3
 
@@ -81,7 +77,7 @@ jobs:
 
       - name: linting
         run: |
-          conda activate ${{ inputs.package_name }}
+          conda activate test_env
           flake8
 
   build_test:
@@ -94,14 +90,14 @@ jobs:
         password: ${{ secrets.GLAMBIE_GCP_CREDENTIALS }}
     defaults:
       run:
-        shell: bash -l {0}
+        shell: bash -leo pipefail {0}
     steps:
       - uses: actions/checkout@v3
 
       - name: Check module can be built
         # define_new_version_number.py generates full_version.txt which is used to define the version in setup.py
         run: |
-          conda activate ${{ inputs.package_name }}
+          conda activate test_env
           python .github/scripts/define_new_version_number.py
           python setup.py sdist bdist_wheel
 
@@ -117,13 +113,13 @@ jobs:
       options: --gpus all
     defaults:
       run:
-        shell: bash -l {0}
+        shell: bash -leo pipefail {0}
     steps:
       - uses: actions/checkout@v3
       
       - name: unit tests
         run: |
-          conda activate ${{ inputs.package_name }}
+          conda activate test_env
           python setup.py develop
-          pytest    
+          pytest
   

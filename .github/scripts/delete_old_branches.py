@@ -42,7 +42,7 @@ def main(branch_age_limit_days: int, dry_run: bool) -> None:
     deleted_something = False
     for branch_name in branch_names:
         posix_date_of_youngest_commit = int(subprocess.check_output(
-            f'git log -n 1 --remotes=origin --branches={branch_name} --date=unix | grep Date', shell=True
+            f'git log -n 1 origin/{branch_name} --date=unix | grep Date', shell=True
         ).decode().split()[1])
         days_since_last_commit = int((datetime.utcnow().timestamp() - posix_date_of_youngest_commit) // 86400)
         print(log_prefix + f'The last commit on remote branch {branch_name} was made {days_since_last_commit} '
@@ -64,7 +64,7 @@ def main(branch_age_limit_days: int, dry_run: bool) -> None:
         print(log_prefix + 'Did not delete any branches.')
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--branch_age_limit_days", type=int, default=30,

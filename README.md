@@ -36,7 +36,7 @@ gcloud auth login --no-launch-browser
 
 The package can now be installed from the GlaMBIE Python Artifact repository: 
 ```
-pip install glambie --extra-index-url https://europe-west1-python.pkg.dev/glambie/pr/simple/ --use-deprecated=legacy-resolver
+pip install glambie --extra-index-url https://europe-west1-python.pkg.dev/glambie/pr/simple
 ```
 
 ### Installation For Development (or when Google Cloud authentication is not possible)
@@ -91,8 +91,7 @@ Versioning follows a simple model featuring three integers known as the major ve
 For example, in package version "v3.5.7", the major version is 3, the minor version is 5 and the build number is 7.
 
 New versions of this package are automatically tagged and pushed to the Google Cloud Artifact Repo
-when code is merged to main (i.e. when a Pull Request is closed). We don't geneate GitHub releases as this would
-represent a duplication of the Google Cloud Repo. Each new version will increment the build number
+when code is merged to main (i.e. when a Pull Request is closed). We also generate a GitHub release, although this is not otherwise used. Each new version will increment the build number
 automatically. To change the major or minor build numbers, please change the contents of major_minor_version.txt.
 Please also add a line in CHANGELOG.md (at the top of the file, so that reading down the file has the reader moving
 backwards in time) at the same time describing what has been changed in the new major or minor version.

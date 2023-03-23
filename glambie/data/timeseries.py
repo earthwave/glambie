@@ -411,17 +411,19 @@ class Timeseries():
 
         object_copy = self.copy()
         # conversion with area change
-        t_0 = self.region.area_change_reference_year
+        area_chnage_reference_year = self.region.area_change_reference_year
         area_change = self.region.area_change
         adjusted_changes = []
         adjusted_areas = []
-        for _, row in self.data.as_dataframe().iterrows():
-            t_i = (row["start_dates"] + row["end_dates"]) / 2
-            adjusted_area = glacier_area + (t_i - t_0) * (area_change / 100) * glacier_area
+
+        df = self.data.as_dataframe()
+        for start_date, end_date, change in zip(df["start_dates"], df["end_dates"], df["changes"]):
+            t_i = (start_date + end_date) / 2
+            adjusted_area = glacier_area + (t_i - area_chnage_reference_year) * (area_change / 100) * glacier_area
             if apply_change:
-                adjusted_changes.append(glacier_area / adjusted_area * row.changes)
+                adjusted_changes.append(glacier_area / adjusted_area * change)
             else:  # remove change
-                adjusted_changes.append(row.changes / (glacier_area / adjusted_area))
+                adjusted_changes.append(change / (glacier_area / adjusted_area))
             adjusted_areas.append(adjusted_area)
         # @TODO: add uncertainty ?
         # area = np.array(adjusted_areas)

@@ -19,18 +19,18 @@ jobs:
       image: ubuntu:22.04
     defaults:
       run:
-        shell: bash -l {0}
+        shell: bash -leo pipefail {0}
     steps:
       - uses: actions/checkout@v3
       - id: specify
         run: |
-          echo "::set-output name=image_name::europe-west1-docker.pkg.dev/glambie/dr/${{ inputs.package_name }}_main"
+          echo "image_name=europe-west1-docker.pkg.dev/glambie/dr/${{ inputs.package_name }}_main" >> $GITHUB_OUTPUT
     outputs:
       image_name: ${{ steps.specify.outputs.image_name }}
 
   tidy_images_and_branches:
-    # delete docker images that are no longer needed (notionally because we just merged the associated branch into main)
     needs: generate_container_name
+    # delete docker images that are no longer needed (notionally because we just merged the associated branch into main)
     runs-on: self-hosted
     container:
       image: ${{ needs.generate_container_name.outputs.image_name }}
@@ -39,30 +39,35 @@ jobs:
         password: ${{ secrets.GLAMBIE_GCP_CREDENTIALS }}
     defaults:
       run:
-        shell: bash -l {0}
+        shell: bash -leo pipefail {0}
     steps:
       - uses: actions/checkout@v3
-
-      - name: Authenticate with Google Cloud
-        id: auth
-        uses: google-github-actions/auth@v0
+        # we need to clone using the EARTHWAVE_ADMIN_PAT in order to gain permission to clone the ew_ci_cd submodule.
         with:
-          credentials_json: ${{ secrets.GLAMBIE_GCP_CREDENTIALS }}
+          token: ${{ secrets.EARTHWAVE_ADMIN_PAT }}
 
-      - name: Setup the Google Cloud SDK
-        uses: 'google-github-actions/setup-gcloud@v0'          
+      - name: Install Google Cloud CLI
+        # while there is a github action to do this, it doesn't work in the base CI containers.
+        # We keep these tools out of the base image because they're large compared to the rest of the image
+        # and not every earthwave project needs them, plus they install quickly and easily.
+        run: |
+          curl -O https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-cli-413.0.0-linux-x86_64.tar.gz
+          tar -xf google-cloud-cli-413.0.0-linux-x86_64.tar.gz
+          ./google-cloud-sdk/install.sh --quiet
 
       - name: Delete old docker images from artifact repo
         # note keyfile is already present in container image (was copied over during build)
-        # we have to add the cloud sdk tools back to the $PATH before python can use them properly
+        # source ./google-cloud-sdk/path.bash.inc is a "conda activate" equivalent for the GCloud CLI,
+        # which we installed above.
         run: |
-          conda activate ${{ inputs.package_name }}
-          export PATH=/root/google-cloud-sdk/bin:$PATH
-          python .github/scripts/delete_containers_not_matching_remote_branches.py --package_name ${{ inputs.package_name }}
+          conda activate test_env
+          source ./google-cloud-sdk/path.bash.inc
+          python .github/scripts/delete_containers_not_matching_remote_branches.py --package_name glambie
 
       - name: Delete old branches from the git repo
         run: |
-          conda activate ${{ inputs.package_name }}
+          conda activate test_env
+          source ./google-cloud-sdk/path.bash.inc
           python .github/scripts/delete_old_branches.py --branch_age_limit_days 30
 
   deploy:
@@ -75,9 +80,12 @@ jobs:
         password: ${{ secrets.GLAMBIE_GCP_CREDENTIALS }}
     defaults:
       run:
-        shell: bash -l {0}
+        shell: bash -leo pipefail {0}
     steps:
       - uses: actions/checkout@v3
+        # we need to use the EARTHWAVE ADMIN PAT so that we have permission to push tags.
+        with:
+          token: ${{ secrets.EARTHWAVE_ADMIN_PAT }}      
 
       - name: Prepare repository for interaction
         # we have to manually set the username and email before we can commit and push
@@ -93,7 +101,7 @@ jobs:
       - name: Build
         # define_new_version_number.py generates full_version.txt for use in the next step
         run: |
-          conda activate ${{ inputs.package_name }}
+          conda activate test_env
           python .github/scripts/define_new_version_number.py
           python setup.py sdist bdist_wheel
 
@@ -107,28 +115,17 @@ jobs:
         run: |
           git tag "$(<full_version.txt)" || exit 1
           git push --tags
-          echo "::set-output name=full_version::$(<full_version.txt)"
+          echo "full_version=$(<full_version.txt)" >> $GITHUB_OUTPUT
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v1
         with:
-          body: "This is an automatically generated build release.\nPlease obtain the packaged version of this release from the python artifact repo at:\n https://console.cloud.google.com/artifacts/python/glambie/europe-west1/pr.\nInstructions on how to install packages from this repo are included in the README.md. Please view CHANGELOG.md for additional details."
+          body: "This is an automatically generated build release.\nPlease obtain the packaged version of this release from the python artifact repo at:\n https://console.cloud.google.com/artifacts/python/earthwave-sys-0/europe-west1/ewpr.\nInstructions on how to install packages from this repo are included in the README.md. Please view CHANGELOG.md for additional details."
           tag_name: ${{ steps.push_tags.outputs.full_version }}
+          token: ${{ secrets.EARTHWAVE_ADMIN_PAT }}
 
       - name: Deploy to Google Python Artifact Registry
         # note twine is able to upload to gcloud because a keyfile and the keyring backend was installed during image build.
         run: |
-          conda activate ${{ inputs.package_name }}
+          conda activate test_env
           twine upload --verbose --repository-url https://europe-west1-python.pkg.dev/glambie/pr/ dist/*
-
-      - name: Raise Pull Requests in dependent repos
-        # This is very similar to Dependabot, and should probably be replaced with it in the future.
-        # Note we have to export a PAT before we can use the GitHub CLI (which this script does internally)
-        run: |
-          conda activate ${{ inputs.package_name }}
-          export GH_TOKEN=${{ github.token }}
-          python .github/scripts/upversion_dependencies.py \
-            --this_repo_name $GITHUB_REPOSITORY \
-            --this_package_name "${{ inputs.package_name }}" \
-            --this_package_version "$(<full_version.txt)" \
-            --repo_age_limit_days 365

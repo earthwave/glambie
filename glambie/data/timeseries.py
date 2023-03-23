@@ -255,6 +255,17 @@ class Timeseries():
         return all(s % 1 == year_start for s in self.data.start_dates) and all(s % 1 == year_start
                                                                                for s in self.data.end_dates)
 
+    def copy(self) -> Timeseries:
+        """
+        Returns a deep copy of itself
+
+        Returns
+        -------
+        Timeseries
+            a copy of itself
+        """
+        return copy.deepcopy(self)
+
     def convert_timeseries_to_unit_mwe(self, density_of_water: float = constants.DENSITY_OF_WATER_KG_PER_M3,
                                        density_of_ice: float = constants.DENSITY_OF_ICE_KG_PER_M3) -> Timeseries:
         """
@@ -280,9 +291,9 @@ class Timeseries():
             For units to be converted that are not implemented yet
         """
         if self.unit == "mwe":  # no conversion needed as already in mwe
-            return copy.deepcopy(self)
+            return self.copy()
         else:
-            object_copy = copy.deepcopy(self)
+            object_copy = self.copy()
             object_copy.unit = "mwe"
             if self.unit == "m":
                 object_copy.data.changes = np.array(meters_to_meters_water_equivalent(object_copy.data.changes,
@@ -304,8 +315,7 @@ class Timeseries():
                 raise NotImplementedError(
                     "Conversion to mwe not implemented yet for Timeseries with unit '{}'".format(self.unit))
 
-    def convert_timeseries_to_unit_gt(self, include_area_change: bool = True,
-                                      density_of_water: float = constants.DENSITY_OF_WATER_KG_PER_M3,
+    def convert_timeseries_to_unit_gt(self, density_of_water: float = constants.DENSITY_OF_WATER_KG_PER_M3,
                                       rgi_area_version=6) -> Timeseries:
         """
         Converts a Timeseries object to the unit of Gigatonnes.
@@ -344,36 +354,18 @@ class Timeseries():
         else:
             raise NotImplementedError("Version '{}' of RGI is not implemented yet.".format(rgi_area_version))
 
-        object_copy = copy.deepcopy(self)
+        object_copy = self.copy()
         object_copy.unit = "gt"
 
         if self.unit == "gt":  # no conversion needed as already in gt
-            return copy.deepcopy(self)
+            return self.copy()
         elif self.unit == "mwe":
-            if not include_area_change:
-                object_copy.data.changes = np.array(meters_water_equivalent_to_gigatonnes(
-                    self.data.changes, area_km2=glacier_area, density_of_water=density_of_water))
-                # variables for uncertainty calculation
-                # area_unc is calculated as a % of the total area. % can be defined individually per region.
-                area_unc = glacier_area * self.region.area_uncertainty_percentage  # use individual glacier area unc
-                area = glacier_area
-            else:
-                # conversion with area change
-                t_0 = self.region.area_change_reference_year
-                area_change = self.region.area_change
-                gt_adjusted_changes = []
-                adjusted_areas = []
-                for _, row in self.data.as_dataframe().iterrows():
-                    t_i = (row["start_dates"] + row["end_dates"]) / 2
-                    adjusted_area = glacier_area + (t_i - t_0) * (area_change / 100) * glacier_area
-                    gt_adjusted_changes.append(meters_water_equivalent_to_gigatonnes(
-                        [row.changes], area_km2=adjusted_area, density_of_water=density_of_water)[0])
-                    adjusted_areas.append(adjusted_area)
-                object_copy.data.changes = np.array(gt_adjusted_changes)
-                # variables for uncertainty calculation
-                area = np.array(adjusted_areas)
-                # area_unc is calculated as a % of the total area. % can be defined individually per region.
-                area_unc = area * self.region.area_uncertainty_percentage  # use individual glacier area unc
+            object_copy.data.changes = np.array(meters_water_equivalent_to_gigatonnes(
+                self.data.changes, area_km2=glacier_area, density_of_water=density_of_water))
+            # variables for uncertainty calculation
+            # area_unc is calculated as a % of the total area. % can be defined individually per region.
+            area_unc = glacier_area * self.region.area_uncertainty_percentage  # use individual glacier area unc
+            area = glacier_area
 
             # Uncertainties
             # First, convert elevation change uncertaintiesr in mwe to Gt
@@ -390,6 +382,56 @@ class Timeseries():
             raise NotImplementedError(
                 "Conversion to Gt not implemented yet for Timeseries with unit '{}'".format(self.unit))
 
+    def apply_area_change(self, rgi_area_version: int = 6, apply_change: bool = True) -> Timeseries:
+        """
+        Applies or removes a changing area to observed changes.
+        Returns a copy of itself with the converted timeseries.
+
+        Parameters
+        ----------
+        rgi_area_version : int, optional
+            version of RGI used for area change, by default 6
+        apply_change : bool, optional
+            Describes if the area change should be applied or removed
+            If set to False, the area change is removed rather than applied, by default True
+
+        Returns
+        -------
+        Timeseries
+            A copy of the Timeseries object containing the converted timeseries data.
+
+        """
+        if self.unit not in ["mwe", "m"]:
+            raise AssertionError("Area change should only applied to 'm' or 'mwe'.")
+        # get area
+        if rgi_area_version == 6:
+            glacier_area = self.region.rgi6_area
+        elif rgi_area_version == 7:
+            glacier_area = self.region.rgi7_area
+
+        object_copy = self.copy()
+        # conversion with area change
+        area_chnage_reference_year = self.region.area_change_reference_year
+        area_change = self.region.area_change
+        adjusted_changes = []
+        adjusted_areas = []
+
+        df = self.data.as_dataframe()
+        for start_date, end_date, change in zip(df["start_dates"], df["end_dates"], df["changes"]):
+            t_i = (start_date + end_date) / 2
+            adjusted_area = glacier_area + (t_i - area_chnage_reference_year) * (area_change / 100) * glacier_area
+            if apply_change:
+                adjusted_changes.append(glacier_area / adjusted_area * change)
+            else:  # remove change
+                adjusted_changes.append(change / (glacier_area / adjusted_area))
+            adjusted_areas.append(adjusted_area)
+        # @TODO: add uncertainty ?
+        # area = np.array(adjusted_areas)
+        # area_unc is calculated as a % of the total area. % can be defined individually per region.
+        # area_unc = area * self.region.area_uncertainty_percentage  # use individual glacier area unc
+        object_copy.data.changes = np.array(adjusted_changes)
+        return object_copy
+
     def convert_timeseries_to_monthly_grid(self) -> Timeseries:
         """
         Converts a Timeseries object to follow the monthly grid. Two different approaches are used depending on
@@ -405,7 +447,7 @@ class Timeseries():
             A copy of the Timeseries object containing the converted timeseries data to the monthly grid.
         """
         # make a deep copy of itself
-        object_copy = copy.deepcopy(self)
+        object_copy = self.copy()
         if not self.timeseries_is_monthly_grid():  # if already in monthly grid there is no need to convert
             # check resolution
             if self.data.max_temporal_resolution >= 0.5:  # resolution above half a year: shift to closest month
@@ -463,7 +505,7 @@ class Timeseries():
         elif year_type == constants.YearType.GLACIOLOGICAL:
             year_start = self.region.glaciological_year_start
 
-        object_copy = copy.deepcopy(self)
+        object_copy = self.copy()
 
         # 1) Case where resolution is < 1 year: we upsample and take the average from e.g. all the months within a year
         if self.data.max_temporal_resolution <= 1:  # resolution higher than a year
@@ -496,16 +538,19 @@ class Timeseries():
             new_start_dates, new_end_dates = get_years(year_start, min_date=self.data.start_dates.min(),
                                                        max_date=self.data.end_dates.max(), return_type="arrays")
             new_changes = []
+            new_uncertainties = []
             for _, row in self.data.as_dataframe().iterrows():
                 time_period = row["end_dates"] - row["start_dates"]
                 annual_trend = row["changes"] / time_period
+                annual_unc = row["errors"] / time_period
                 # add annual trend times number of years to the new changes
                 new_changes.extend([annual_trend for _ in range(int(time_period))])
+                new_uncertainties.extend([annual_unc for _ in range(int(time_period))])
             assert len(new_changes) == len(new_start_dates) == len(new_end_dates)
             object_copy.data.start_dates = np.array(new_start_dates)
             object_copy.data.end_dates = np.array(new_end_dates)
             object_copy.data.changes = np.array(new_changes)
-            object_copy.data.errors = None
+            object_copy.data.errors = np.array(new_uncertainties)
             object_copy.data.glacier_area_observed = None
             object_copy.data.glacier_area_reference = None
 
@@ -521,7 +566,7 @@ class Timeseries():
         Timeseries
             A copy of the Timeseries object containing the converted timeseries data to a longterm trend.
         """
-        object_copy = copy.deepcopy(self)
+        object_copy = self.copy()
         trend = get_total_trend(self.data.start_dates, self.data.end_dates, self.data.changes, return_type="dataframe")
 
         trend_errors = get_total_trend(self.data.start_dates, self.data.end_dates,
@@ -586,7 +631,7 @@ class Timeseries():
         elif year_type == constants.YearType.GLACIOLOGICAL:
             year_start = self.region.glaciological_year_start
 
-        object_copy = copy.deepcopy(self)
+        object_copy = self.copy()
         if not self.timeseries_is_annual_grid():  # if already annual then no need to homogenize
             # 1) calibrate calibration series with trends from timeseries
             calibrated_s, dist_mat = calibrate_timeseries_with_trends(self.data.as_dataframe(),

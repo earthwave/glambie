@@ -30,6 +30,7 @@ class Config(ABC):
             missing_keys = sorted(reference_dict_key_set - config_dict_key_set)
             if len(missing_keys) > 0:
                 error_msg += f'The config dictionary is missing the following keys: {missing_keys}. '
+            log.error(error_msg)
             raise KeyError(error_msg)
 
     @classmethod
@@ -99,8 +100,9 @@ class GlambieRunConfig(Config):
                     region_config = RegionRunConfig.from_yaml(config_file_path)
                     # check that region name is the same in both configs, throw error if not
                     if region_config.region_name != region["region_name"]:
-                        error_msg = f'The config region name from the GlambieRunConfig and the GlambieRegionConfig \
-                            do not match up: {region_config.region_name} != {region.region_name}. '
+                        error_msg = f'''The config region name from the GlambieRunConfig and the GlambieRegionConfig
+                        do not match up: {region_config.region_name} != {region["region_name"]}.'''
+                        log.error(error_msg)
                         raise ValueError(error_msg)
                     new_regions.append(region_config)
         self.regions = new_regions

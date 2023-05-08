@@ -26,5 +26,5 @@ def test_glambie_run_config_from_file():
 def test_glambie_run_config_regions_from_file():
     yaml_abspath = os.path.join('tests', 'test_data', 'configs', 'test_config.yaml')
     config = GlambieRunConfig.from_yaml(yaml_abspath)
-    print()
     assert isinstance(config.regions[0].year_type, YearType)
+    assert config.regions[0].seasonal_correction_dataset["user_group"] == "wgms_sine"

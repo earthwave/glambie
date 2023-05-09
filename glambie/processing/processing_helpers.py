@@ -3,7 +3,7 @@ from typing import Tuple
 
 from glambie.config.config_classes import RegionRunConfig
 from glambie.data.data_catalogue import DataCatalogue
-from glambie.const.data_groups import GlambieDataGroup
+from glambie.const.data_groups import GLAMBIE_DATA_GROUPS, GlambieDataGroup
 
 log = logging.getLogger(__name__)
 
@@ -25,13 +25,23 @@ def filter_catalogue_with_config_settings(data_group: GlambieDataGroup,
 
     Returns
     -------
-    Tuple[DataCatalogue, DataCatalogue]        
+    Tuple[DataCatalogue, DataCatalogue]
         Tuple[data_catalogue_annual, data_catalogue_trend]
         the filtered catalogue for annual datasets and for longterm trend datasets
     """
     # 1 filter by data group - just in case it hasn't already been done
-    data_catalogue = data_catalogue.get_filtered_catalogue(
-        data_group=data_group.name)
+    if data_group != GLAMBIE_DATA_GROUPS["demdiff_and_glaciological"]:
+        data_catalogue = data_catalogue.get_filtered_catalogue(
+            data_group=data_group.name)
+    else:
+        data_catalogue_demdiff = data_catalogue.get_filtered_catalogue(
+            data_group=GLAMBIE_DATA_GROUPS["demdiff"].name)
+        data_catalogue_glaciological = data_catalogue.get_filtered_catalogue(
+            data_group=GLAMBIE_DATA_GROUPS["glaciological"].name)
+        # concatenate demdiff and glaciological into one
+        data_catalogue = DataCatalogue.from_list(data_catalogue_demdiff.datasets
+                                                 + data_catalogue_glaciological.datasets,
+                                                 base_path=data_catalogue.base_path)
     # 2 filter out what has been specified in config for annual datasets
     datasets_annual = data_catalogue.datasets.copy()
     exclude_annual_datasets = region_config.region_run_settings[data_group.name].get("exclude_annual_datasets", [])

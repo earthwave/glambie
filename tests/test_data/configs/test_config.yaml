@@ -18,6 +18,6 @@ regions:
     config_file_path: test_config_iceland.yaml
 
   - region_name: svalbard
-    enable_this_region: false
-    config_file_path: svalbard.yaml
+    enable_this_region: true
+    config_file_path: test_config_svalbard.yaml
   

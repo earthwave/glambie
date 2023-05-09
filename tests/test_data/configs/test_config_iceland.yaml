@@ -4,25 +4,24 @@ region_name: iceland
 year_type: glaciological # or calendar
 
 seasonal_correction_dataset:
-  - user_group: wgms_sine
-  - data_group: glaciological
+  user_group: wgms_sine
+  data_group: glaciological
 
 region_run_settings:
-  - datagroup: altimetry
+  altimetry:
     exclude_annual_datasets :
       - xxxxxxxxxxxxxxxxxxxx
-    exclude_longterm_datasets :
+    exclude_trend_datasets :
       - xxxxxxxxxxxxxxxxxxxx
-  - datagroup: gravimetry
+  gravimetry:
     exclude_annual_datasets :
     - ciraci
-    exclude_longterm_datasets :
-    - ciraci
-  - datagroup: demdiff
-    exclude_longterm_datasets :
+    exclude_trend_datasets :
+    - wouters
+  demdiff_and_glaciological:
+    exclude_trend_datasets : # demdiff datasets
     - hugonnet
-  - datagroup: glaciological
-    exclude_annual_datasets :
+    exclude_trend_datasets : # glaciological datasets
     - wgms_sine
     - wgms_seasonal
     - wgms_anomalies

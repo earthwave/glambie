@@ -1,6 +1,6 @@
 
 import os
-from glambie.processing.path_handling import OuputPathHandler
+from glambie.processing.path_handling import OutputPathHandler
 from glambie.const.regions import REGIONS
 from glambie.const.data_groups import GLAMBIE_DATA_GROUPS
 import pytest
@@ -13,7 +13,7 @@ TESTING_DIR = os.path.join("tests", "test_output_path_handler")
 def path_helper():
     def remove_test_dir():
         shutil.rmtree(TESTING_DIR)
-    yield OuputPathHandler(TESTING_DIR)
+    yield OutputPathHandler(TESTING_DIR)
     # Cleanup a testing directory once we are finished.
     remove_test_dir()
 

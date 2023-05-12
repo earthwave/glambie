@@ -2,14 +2,16 @@ import logging
 
 from glambie.config.config_classes import GlambieRunConfig, RegionRunConfig
 from glambie.data.data_catalogue import DataCatalogue, Timeseries
-from glambie.const.data_groups import GLAMBIE_DATA_GROUPS
+from glambie.const.data_groups import GLAMBIE_DATA_GROUPS, GlambieDataGroup
 from glambie.const.regions import REGIONS, RGIRegion
 from glambie.processing.processing_helpers import convert_datasets_to_longterm_trends, convert_datasets_to_monthly_grid
 from glambie.processing.processing_helpers import convert_datasets_to_annual_trends
 from glambie.processing.processing_helpers import convert_datasets_to_unit_mwe
 from glambie.processing.processing_helpers import filter_catalogue_with_config_settings
 from glambie.data.data_catalogue_helpers import calibrate_timeseries_with_trends_catalogue
-from glambie.plot.processing_plots import plot_homogenized_input_data
+from glambie.plot.processing_plots import plot_all_plots_for_region_data_group_processing
+from glambie.processing.path_handling import OutputPathHandler
+
 
 log = logging.getLogger(__name__)
 
@@ -17,6 +19,7 @@ log = logging.getLogger(__name__)
 def run_one_region(glambie_run_config: GlambieRunConfig,
                    region_config: RegionRunConfig,
                    data_catalogue: DataCatalogue,
+                   output_path_handler: OutputPathHandler,
                    verbose=True) -> DataCatalogue:
 
     # filter data catalogue by region
@@ -51,17 +54,14 @@ def run_one_region(glambie_run_config: GlambieRunConfig,
         data_catalogue_annual = convert_datasets_to_monthly_grid(data_catalogue_annual)
         data_catalogue_trends = convert_datasets_to_monthly_grid(data_catalogue_annual)
 
-        if data_group == GLAMBIE_DATA_GROUPS["altimetry"]:
-            result_catalogue = run_altimetry(data_catalogue_annual=data_catalogue_annual,
-                                             data_catalogue_trends=data_catalogue_trends,
-                                             seasonal_calibration_dataset=seasonal_calibration_dataset,
-                                             region=REGIONS[region_config.region_name],
-                                             verbose=verbose)
-        elif data_group == GLAMBIE_DATA_GROUPS["gravimetry"]:
-            result_catalogue = run_gravimetry(data_catalogue_annual=data_catalogue_annual,
-                                              data_catalogue_trends=data_catalogue_trends,
-                                              seasonal_calibration_dataset=seasonal_calibration_dataset,
-                                              verbose=verbose)
+        if data_group == GLAMBIE_DATA_GROUPS["altimetry"] or data_group == GLAMBIE_DATA_GROUPS["gravimetry"]:
+            result_catalogue = run_altimetry_or_gravimetry(data_catalogue_annual=data_catalogue_annual,
+                                                           data_catalogue_trends=data_catalogue_trends,
+                                                           seasonal_calibration_dataset=seasonal_calibration_dataset,
+                                                           region=REGIONS[region_config.region_name],
+                                                           data_group=data_group,
+                                                           output_path_handler=output_path_handler,
+                                                           verbose=verbose)
         elif data_group == GLAMBIE_DATA_GROUPS["demdiff_and_glaciological"]:
             result_catalogue = run_demdiff_and_glaciological(data_catalogue_annual=data_catalogue_annual,
                                                              data_catalogue_trends=data_catalogue_trends,
@@ -71,9 +71,7 @@ def run_one_region(glambie_run_config: GlambieRunConfig,
             error_msg = f'Processing for the data_group {data_group.name} has not been implemented yet'
             log.error(error_msg)
             raise NotImplementedError(error_msg)
-
     # TODO: aggregate different results catalogue into one catalogue
-
     return result_catalogue
 
 
@@ -81,16 +79,22 @@ def combine_within_one_region():
     pass
 
 
-def run_altimetry(data_catalogue_annual: DataCatalogue,
-                  data_catalogue_trends: DataCatalogue,
-                  seasonal_calibration_dataset: Timeseries,
-                  region: RGIRegion,
-                  verbose: bool = True) -> DataCatalogue:
+def run_altimetry_or_gravimetry(data_catalogue_annual: DataCatalogue,
+                                data_catalogue_trends: DataCatalogue,
+                                seasonal_calibration_dataset: Timeseries,
+                                region: RGIRegion,
+                                data_group: GlambieDataGroup,
+                                output_path_handler: OutputPathHandler,
+                                verbose: bool = True) -> DataCatalogue:
+
+    data_catalogue_annual_raw = data_catalogue_annual
+    data_catalogue_trends_raw = data_catalogue_trends
+
     # in case seasonal calibration dataset hasn't been converted yet
     seasonal_calibration_dataset = seasonal_calibration_dataset.convert_timeseries_to_monthly_grid()
     seasonal_calibration_dataset = seasonal_calibration_dataset.convert_timeseries_to_unit_mwe()
 
-    # TODO: read annual year (calendar or hydrological) from config
+    # TODO: read annual year for seasonal correction (calendar or hydrological) from config
 
     # 1) ANNUAL TRENDS
     log.info("Calculating combined annual trends within data group and region...")
@@ -99,15 +103,9 @@ def run_altimetry(data_catalogue_annual: DataCatalogue,
     # convert to mwe
     data_catalogue_annual = convert_datasets_to_unit_mwe(data_catalogue_annual)
 
-    if verbose:
-        plot_homogenized_input_data(catalogue_annual=data_catalogue_annual,
-                                    data_group=GLAMBIE_DATA_GROUPS["altimetry"],
-                                    region=region,
-                                    output_filepath='glambie/output_plots/processing/test2.png')
-
     # calculate combined annual timeseries
     annual_combined, catalogue_annual_anomalies = data_catalogue_annual.average_timeseries_in_catalogue(
-        remove_trend=True, out_data_group=GLAMBIE_DATA_GROUPS["altimetry"])
+        remove_trend=True, out_data_group=data_group)
 
     # 2) LONGTERM TRENDS
     log.info("Recalibrating with longterm trends within data group and region...")
@@ -119,8 +117,24 @@ def run_altimetry(data_catalogue_annual: DataCatalogue,
     catalogue_calibrated_series = calibrate_timeseries_with_trends_catalogue(data_catalogue_trends, annual_combined)
     # we dont remove trends as these are calibrated series with trends
     trend_combined, _ = catalogue_calibrated_series.average_timeseries_in_catalogue(remove_trend=False,
-                                                                                    out_data_group=GLAMBIE_DATA_GROUPS
-                                                                                    ["altimetry"])
+                                                                                    out_data_group=data_group)
+
+    if verbose:
+        log.info("Saving plots for region=%s datagroup=%s under path=%s", region.name, data_group.name,
+                 output_path_handler.get_plot_output_file_path(region=region, data_group=data_group,
+                                                               plot_file_name=""))
+        plot_all_plots_for_region_data_group_processing(output_path_handler=output_path_handler,
+                                                        region=region,
+                                                        data_group=data_group,
+                                                        data_catalogue_annual_raw=data_catalogue_annual_raw,
+                                                        data_catalogue_trends_raw=data_catalogue_trends_raw,
+                                                        data_catalogue_annual_homogenized=data_catalogue_annual,
+                                                        data_catalogue_annual_anomalies=catalogue_annual_anomalies,
+                                                        timeseries_annual_combined=annual_combined,
+                                                        data_catalogue_trends_homogenized=data_catalogue_trends,
+                                                        data_catalogue_calibrated_series=catalogue_calibrated_series,
+                                                        timeseries_trend_combined=trend_combined)
+
     return trend_combined, annual_combined
 
 
@@ -131,14 +145,5 @@ def run_demdiff_and_glaciological(data_catalogue_annual: DataCatalogue,
     data_catalogue_annual
     data_catalogue_trends
     seasonal_calibration_dataset
-    pass
-
-
-def run_gravimetry(data_catalogue_annual: DataCatalogue,
-                   data_catalogue_trends: DataCatalogue,
-                   seasonal_calibration_dataset: Timeseries,
-                   verbose: bool = True) -> DataCatalogue:
-    data_catalogue_annual
-    data_catalogue_trends
-    seasonal_calibration_dataset
+    verbose
     pass

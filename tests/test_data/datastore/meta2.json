@@ -1,0 +1,11 @@
+{  "base_path" : ["tests", "test_data", "datastore"],
+   "datasets": [
+	  {
+	    "filename" : "central_asia_demdiff_sharks.csv",
+	    "region": "iceland",
+	    "user_group" : "sharks",
+	    "data_group" : "demdiff",
+		"unit" : "meters"
+	  }
+  ]
+}

@@ -81,10 +81,13 @@ If you wish to make a contribution but find that you are unable to push, please 
 
 After completing the Installation instructions above, you can use this package as follows:
 ```
-python -m glambie -config <config_file>
+python -m glambie <config_file>
 ```
 
-Note that this is a dummy entrypoint that we will replace shortly with meaningful functionality and examples.
+e.g. 
+```
+python -m glambie tests/test_data/configs/test_config.yaml
+```
 
 ## Versioning and releases
 Versioning follows a simple model featuring three integers known as the major version, minor version and build number.

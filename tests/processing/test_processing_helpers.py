@@ -25,6 +25,7 @@ def example_catalogue_1():
             "unit": "m"
         }]})
 
+
 @pytest.fixture()
 def example_catalogue_2():
     return DataCatalogue.from_dict({"base_path": ["tests", "test_data", "datastore"],

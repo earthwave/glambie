@@ -8,8 +8,8 @@ from glambie.const.data_groups import GlambieDataGroup
 
 
 def test_glambie_run_config_from_dict_raises_key_error():
+    config_dict = {}
     with pytest.raises(KeyError):
-        config_dict = {}
         GlambieRunConfig.from_params(**config_dict)  # empty config should raise key error
 
 

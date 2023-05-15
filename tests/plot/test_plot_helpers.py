@@ -17,7 +17,7 @@ def timeseries_data_example1():
 @pytest.fixture()
 def timeseries_data_example2():
     return TimeseriesData(start_dates=[2012, 2013],
-                          end_dates=[2014, 2015],
+                          end_dates=[2013, 2014],
                           changes=np.array([3., 6.]),
                           errors=np.array([1., 1.2]),
                           glacier_area_reference=np.array([10000, 10000]),

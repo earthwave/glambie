@@ -24,7 +24,7 @@ class OutputPathHandler():
 
     def get_region_output_folder_path(self, region: RGIRegion) -> str:
         """
-        Returns requested folder path for saving outputs. 
+        Returns requested folder path for saving outputs.
         If a folder dosen't exist it is iteratively created on the fly.
 
         Parameters

@@ -381,4 +381,3 @@ def plot_recalibrated_result_of_data_group(catalogue_trends: DataCatalogue,
     plt.tight_layout()
     plt.savefig(output_filepath)
     plt.close()
-    

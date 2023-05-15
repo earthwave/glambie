@@ -4,7 +4,7 @@ Configuration control dataclasses for GlaMBIE.
 from dataclasses import dataclass
 import yaml
 import logging
-from abc import ABC, abstractmethod
+from abc import ABC, abstractclassmethod, abstractmethod
 from glambie.const.constants import YearType
 from glambie.const.data_groups import GLAMBIE_DATA_GROUPS, GlambieDataGroup
 import os
@@ -12,7 +12,6 @@ import os
 log = logging.getLogger(__name__)
 
 
-@abstractmethod
 class Config(ABC):
     """
     Abstract base class for configuration classes
@@ -40,6 +39,10 @@ class Config(ABC):
         with open(yaml_abspath, 'r') as fh:
             config_dict = yaml.safe_load(fh)
             return cls.from_params(**config_dict)
+
+    @abstractclassmethod
+    def from_params(self):
+        pass
 
 
 @dataclass

@@ -54,7 +54,7 @@ def test_apply_vertical_adjustment_for_cumulative_plot_with_interpolation(timese
     adjusted_series = apply_vertical_adjustment_for_cumulative_plot(timeseries_to_adjust=timeseries_to_adjust,
                                                                     reference_timeseries=reference_timeseries)
     expected_changes = timeseries_to_adjust.changes + (2.0 + 5.0 / 12.0)
-    assert all(pytest.approx(a, b) for a, b in zip(expected_changes, adjusted_series.changes))
+    assert all(a == pytest.approx(b) for a, b in zip(expected_changes, adjusted_series.changes))
 
 
 def test_apply_vertical_adjustment_for_cumulative_plot_outside_reference_dataset(timeseries_data_example1,
@@ -66,4 +66,4 @@ def test_apply_vertical_adjustment_for_cumulative_plot_outside_reference_dataset
     adjusted_series = apply_vertical_adjustment_for_cumulative_plot(timeseries_to_adjust=timeseries_to_adjust,
                                                                     reference_timeseries=reference_timeseries)
     expected_changes = timeseries_to_adjust.changes + (-3.0)
-    assert all(pytest.approx(a, b) for a, b in zip(expected_changes, adjusted_series.changes))
+    assert all(a == pytest.approx(b) for a, b in zip(expected_changes, adjusted_series.changes))

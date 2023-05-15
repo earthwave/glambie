@@ -4,7 +4,7 @@ Configuration control dataclasses for GlaMBIE.
 from dataclasses import dataclass
 import yaml
 import logging
-from abc import ABC, abstractclassmethod, abstractmethod
+from abc import ABC, abstractclassmethod
 from glambie.const.constants import YearType
 from glambie.const.data_groups import GLAMBIE_DATA_GROUPS, GlambieDataGroup
 import os

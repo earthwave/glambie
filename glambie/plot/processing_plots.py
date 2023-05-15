@@ -132,6 +132,7 @@ def plot_raw_input_data_of_data_group(catalogue_raw: DataCatalogue,
     ax[0].set_title("{} - {} - {}: raw input data".format(region.long_name, data_group.long_name, category))
     plt.tight_layout()
     plt.savefig(output_filepath)
+    plt.close()
 
 
 def plot_raw_and_homogenized_input_data_of_data_group(catalogue_raw: DataCatalogue,
@@ -188,6 +189,7 @@ def plot_raw_and_homogenized_input_data_of_data_group(catalogue_raw: DataCatalog
     ax[0].set_title("{} - {} - {}: raw input data".format(region.long_name, data_group.long_name, category))
     plt.tight_layout()
     plt.savefig(output_filepath)
+    plt.close()
 
 
 def plot_homogenized_input_data_of_data_group(catalogue_annual: DataCatalogue,
@@ -269,6 +271,7 @@ def plot_annual_variability_of_data_group(catalogue_annual_anomalies: DataCatalo
     ax[0].set_title("{} - {}: annual variability".format(region.long_name, data_group.long_name))
     plt.tight_layout()
     plt.savefig(output_filepath)
+    plt.close()
 
 
 def plot_recalibration_of_annual_variability_with_trends(catalogue_trends: DataCatalogue,
@@ -325,6 +328,7 @@ def plot_recalibration_of_annual_variability_with_trends(catalogue_trends: DataC
                                                                 data_group.long_name))
     plt.tight_layout()
     plt.savefig(output_filepath)
+    plt.close()
 
 
 def plot_recalibrated_result_of_data_group(catalogue_trends: DataCatalogue,
@@ -344,7 +348,7 @@ def plot_recalibrated_result_of_data_group(catalogue_trends: DataCatalogue,
         ax[0].plot([], [], label="Calibrated annual series: " + ds.user_group
                    + " (" + ds.data_group.name + ")", color=COLOURS[count], linestyle="--")
         count = count + 1
-    for ix, row in trend_combined.data.as_dataframe().iterrows():
+    for _, row in trend_combined.data.as_dataframe().iterrows():
         time_period = row["end_dates"] - row["start_dates"]
         ax[0].plot([row["start_dates"], row["end_dates"]], [np.array(row["changes"]) / time_period,
                    np.array(row["changes"]) / time_period], color="black", linestyle="--")
@@ -376,3 +380,5 @@ def plot_recalibrated_result_of_data_group(catalogue_trends: DataCatalogue,
                                                         data_group.long_name))
     plt.tight_layout()
     plt.savefig(output_filepath)
+    plt.close()
+    

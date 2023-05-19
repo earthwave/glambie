@@ -28,7 +28,7 @@ def get_colours(number_of_colours: int) -> list[str]:
     if number_of_colours > len(COLOURS):
         number_of_colours_needed = number_of_colours - len(COLOURS)
         cmap = mpl.cm.get_cmap('Spectral', number_of_colours_needed)
-        colour_list_hex = [mpl.colors.rgb2hex(cmap(i)) for i in range(0, number_of_colours_needed)]
+        colour_list_hex = [mpl.colors.rgb2hex(cmap(i)) for i in range(number_of_colours_needed)]
         return [*COLOURS, *colour_list_hex]
     else:
         return COLOURS[:number_of_colours]

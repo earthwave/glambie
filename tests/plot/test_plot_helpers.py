@@ -1,4 +1,5 @@
 from glambie.plot.plot_helpers import apply_vertical_adjustment_for_cumulative_plot
+from glambie.plot.plot_helpers import get_colours, COLOURS
 from glambie.data.timeseries import TimeseriesData
 import numpy as np
 import pytest
@@ -67,3 +68,11 @@ def test_apply_vertical_adjustment_for_cumulative_plot_outside_reference_dataset
                                                                     reference_timeseries=reference_timeseries)
     expected_changes = timeseries_to_adjust.changes + (-3.0)
     assert all(a == pytest.approx(b) for a, b in zip(expected_changes, adjusted_series.changes))
+
+
+def test_get_colours():
+    colours = get_colours(2)
+    assert len(colours) == 2
+    assert colours[0] == COLOURS[0]
+    colours = get_colours(100)
+    assert len(colours) == 100

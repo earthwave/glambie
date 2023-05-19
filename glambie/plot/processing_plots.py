@@ -9,9 +9,7 @@ from glambie.processing.path_handling import OutputPathHandler
 from glambie.processing.processing_helpers import convert_datasets_to_monthly_grid
 from glambie.processing.processing_helpers import convert_datasets_to_unit_mwe
 from glambie.plot.plot_helpers import apply_vertical_adjustment_for_cumulative_plot
-
-
-COLOURS = ["red", "blue", "gold", "green", "orange", "teal", "pink", "purple"]
+from glambie.plot.plot_helpers import get_colours
 
 
 def plot_all_plots_for_region_data_group_processing(output_path_handler: OutputPathHandler,
@@ -104,14 +102,15 @@ def plot_raw_input_data_of_data_group(catalogue_raw: DataCatalogue,
                                       output_filepath: str):
     _, ax = plt.subplots(2, 1, figsize=(7, 6))
 
+    colours = get_colours(len(catalogue_raw.datasets))
     count = 0
     for _, ds in enumerate(catalogue_raw.datasets):
         for _, row in ds.data.as_dataframe().iterrows():
             time_period = row["end_dates"] - row["start_dates"]
             ax[0].plot([row["start_dates"], row["end_dates"]], [np.array(row["changes"]) / time_period,
                                                                 np.array(row["changes"]) / time_period],
-                       color=COLOURS[count])
-        ax[0].plot([], [], label="Dataset: " + ds.user_group, color=COLOURS[count])
+                       color=colours[count])
+        ax[0].plot([], [], label="Dataset: " + ds.user_group, color=colours[count])
         count = count + 1
     ax[0].axhline(0, color='grey', linewidth=0.9, linestyle="--")
     ax[0].set_ylabel("Change [{} per year]".format(catalogue_raw.datasets[0].unit))
@@ -123,7 +122,7 @@ def plot_raw_input_data_of_data_group(catalogue_raw: DataCatalogue,
         df_trend_cum["changes"] = apply_vertical_adjustment_for_cumulative_plot(df_trend_cum,
                                                                                 vertical_shift_ref_timeseries).changes
         ax[1].plot(df_trend_cum["dates"], df_trend_cum["changes"],
-                   label="Dataset: " + ds.user_group, color=COLOURS[count])
+                   label="Dataset: " + ds.user_group, color=colours[count])
         count = count + 1
     ax[1].axhline(0, color='grey', linewidth=0.9, linestyle="--")
     ax[1].legend(prop={'size': 7})
@@ -144,14 +143,15 @@ def plot_raw_and_homogenized_input_data_of_data_group(catalogue_raw: DataCatalog
                                                       output_filepath: str):
     _, ax = plt.subplots(2, 1, figsize=(7, 6))
 
+    colours = get_colours(len(catalogue_raw.datasets))
     count = 0
     for _, ds in enumerate(catalogue_raw.datasets):
         for _, row in ds.data.as_dataframe().iterrows():
             time_period = row["end_dates"] - row["start_dates"]
             ax[0].plot([row["start_dates"], row["end_dates"]], [np.array(row["changes"]) / time_period,
                                                                 np.array(row["changes"]) / time_period],
-                       color=COLOURS[count])
-        ax[0].plot([], [], label="Dataset (raw): " + ds.user_group, color=COLOURS[count])
+                       color=colours[count])
+        ax[0].plot([], [], label="Dataset (raw): " + ds.user_group, color=colours[count])
         count = count + 1
     count = 0
     for _, ds in enumerate(catalogue_homogenized.datasets):
@@ -159,8 +159,8 @@ def plot_raw_and_homogenized_input_data_of_data_group(catalogue_raw: DataCatalog
             time_period = row["end_dates"] - row["start_dates"]
             ax[0].plot([row["start_dates"], row["end_dates"]], [np.array(row["changes"]) / time_period,
                                                                 np.array(row["changes"]) / time_period],
-                       color=COLOURS[count], linestyle="--")
-        ax[0].plot([], [], label="Dataset: " + ds.user_group, color=COLOURS[count], linestyle="--")
+                       color=colours[count], linestyle="--")
+        ax[0].plot([], [], label="Dataset: " + ds.user_group, color=colours[count], linestyle="--")
         count = count + 1
     ax[0].axhline(0, color='grey', linewidth=0.9, linestyle="--")
     ax[0].set_ylabel("Change [{} per year]".format(catalogue_raw.datasets[0].unit))
@@ -171,7 +171,7 @@ def plot_raw_and_homogenized_input_data_of_data_group(catalogue_raw: DataCatalog
         df_trend_cum["changes"] = apply_vertical_adjustment_for_cumulative_plot(df_trend_cum,
                                                                                 vertical_shift_ref_timeseries).changes
         ax[1].plot(df_trend_cum["dates"], df_trend_cum["changes"],
-                   label="Dataset (raw): " + ds.user_group, color=COLOURS[count])
+                   label="Dataset (raw): " + ds.user_group, color=colours[count])
         count = count + 1
     count = 0
     for _, ds in enumerate(catalogue_homogenized.datasets):
@@ -180,7 +180,7 @@ def plot_raw_and_homogenized_input_data_of_data_group(catalogue_raw: DataCatalog
         df_trend_cum["changes"] = apply_vertical_adjustment_for_cumulative_plot(df_trend_cum,
                                                                                 vertical_shift_ref_timeseries).changes
         ax[1].plot(df_trend_cum["dates"], df_trend_cum["changes"],
-                   label="Dataset: " + ds.user_group, color=COLOURS[count], linestyle="--")
+                   label="Dataset: " + ds.user_group, color=colours[count], linestyle="--")
         count = count + 1
     ax[1].axhline(0, color='grey', linewidth=0.9, linestyle="--")
     ax[1].legend(prop={'size': 7})
@@ -199,14 +199,15 @@ def plot_homogenized_input_data_of_data_group(catalogue_annual: DataCatalogue,
                                               output_filepath: str):
     _, ax = plt.subplots(2, 1, figsize=(7, 6))
 
+    colours = get_colours(len(catalogue_annual.datasets))
     count = 0
     for _, ds in enumerate(catalogue_annual.datasets):
         for _, row in ds.data.as_dataframe().iterrows():
             time_period = row["end_dates"] - row["start_dates"]
             ax[0].plot([row["start_dates"], row["end_dates"]], [np.array(row["changes"]) / time_period,
                                                                 np.array(row["changes"]) / time_period],
-                       color=COLOURS[count])
-        ax[0].plot([], [], label="Dataset: " + ds.user_group, color=COLOURS[count])
+                       color=colours[count])
+        ax[0].plot([], [], label="Dataset: " + ds.user_group, color=colours[count])
         count = count + 1
     ax[0].axhline(0, color='grey', linewidth=0.9, linestyle="--")
     ax[0].set_ylabel("Change [{} per year]".format(catalogue_annual.datasets[0].unit))
@@ -217,7 +218,7 @@ def plot_homogenized_input_data_of_data_group(catalogue_annual: DataCatalogue,
         df_trend_cum["changes"] = apply_vertical_adjustment_for_cumulative_plot(df_trend_cum,
                                                                                 vertical_shift_ref_timeseries).changes
         ax[1].plot(df_trend_cum["dates"], df_trend_cum["changes"],
-                   label="Dataset: " + ds.user_group, color=COLOURS[count])
+                   label="Dataset: " + ds.user_group, color=colours[count])
         count = count + 1
     ax[1].axhline(0, color='grey', linewidth=0.9, linestyle="--")
     ax[1].legend(prop={'size': 7})
@@ -234,14 +235,16 @@ def plot_annual_variability_of_data_group(catalogue_annual_anomalies: DataCatalo
                                           region: RGIRegion,
                                           output_filepath: str):
     _, ax = plt.subplots(2, 1, figsize=(7, 6))
+
+    colours = get_colours(len(catalogue_annual_anomalies.datasets))
     count = 0
     for _, ds in enumerate(catalogue_annual_anomalies.datasets):
         for _, row in ds.data.as_dataframe().iterrows():
             time_period = row["end_dates"] - row["start_dates"]
             ax[0].plot([row["start_dates"], row["end_dates"]], [np.array(row["changes"]) / time_period,
                                                                 np.array(row["changes"]) / time_period],
-                       color=COLOURS[count])
-        ax[0].plot([], [], label="Dataset: " + ds.user_group, color=COLOURS[count])
+                       color=colours[count])
+        ax[0].plot([], [], label="Dataset: " + ds.user_group, color=colours[count])
         count = count + 1
 
     for _, row in timeseries_combined_annual.data.as_dataframe().iterrows():
@@ -261,7 +264,7 @@ def plot_annual_variability_of_data_group(catalogue_annual_anomalies: DataCatalo
         df_trend_cum["changes"] = apply_vertical_adjustment_for_cumulative_plot(df_trend_cum,
                                                                                 vertical_shift_ref_timeseries).changes
         ax[1].plot(df_trend_cum["dates"], df_trend_cum["changes"],
-                   label="Dataset: " + ds.user_group, color=COLOURS[count])
+                   label="Dataset: " + ds.user_group, color=colours[count])
         count = count + 1
     ax[1].plot(df_combined_cum["dates"], df_combined_cum["changes"],
                label="{} - combined solution".format(data_group.long_name), color="black", linestyle="--")
@@ -281,21 +284,22 @@ def plot_recalibration_of_annual_variability_with_trends(catalogue_trends: DataC
                                                          region: RGIRegion,
                                                          output_filepath: str):
     _, ax = plt.subplots(2, 1, figsize=(7, 6))
+    colours = get_colours(len(catalogue_trends.datasets))
     count = 0
     for idx, ds in enumerate(catalogue_trends.datasets):
         for _, row in ds.data.as_dataframe().iterrows():
             time_period = row["end_dates"] - row["start_dates"]
             ax[0].plot([row["start_dates"], row["end_dates"]], [np.array(row["changes"]) / time_period,
                                                                 np.array(row["changes"]) / time_period],
-                       color=COLOURS[count])
-        ax[0].plot([], [], label="Trend: " + ds.user_group, color=COLOURS[count])
+                       color=colours[count])
+        ax[0].plot([], [], label="Trend: " + ds.user_group, color=colours[count])
 
         ds = catalogue_calibrated_series.datasets[idx]
         for _, row in ds.data.as_dataframe().iterrows():
             time_period = row["end_dates"] - row["start_dates"]
             ax[0].plot([row["start_dates"], row["end_dates"]], [np.array(row["changes"]) / time_period,
-                       np.array(row["changes"]) / time_period], color=COLOURS[count], linestyle="--")
-        ax[0].plot([], [], label="Calibrated annual: " + ds.user_group, color=COLOURS[count], linestyle="--")
+                       np.array(row["changes"]) / time_period], color=colours[count], linestyle="--")
+        ax[0].plot([], [], label="Calibrated annual: " + ds.user_group, color=colours[count], linestyle="--")
         count = count + 1
 
     ax[0].axhline(0, color='grey', linewidth=0.9, linestyle="--")
@@ -310,14 +314,14 @@ def plot_recalibration_of_annual_variability_with_trends(catalogue_trends: DataC
         df_trend_cum["changes"] = apply_vertical_adjustment_for_cumulative_plot(df_trend_cum,
                                                                                 vertical_shift_ref_timeseries).changes
         ax[1].plot(df_trend_cum["dates"], df_trend_cum["changes"],
-                   label="Trend: " + ds.user_group, color=COLOURS[count])
+                   label="Trend: " + ds.user_group, color=colours[count])
         # plot calibrated series
         df_trend_cum = df_trend_cum_cali
         vertical_shift_ref_timeseries = trend_combined.data.as_cumulative_timeseries()
         df_trend_cum["changes"] = apply_vertical_adjustment_for_cumulative_plot(df_trend_cum,
                                                                                 vertical_shift_ref_timeseries).changes
         ax[1].plot(df_trend_cum["dates"], df_trend_cum["changes"], label="Calibrated annual: "
-                   + ds.user_group, color=COLOURS[count], linestyle="--")
+                   + ds.user_group, color=colours[count], linestyle="--")
         count = count + 1
 
     ax[1].axhline(0, color='grey', linewidth=0.9, linestyle="--")
@@ -338,15 +342,16 @@ def plot_recalibrated_result_of_data_group(catalogue_trends: DataCatalogue,
                                            region: RGIRegion,
                                            output_filepath: str):
     _, ax = plt.subplots(2, 1, figsize=(7, 6))
+    colours = get_colours(len(catalogue_trends.datasets))
     count = 0
     for idx, ds in enumerate(catalogue_trends.datasets):
         ds = catalogue_calibrated_series.datasets[idx]
         for _, row in ds.data.as_dataframe().iterrows():
             time_period = row["end_dates"] - row["start_dates"]
             ax[0].plot([row["start_dates"], row["end_dates"]], [np.array(row["changes"]) / time_period,
-                       np.array(row["changes"]) / time_period], color=COLOURS[count], linestyle="--")
+                       np.array(row["changes"]) / time_period], color=colours[count], linestyle="--")
         ax[0].plot([], [], label="Calibrated annual series: " + ds.user_group
-                   + " (" + ds.data_group.name + ")", color=COLOURS[count], linestyle="--")
+                   + " (" + ds.data_group.name + ")", color=colours[count], linestyle="--")
         count = count + 1
     for _, row in trend_combined.data.as_dataframe().iterrows():
         time_period = row["end_dates"] - row["start_dates"]
@@ -367,7 +372,7 @@ def plot_recalibrated_result_of_data_group(catalogue_trends: DataCatalogue,
         df_trend_cum["changes"] = apply_vertical_adjustment_for_cumulative_plot(df_trend_cum,
                                                                                 vertical_shift_ref_timeseries).changes
         ax[1].plot(df_trend_cum["dates"], df_trend_cum["changes"],
-                   label="Calibrated annual series: {}".format(ds.user_group), color=COLOURS[count], linestyle="--")
+                   label="Calibrated annual series: {}".format(ds.user_group), color=colours[count], linestyle="--")
         count = count + 1
     ax[1].plot(df_combined_cum_trend["dates"], df_combined_cum_trend["changes"],
                label="{} - combined solution".format(data_group.long_name), color="black", linestyle="--")

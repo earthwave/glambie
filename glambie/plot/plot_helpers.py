@@ -1,10 +1,37 @@
 import numpy as np
 import pandas as pd
+import matplotlib as mpl
 from glambie.util.timeseries_helpers import resample_1d_array, timeseries_as_months
 
 """
 Handy functions to help making plots
 """
+
+COLOURS = ["red", "blue", "gold", "green", "orange", "teal", "pink", "purple"]
+
+
+def get_colours(number_of_colours: int) -> list[str]:
+    """
+    Calculates and returns a list of colours for matplotlib using 'COLOURS'
+    If more colours needed they are generated from the Spectral colour map.
+
+    Parameters
+    ----------
+    number_of_colours : int
+        number of colours needed
+
+    Returns
+    -------
+    list[str]
+        list with names and hex codes of colours
+    """
+    if number_of_colours > len(COLOURS):
+        number_of_colours_needed = number_of_colours - len(COLOURS)
+        cmap = mpl.cm.get_cmap('Spectral', number_of_colours_needed)
+        colour_list_hex = [mpl.colors.rgb2hex(cmap(i)) for i in range(0, number_of_colours_needed)]
+        return [*COLOURS, *colour_list_hex]
+    else:
+        return COLOURS[:number_of_colours]
 
 
 def autoscale_y_axis(ax, margin=0.1):

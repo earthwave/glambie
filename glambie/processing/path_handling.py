@@ -12,7 +12,7 @@ class OutputPathHandler():
 
     def __init__(self, base_path: str):
         """
-        Constructor
+        Creates base_path folder recursively if it doesn't already exist.
 
         Parameters
         ----------
@@ -92,7 +92,7 @@ def get_output_path_handler_with_timestamped_subfolder(base_output_dir: str) -> 
     Creates a OutputPathHandler with a timestamped subfolder from the base_output_dir.
 
     E.g. for a base_output_dir of '/output/path'
-    the OutputPathHandler ojects base_path would be '/output/path/2023-05-11_12-54'
+    the OutputPathHandler objects base_path would be '/output/path/2023-05-11_12-54'
     using the timestamp when calling the function as in YYYY-mm-dd-HH-MM
 
     Parameters

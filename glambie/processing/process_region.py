@@ -19,8 +19,7 @@ log = logging.getLogger(__name__)
 def run_one_region(glambie_run_config: GlambieRunConfig,
                    region_config: RegionRunConfig,
                    data_catalogue: DataCatalogue,
-                   output_path_handler: OutputPathHandler,
-                   verbose=True) -> DataCatalogue:
+                   output_path_handler: OutputPathHandler) -> DataCatalogue:
 
     # filter data catalogue by region
     data_catalogue = data_catalogue.get_filtered_catalogue(
@@ -55,8 +54,7 @@ def run_one_region(glambie_run_config: GlambieRunConfig,
                                                             seasonal_calibration_dataset=seasonal_calibration_dataset,
                                                             region=REGIONS[region_config.region_name],
                                                             data_group=data_group,
-                                                            output_path_handler=output_path_handler,
-                                                            verbose=verbose)
+                                                            output_path_handler=output_path_handler)
             result_datasets.append(trend_combined)
         elif data_group == GLAMBIE_DATA_GROUPS["demdiff_and_glaciological"]:
             trend_combined, _ = run_demdiff_and_glaciological(data_catalogue_annual=data_catalogue_annual,
@@ -64,8 +62,7 @@ def run_one_region(glambie_run_config: GlambieRunConfig,
                                                               seasonal_calibration_dataset=seasonal_calibration_dataset,
                                                               region=REGIONS[region_config.region_name],
                                                               data_group=data_group,
-                                                              output_path_handler=output_path_handler,
-                                                              verbose=verbose)
+                                                              output_path_handler=output_path_handler)
             result_datasets.append(trend_combined)
         else:
             error_msg = f'Processing for the data_group {data_group.name} has not been implemented yet'
@@ -87,8 +84,7 @@ def run_altimetry_or_gravimetry(data_catalogue_annual: DataCatalogue,
                                 seasonal_calibration_dataset: Timeseries,
                                 region: RGIRegion,
                                 data_group: GlambieDataGroup,
-                                output_path_handler: OutputPathHandler,
-                                verbose: bool = True) -> DataCatalogue:
+                                output_path_handler: OutputPathHandler) -> DataCatalogue:
 
     data_catalogue_annual_raw = data_catalogue_annual
     data_catalogue_trends_raw = data_catalogue_trends
@@ -123,7 +119,7 @@ def run_altimetry_or_gravimetry(data_catalogue_annual: DataCatalogue,
     trend_combined, _ = catalogue_calibrated_series.average_timeseries_in_catalogue(remove_trend=False,
                                                                                     out_data_group=data_group)
 
-    if verbose:
+    if output_path_handler is not None:
         log.info("Saving plots for region=%s datagroup=%s under path=%s", region.name, data_group.name,
                  output_path_handler.get_plot_output_file_path(region=region, data_group=data_group,
                                                                plot_file_name=""))
@@ -147,8 +143,7 @@ def run_demdiff_and_glaciological(data_catalogue_annual: DataCatalogue,
                                   seasonal_calibration_dataset: Timeseries,
                                   region: RGIRegion,
                                   data_group: GlambieDataGroup,
-                                  output_path_handler: OutputPathHandler,
-                                  verbose: bool = True) -> DataCatalogue:
+                                  output_path_handler: OutputPathHandler) -> DataCatalogue:
     data_catalogue_annual_raw = data_catalogue_annual
     data_catalogue_trends_raw = data_catalogue_trends
 
@@ -193,7 +188,7 @@ def run_demdiff_and_glaciological(data_catalogue_annual: DataCatalogue,
     trend_combined, _ = catalogue_calibrated_series.average_timeseries_in_catalogue(remove_trend=False,
                                                                                     out_data_group=data_group)
 
-    if verbose:
+    if output_path_handler is not None:
         log.info("Saving plots for region=%s datagroup=%s under path=%s", region.name, data_group.name,
                  output_path_handler.get_plot_output_file_path(region=region, data_group=data_group,
                                                                plot_file_name=""))

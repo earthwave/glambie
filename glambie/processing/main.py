@@ -1,28 +1,15 @@
 import logging
-from glambie.monitoring.logging import setup_logging
 from glambie.config.config_classes import GlambieRunConfig
 from glambie.data.data_catalogue import DataCatalogue
 from glambie.processing.process_region import run_one_region, combine_within_one_region
-from glambie.processing.path_handling import OutputPathHandler, get_output_path_handler_with_timestamped_subfolder
+from glambie.processing.path_handling import OutputPathHandler
 
 
 log = logging.getLogger(__name__)
 
 
 def run_glambie_assessment(glambie_run_config: GlambieRunConfig,
-                           log_level: str = "INFO",
-                           verbose: bool = True):
-
-    if not log.hasHandlers():
-        setup_logging(log_level=log_level)
-    log.info('Starting GlaMBIE algorithm: log_level=%s, verbose=%s', log_level, verbose)
-
-    if verbose:
-        output_path_handler = get_output_path_handler_with_timestamped_subfolder(glambie_run_config.result_base_path)
-        log.info('Output directory set to %s', output_path_handler.base_path)
-    else:
-        output_path_handler = None
-
+                           output_path_handler: OutputPathHandler):
     data_catalogue_original = load_catalogue_and_data(glambie_run_config.catalogue_path)
     results_catalogue_combined_per_region, _ = run_regional_results(
         glambie_run_config, data_catalogue_original, output_path_handler=output_path_handler)
@@ -31,8 +18,7 @@ def run_glambie_assessment(glambie_run_config: GlambieRunConfig,
 
 def run_regional_results(glambie_run_config: GlambieRunConfig,
                          data_catalogue: DataCatalogue,
-                         output_path_handler: OutputPathHandler,
-                         verbose: bool = True) -> DataCatalogue:
+                         output_path_handler: OutputPathHandler) -> DataCatalogue:
 
     data_group_results_per_region = []
     combined_regional_results = []
@@ -41,8 +27,7 @@ def run_regional_results(glambie_run_config: GlambieRunConfig,
         results_one_region = run_one_region(glambie_run_config=glambie_run_config,
                                             region_config=region_config,
                                             data_catalogue=data_catalogue,
-                                            output_path_handler=output_path_handler,
-                                            verbose=verbose)
+                                            output_path_handler=output_path_handler)
         data_group_results_per_region.extend(results_one_region.datasets)
 
         # get combined regional results combining the individual data group results

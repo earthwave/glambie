@@ -11,6 +11,7 @@ import argparse
 from glambie.processing.main import run_glambie_assessment
 from glambie.config.config_classes import GlambieRunConfig
 from glambie.monitoring.logging import setup_logging
+from glambie.processing.path_handling import get_output_path_handler_with_timestamped_subfolder
 import logging
 
 log = logging.getLogger(__name__)
@@ -33,7 +34,7 @@ def main():
 
     # get config object
     config_path = args.config
-    config_object = GlambieRunConfig.from_yaml(config_path)
+    glambie_run_config = GlambieRunConfig.from_yaml(config_path)
 
     # get logging level
     if args.debug_mode:
@@ -43,9 +44,15 @@ def main():
 
     # set up logging
     setup_logging(log_level=log_level)
-    log.info('Initiating GlaMBIE algorithm with config file = %s', config_path)
+    log.info('Initiating GlaMBIE algorithm with config file = %s log_level=%s', config_path, log_level)
+
+    if not args.quiet:
+        output_path_handler = get_output_path_handler_with_timestamped_subfolder(glambie_run_config.result_base_path)
+        log.info('Output directory set to %s', output_path_handler.base_path)
+    else:
+        output_path_handler = None
 
     # run assessment
-    run_glambie_assessment(glambie_run_config=config_object, log_level=log_level, verbose=not args.quiet)
+    run_glambie_assessment(glambie_run_config=glambie_run_config, output_path_handler=output_path_handler)
 
     print("Finished running GlaMBIE algorithm.")

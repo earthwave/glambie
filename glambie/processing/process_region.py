@@ -73,7 +73,7 @@ def run_one_region(glambie_run_config: GlambieRunConfig,
     return result_catalogue
 
 
-def _combine_within_one_region(catalogue_data_group_results: DataCatalogue):
+def combine_within_one_region(catalogue_data_group_results: DataCatalogue):
     # TODO: implement
     catalogue_data_group_results
     pass

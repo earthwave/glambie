@@ -1,7 +1,7 @@
 import logging
 from glambie.config.config_classes import GlambieRunConfig
 from glambie.data.data_catalogue import DataCatalogue
-from glambie.processing.process_region import run_one_region, _combine_within_one_region
+from glambie.processing.process_region import run_one_region, combine_within_one_region
 from glambie.processing.path_handling import OutputPathHandler
 
 
@@ -31,7 +31,7 @@ def _run_regional_results(glambie_run_config: GlambieRunConfig,
         data_group_results_per_region.extend(results_one_region.datasets)
 
         # get combined regional results combining the individual data group results
-        combined_results = _combine_within_one_region(results_one_region)  # TODO: to be implemented
+        combined_results = combine_within_one_region(results_one_region)  # TODO: to be implemented
         combined_regional_results.append(combined_results)
 
     catalogue_data_group_results_per_region = DataCatalogue.from_list(

@@ -26,11 +26,11 @@ def run_one_region(glambie_run_config: GlambieRunConfig,
         region_name=region_config.region_name)
 
     # get seasonal calibration dataset and convert to monthly grid
-    seasonal_calibration_dataset = data_catalogue.get_filtered_catalogue(
+    season_calibration_dataset = data_catalogue.get_filtered_catalogue(
         user_group=region_config.seasonal_correction_dataset["user_group"],
         data_group=region_config.seasonal_correction_dataset["data_group"]).datasets[0]
-    seasonal_calibration_dataset.load_data()
-    seasonal_calibration_dataset = seasonal_calibration_dataset.convert_timeseries_to_monthly_grid()
+    season_calibration_dataset.load_data()
+    season_calibration_dataset = season_calibration_dataset.convert_timeseries_to_monthly_grid()
 
     # TODO: also filter all data to 2000? (i.e.remove any data ending pre 2000)
     # TODO: convert to RGIv6 if not already done
@@ -49,20 +49,20 @@ def run_one_region(glambie_run_config: GlambieRunConfig,
         data_catalogue_trends = convert_datasets_to_monthly_grid(data_catalogue_trends)
 
         if data_group == GLAMBIE_DATA_GROUPS["altimetry"] or data_group == GLAMBIE_DATA_GROUPS["gravimetry"]:
-            trend_combined, _ = run_altimetry_or_gravimetry(data_catalogue_annual=data_catalogue_annual,
-                                                            data_catalogue_trends=data_catalogue_trends,
-                                                            seasonal_calibration_dataset=seasonal_calibration_dataset,
-                                                            region=REGIONS[region_config.region_name],
-                                                            data_group=data_group,
-                                                            output_path_handler=output_path_handler)
+            trend_combined, _ = _run_altimetry_or_gravimetry(data_catalogue_annual=data_catalogue_annual,
+                                                             data_catalogue_trends=data_catalogue_trends,
+                                                             seasonal_calibration_dataset=season_calibration_dataset,
+                                                             region=REGIONS[region_config.region_name],
+                                                             data_group=data_group,
+                                                             output_path_handler=output_path_handler)
             result_datasets.append(trend_combined)
         elif data_group == GLAMBIE_DATA_GROUPS["demdiff_and_glaciological"]:
-            trend_combined, _ = run_demdiff_and_glaciological(data_catalogue_annual=data_catalogue_annual,
-                                                              data_catalogue_trends=data_catalogue_trends,
-                                                              seasonal_calibration_dataset=seasonal_calibration_dataset,
-                                                              region=REGIONS[region_config.region_name],
-                                                              data_group=data_group,
-                                                              output_path_handler=output_path_handler)
+            trend_combined, _ = _run_demdiff_and_glaciological(data_catalogue_annual=data_catalogue_annual,
+                                                               data_catalogue_trends=data_catalogue_trends,
+                                                               seasonal_calibration_dataset=season_calibration_dataset,
+                                                               region=REGIONS[region_config.region_name],
+                                                               data_group=data_group,
+                                                               output_path_handler=output_path_handler)
             result_datasets.append(trend_combined)
         else:
             error_msg = f'Processing for the data_group {data_group.name} has not been implemented yet'
@@ -73,18 +73,18 @@ def run_one_region(glambie_run_config: GlambieRunConfig,
     return result_catalogue
 
 
-def combine_within_one_region(catalogue_data_group_results: DataCatalogue):
+def _combine_within_one_region(catalogue_data_group_results: DataCatalogue):
     # TODO: implement
     catalogue_data_group_results
     pass
 
 
-def run_altimetry_or_gravimetry(data_catalogue_annual: DataCatalogue,
-                                data_catalogue_trends: DataCatalogue,
-                                seasonal_calibration_dataset: Timeseries,
-                                region: RGIRegion,
-                                data_group: GlambieDataGroup,
-                                output_path_handler: OutputPathHandler) -> DataCatalogue:
+def _run_altimetry_or_gravimetry(data_catalogue_annual: DataCatalogue,
+                                 data_catalogue_trends: DataCatalogue,
+                                 seasonal_calibration_dataset: Timeseries,
+                                 region: RGIRegion,
+                                 data_group: GlambieDataGroup,
+                                 output_path_handler: OutputPathHandler) -> DataCatalogue:
 
     data_catalogue_annual_raw = data_catalogue_annual
     data_catalogue_trends_raw = data_catalogue_trends
@@ -138,12 +138,12 @@ def run_altimetry_or_gravimetry(data_catalogue_annual: DataCatalogue,
     return trend_combined, annual_combined
 
 
-def run_demdiff_and_glaciological(data_catalogue_annual: DataCatalogue,
-                                  data_catalogue_trends: DataCatalogue,
-                                  seasonal_calibration_dataset: Timeseries,
-                                  region: RGIRegion,
-                                  data_group: GlambieDataGroup,
-                                  output_path_handler: OutputPathHandler) -> DataCatalogue:
+def _run_demdiff_and_glaciological(data_catalogue_annual: DataCatalogue,
+                                   data_catalogue_trends: DataCatalogue,
+                                   seasonal_calibration_dataset: Timeseries,
+                                   region: RGIRegion,
+                                   data_group: GlambieDataGroup,
+                                   output_path_handler: OutputPathHandler) -> DataCatalogue:
     data_catalogue_annual_raw = data_catalogue_annual
     data_catalogue_trends_raw = data_catalogue_trends
 

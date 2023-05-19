@@ -1,0 +1,25 @@
+# config yaml file for iceland
+---
+region_name: svalbard
+year_type: glaciological # or calendar
+
+seasonal_correction_dataset:
+  user_group: wgms_sine
+  data_group: glaciological
+
+region_run_settings:
+  altimetry:
+    exclude_annual_datasets :
+      - lions
+    exclude_trend_datasets :
+      - sharks
+  gravimetry:
+    exclude_annual_datasets :
+    - ciraci
+    exclude_trend_datasets :
+    - wouters
+  demdiff_and_glaciological:
+    exclude_annual_datasets : # glaciological datasets
+    - lions
+    exclude_trend_datasets : # demdiff datasets
+    - sharks

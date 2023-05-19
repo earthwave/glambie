@@ -161,3 +161,8 @@ cython_debug/
 
 # pyreverse
 *.vcg
+
+# custom output paths
+output_plots
+notebooks
+sine_curve

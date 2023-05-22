@@ -215,10 +215,7 @@ def test_convert_timeseries_to_annual_trends_down_sampling(example_timeseries_in
     example_timeseries_converted = example_timeseries_ingested.convert_timeseries_to_annual_trends()
     assert example_timeseries_converted.timeseries_is_annual_grid()
     assert len(example_timeseries_converted.data.changes) == 1
-    assert len(example_timeseries_converted.data.errors) == 1
     assert example_timeseries_converted.data.changes[0] == example_timeseries_ingested.data.changes.sum()
-    # current implementation of errors is stdev, test will need to be adapted once this is changed
-    assert example_timeseries_converted.data.errors[0] == example_timeseries_ingested.data.errors.std()
 
     # add one more month and check it's still the same
     np.append(example_timeseries_ingested.data.start_dates, 2011)
@@ -240,6 +237,19 @@ def test_convert_timeseries_to_annual_trends_down_sampling(example_timeseries_in
     assert example_timeseries_converted2.timeseries_is_annual_grid()
     assert len(example_timeseries_converted2.data.changes) == 0
     assert len(example_timeseries_converted2.data.errors) == 0
+
+
+def test_convert_timeseries_to_annual_trends_down_sampling_errors(example_timeseries_ingested):
+    # we are resampling since it is monthly resolution
+    example_timeseries_ingested.data.start_dates = np.linspace(2010, 2011, 13)[:-1]
+    example_timeseries_ingested.data.end_dates = np.linspace(2010, 2011, 13)[1:]
+    example_timeseries_ingested.data.changes = np.linspace(1, 11, 12)
+    example_timeseries_ingested.data.errors = np.linspace(1, 2, 12)
+    example_timeseries_converted = example_timeseries_ingested.convert_timeseries_to_annual_trends()
+    assert len(example_timeseries_converted.data.errors) == 1
+    assert example_timeseries_converted.data.errors[0] == np.sqrt(np.nansum(example_timeseries_ingested.
+                                                                            data.errors**2)) / len(
+                                                                                example_timeseries_ingested.data.errors)
 
 
 def test_convert_timeseries_to_annual_trends_down_sampling_glaciological_year(example_timeseries_ingested):
@@ -328,13 +338,20 @@ def test_convert_timeseries_to_longterm_trend(example_timeseries_ingested):
     assert len(example_timeseries_converted.data.changes) == 1
     assert np.array_equal(example_timeseries_converted.data.changes,
                           np.array([example_timeseries_ingested.data.changes.sum()]))
-    # will need to be changed in future when error calculation adapted
-    assert np.array_equal(example_timeseries_converted.data.errors,
-                          np.array([example_timeseries_ingested.data.errors.std()]))
     assert np.array_equal(example_timeseries_converted.data.start_dates,
                           np.array([example_timeseries_ingested.data.start_dates[0]]))
     assert np.array_equal(example_timeseries_converted.data.end_dates,
                           np.array([example_timeseries_ingested.data.end_dates[1]]))
+
+
+def test_convert_timeseries_to_longterm_trend_errors(example_timeseries_ingested):
+    example_timeseries_converted = example_timeseries_ingested.convert_timeseries_to_longterm_trend()
+    assert len(example_timeseries_converted.data.changes) == 1
+    assert np.array_equal(example_timeseries_converted.data.changes,
+                          np.array([example_timeseries_ingested.data.changes.sum()]))
+    assert np.array_equal(example_timeseries_converted.data.errors,
+                          np.array([np.sqrt(np.nansum(example_timeseries_ingested.data.errors**2)) / len(
+                              example_timeseries_ingested.data.errors)]))
 
 
 def test_apply_area_change(example_timeseries_ingested):

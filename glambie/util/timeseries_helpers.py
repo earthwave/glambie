@@ -517,11 +517,11 @@ def get_total_trend(start_dates, end_dates, changes, calculate_as_errors=False, 
     pd.DataFrame or single value with overall trend
         'dataframe': pd.DataFrame({'start_dates': start_dates, 'end_dates': end_dates, 'changes': changes})
                      will contain a single row.
-        'value': longerm trend in input unit
+        'value': longterm trend in input unit
 
     """
     if calculate_as_errors:
-        result = np.nanstd(changes)  # @TODO: placeholder calculation. Update this, once we decide how to do it
+        result = np.sqrt(np.nansum(changes * changes)) / len(changes)
     else:
         result = np.nansum(changes)
     if return_type == "value":

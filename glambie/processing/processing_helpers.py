@@ -4,6 +4,7 @@ from typing import Tuple
 from glambie.config.config_classes import RegionRunConfig
 from glambie.data.data_catalogue import DataCatalogue
 from glambie.const.data_groups import GLAMBIE_DATA_GROUPS, GlambieDataGroup
+from glambie.data.timeseries import Timeseries
 from glambie.const.constants import YearType
 
 log = logging.getLogger(__name__)
@@ -88,7 +89,8 @@ def convert_datasets_to_monthly_grid(data_catalogue: DataCatalogue) -> DataCatal
     return catalogue_monthly_grid
 
 
-def convert_datasets_to_annual_trends(data_catalogue: DataCatalogue, year_type: YearType) -> DataCatalogue:
+def convert_datasets_to_annual_trends(data_catalogue: DataCatalogue, year_type: YearType,
+                                      season_calibration_dataset: Timeseries) -> DataCatalogue:
     """
     Convert all datasets in data catalogue to annual trends
 
@@ -108,12 +110,19 @@ def convert_datasets_to_annual_trends(data_catalogue: DataCatalogue, year_type: 
     data_catalogue = convert_datasets_to_monthly_grid(data_catalogue)
     datasets = []
     for ds in data_catalogue.datasets:
-        datasets.append(ds.convert_timeseries_to_annual_trends(year_type=year_type))
+        if (ds.data.max_temporal_resolution == 1) and (ds.data.min_temporal_resolution == 1):
+            ds = ds.convert_timeseries_to_unit_mwe()
+            datasets.append(ds.convert_timeseries_using_seasonal_homogenization(
+                seasonal_calibration_dataset=season_calibration_dataset, year_type=year_type, p_value=0))
+        else:
+            datasets.append(ds.convert_timeseries_to_annual_trends(year_type=year_type))
+
     catalogue_annual_grid = DataCatalogue.from_list(datasets, base_path=data_catalogue.base_path)
     return catalogue_annual_grid
 
 
-def convert_datasets_to_longterm_trends(data_catalogue: DataCatalogue, year_type: YearType) -> DataCatalogue:
+def convert_datasets_to_longterm_trends(data_catalogue: DataCatalogue, year_type: YearType,
+                                        season_calibration_dataset: Timeseries) -> DataCatalogue:
     """
     Convert all datasets in data catalogue to longterm trends
 
@@ -131,12 +140,19 @@ def convert_datasets_to_longterm_trends(data_catalogue: DataCatalogue, year_type
         New data catalogue with converted data
     """
     data_catalogue = convert_datasets_to_monthly_grid(data_catalogue)
+    data_catalogue_original = data_catalogue.copy()
     # first convert to annual so that longterm trend will fit into annual grid
-    data_catalogue = convert_datasets_to_annual_trends(data_catalogue, year_type=year_type)
+    # data_catalogue = convert_datasets_to_annual_trends(data_catalogue, year_type=year_type,
+    #                                                    season_calibration_dataset=season_calibration_dataset)
     datasets = []
-    for ds in data_catalogue.datasets:
-        # then convert to longterm trend
-        datasets.append(ds.convert_timeseries_to_longterm_trend())
+    for idx, ds in enumerate(data_catalogue.datasets):
+        if data_catalogue_original.datasets[idx].data.max_temporal_resolution > 1:
+            ds = data_catalogue_original.datasets[idx].convert_timeseries_to_unit_mwe()
+            datasets.append(ds.convert_timeseries_using_seasonal_homogenization(
+                seasonal_calibration_dataset=season_calibration_dataset, year_type=year_type, p_value=0))
+        else:
+            ds = ds.convert_timeseries_to_annual_trends(year_type=year_type)
+            datasets.append(ds.convert_timeseries_to_longterm_trend())
     catalogue_trends = DataCatalogue.from_list(datasets, base_path=data_catalogue.base_path)
     return catalogue_trends
 

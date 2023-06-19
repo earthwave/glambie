@@ -4,6 +4,7 @@ from glambie.config.config_classes import GlambieRunConfig, RegionRunConfig
 from glambie.data.data_catalogue import DataCatalogue, Timeseries
 from glambie.const.data_groups import GLAMBIE_DATA_GROUPS, GlambieDataGroup
 from glambie.const.regions import REGIONS, RGIRegion
+from glambie.const.constants import YearType
 from glambie.processing.processing_helpers import convert_datasets_to_longterm_trends, convert_datasets_to_monthly_grid
 from glambie.processing.processing_helpers import convert_datasets_to_annual_trends
 from glambie.processing.processing_helpers import convert_datasets_to_unit_mwe
@@ -52,6 +53,7 @@ def run_one_region(glambie_run_config: GlambieRunConfig,
             trend_combined, _ = _run_altimetry_or_gravimetry(data_catalogue_annual=data_catalogue_annual,
                                                              data_catalogue_trends=data_catalogue_trends,
                                                              seasonal_calibration_dataset=season_calibration_dataset,
+                                                             year_type=region_config.year_type,
                                                              region=REGIONS[region_config.region_name],
                                                              data_group=data_group,
                                                              output_path_handler=output_path_handler)
@@ -60,6 +62,7 @@ def run_one_region(glambie_run_config: GlambieRunConfig,
             trend_combined, _ = _run_demdiff_and_glaciological(data_catalogue_annual=data_catalogue_annual,
                                                                data_catalogue_trends=data_catalogue_trends,
                                                                seasonal_calibration_dataset=season_calibration_dataset,
+                                                               year_type=region_config.year_type,
                                                                region=REGIONS[region_config.region_name],
                                                                data_group=data_group,
                                                                output_path_handler=output_path_handler)
@@ -82,6 +85,7 @@ def combine_within_one_region(catalogue_data_group_results: DataCatalogue):
 def _run_altimetry_or_gravimetry(data_catalogue_annual: DataCatalogue,
                                  data_catalogue_trends: DataCatalogue,
                                  seasonal_calibration_dataset: Timeseries,
+                                 year_type: YearType,
                                  region: RGIRegion,
                                  data_group: GlambieDataGroup,
                                  output_path_handler: OutputPathHandler) -> DataCatalogue:
@@ -93,13 +97,11 @@ def _run_altimetry_or_gravimetry(data_catalogue_annual: DataCatalogue,
     seasonal_calibration_dataset = seasonal_calibration_dataset.convert_timeseries_to_monthly_grid()
     seasonal_calibration_dataset = seasonal_calibration_dataset.convert_timeseries_to_unit_mwe()
 
-    # TODO: implement reading annual year for seasonal correction (calendar or hydrological) from config
-
     # 1) ANNUAL TRENDS
     log.info("Calculating combined annual trends within data group and region...")
     # convert to annual trends
     # TODO: need to enable here to detect between seasonal correction and reading dataset
-    data_catalogue_annual = convert_datasets_to_annual_trends(data_catalogue_annual)
+    data_catalogue_annual = convert_datasets_to_annual_trends(data_catalogue_annual, year_type=year_type)
     # convert to mwe
     data_catalogue_annual = convert_datasets_to_unit_mwe(data_catalogue_annual)
 
@@ -110,7 +112,7 @@ def _run_altimetry_or_gravimetry(data_catalogue_annual: DataCatalogue,
     # 2) LONGTERM TRENDS
     log.info("Recalibrating with longterm trends within data group and region...")
     # get catalogue with longerm datasets for altimetry
-    data_catalogue_trends = convert_datasets_to_longterm_trends(data_catalogue_trends)
+    data_catalogue_trends = convert_datasets_to_longterm_trends(data_catalogue_trends, year_type=year_type)
     # convert to mwe
     data_catalogue_trends = convert_datasets_to_unit_mwe(data_catalogue_trends)
     # recalibrate
@@ -141,6 +143,7 @@ def _run_altimetry_or_gravimetry(data_catalogue_annual: DataCatalogue,
 def _run_demdiff_and_glaciological(data_catalogue_annual: DataCatalogue,
                                    data_catalogue_trends: DataCatalogue,
                                    seasonal_calibration_dataset: Timeseries,
+                                   year_type: YearType,
                                    region: RGIRegion,
                                    data_group: GlambieDataGroup,
                                    output_path_handler: OutputPathHandler) -> DataCatalogue:
@@ -161,7 +164,8 @@ def _run_demdiff_and_glaciological(data_catalogue_annual: DataCatalogue,
     # convert to mwe
     data_catalogue_annual = convert_datasets_to_unit_mwe(data_catalogue_annual)
     datasets = [d.convert_timeseries_using_seasonal_homogenization(
-        seasonal_calibration_dataset=seasonal_calibration_dataset, p_value=0) for d in data_catalogue_annual.datasets]
+        seasonal_calibration_dataset=seasonal_calibration_dataset, year_type=year_type, p_value=0)
+        for d in data_catalogue_annual.datasets]
     data_catalogue_annual = DataCatalogue.from_list(datasets, base_path=data_catalogue_annual.base_path)
 
     # calculate combined annual timeseries
@@ -179,7 +183,8 @@ def _run_demdiff_and_glaciological(data_catalogue_annual: DataCatalogue,
     # DEMDIFF + GLACIOLOGICAL COMBINED ESTIMATE
     # get catalogue with longerm datasets for demdiff
     datasets = [d.convert_timeseries_using_seasonal_homogenization(
-        seasonal_calibration_dataset=seasonal_calibration_dataset, p_value=0) for d in data_catalogue_trends.datasets]
+        seasonal_calibration_dataset=seasonal_calibration_dataset, year_type=year_type, p_value=0)
+        for d in data_catalogue_trends.datasets]
     data_catalogue_trends = DataCatalogue.from_list(datasets, base_path=data_catalogue_trends.base_path)
 
     # recalibrate

@@ -632,7 +632,7 @@ class Timeseries():
             year_start = self.region.glaciological_year_start
 
         object_copy = self.copy()
-        if not self.timeseries_is_annual_grid():  # if already annual then no need to homogenize
+        if not self.timeseries_is_annual_grid(year_type=year_type):  # if already annual then no need to homogenize
             # 1) calibrate calibration series with trends from timeseries
             calibrated_s, dist_mat = calibrate_timeseries_with_trends(self.data.as_dataframe(),
                                                                       seasonal_calibration_dataset.data.as_dataframe())

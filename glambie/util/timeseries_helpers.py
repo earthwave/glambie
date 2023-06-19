@@ -521,7 +521,7 @@ def get_total_trend(start_dates, end_dates, changes, calculate_as_errors=False, 
 
     """
     if calculate_as_errors:
-        result = np.sqrt(np.nansum(changes * changes)) / len(changes)
+        result = np.sqrt(np.nansum(changes**2)) / len(changes)
     else:
         result = np.nansum(changes)
     if return_type == "value":

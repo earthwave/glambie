@@ -4,6 +4,7 @@ from typing import Tuple
 from glambie.config.config_classes import RegionRunConfig
 from glambie.data.data_catalogue import DataCatalogue
 from glambie.const.data_groups import GLAMBIE_DATA_GROUPS, GlambieDataGroup
+from glambie.const.constants import YearType
 
 log = logging.getLogger(__name__)
 
@@ -87,7 +88,7 @@ def convert_datasets_to_monthly_grid(data_catalogue: DataCatalogue) -> DataCatal
     return catalogue_monthly_grid
 
 
-def convert_datasets_to_annual_trends(data_catalogue: DataCatalogue) -> DataCatalogue:
+def convert_datasets_to_annual_trends(data_catalogue: DataCatalogue, year_type: YearType) -> DataCatalogue:
     """
     Convert all datasets in data catalogue to annual trends
 
@@ -95,6 +96,9 @@ def convert_datasets_to_annual_trends(data_catalogue: DataCatalogue) -> DataCata
     ----------
     data_catalogue : DataCatalogue
         data catalogue to be converted
+
+    year_type : YearType
+        type of annual year, e.g hydrological or calendar
 
     Returns
     -------
@@ -104,12 +108,12 @@ def convert_datasets_to_annual_trends(data_catalogue: DataCatalogue) -> DataCata
     data_catalogue = convert_datasets_to_monthly_grid(data_catalogue)
     datasets = []
     for ds in data_catalogue.datasets:
-        datasets.append(ds.convert_timeseries_to_annual_trends())
+        datasets.append(ds.convert_timeseries_to_annual_trends(year_type=year_type))
     catalogue_annual_grid = DataCatalogue.from_list(datasets, base_path=data_catalogue.base_path)
     return catalogue_annual_grid
 
 
-def convert_datasets_to_longterm_trends(data_catalogue: DataCatalogue) -> DataCatalogue:
+def convert_datasets_to_longterm_trends(data_catalogue: DataCatalogue, year_type: YearType) -> DataCatalogue:
     """
     Convert all datasets in data catalogue to longterm trends
 
@@ -118,6 +122,9 @@ def convert_datasets_to_longterm_trends(data_catalogue: DataCatalogue) -> DataCa
     data_catalogue : DataCatalogue
         data catalogue to be converted
 
+    year_type : YearType
+        type of annual year when longterm timeseries should start and end, e.g hydrological or calendar
+
     Returns
     -------
     DataCatalogue
@@ -125,7 +132,7 @@ def convert_datasets_to_longterm_trends(data_catalogue: DataCatalogue) -> DataCa
     """
     data_catalogue = convert_datasets_to_monthly_grid(data_catalogue)
     # first convert to annual so that longterm trend will fit into annual grid
-    data_catalogue = convert_datasets_to_annual_trends(data_catalogue)
+    data_catalogue = convert_datasets_to_annual_trends(data_catalogue, year_type=year_type)
     datasets = []
     for ds in data_catalogue.datasets:
         # then convert to longterm trend

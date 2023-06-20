@@ -6,6 +6,7 @@ class RGIRegion():
     rgi_id: int
     name: str
     long_name: str
+    rgi5_area: float
     rgi6_area: float
     rgi7_area: float
     area_uncertainty_percentage: float  # area uncertainty would be area_uncertainty_percentage * area
@@ -22,25 +23,25 @@ class RGIRegion():
 
 REGIONS = {
     'alaska': RGIRegion(rgi_id=1, name='alaska', long_name='Alaska',
-                        rgi6_area=86725, rgi7_area=86725,
+                        rgi5_area=86725, rgi6_area=86725, rgi7_area=86725,
                         area_uncertainty_percentage=0.05,  # 5% defined in GlamBIE Assessment Algorithm
                         area_change=-0.48,
                         area_change_reference_year=2009,
                         glaciological_year_start=0.75),
     'iceland': RGIRegion(rgi_id=6, name='iceland', long_name='Iceland',
-                         rgi6_area=11060, rgi7_area=11060,
+                         rgi5_area=11060, rgi6_area=11060, rgi7_area=11060,
                          area_uncertainty_percentage=0.05,  # 5% defined in GlamBIE Assessment Algorithm
                          area_change=-0.36,
                          area_change_reference_year=2000,
                          glaciological_year_start=0.75),
     'svalbard': RGIRegion(rgi_id=7, name='svalbard', long_name='Svalbard & Jan Mayen',
-                          rgi6_area=33959, rgi7_area=33959,
+                          rgi5_area=33959, rgi6_area=33959, rgi7_area=33959,
                           area_uncertainty_percentage=0.05,  # 5% defined in GlamBIE Assessment Algorithm
                           area_change=-0.26,
                           area_change_reference_year=2001,
                           glaciological_year_start=0.75),
     'central_asia': RGIRegion(rgi_id=13, name='central_asia', long_name='Central Asia',
-                              rgi6_area=49303, rgi7_area=49303,
+                              rgi5_area=49303, rgi6_area=49303, rgi7_area=49303,
                               area_uncertainty_percentage=0.05,  # 5% defined in GlamBIE Assessment Algorithm
                               area_change=-0.18,
                               area_change_reference_year=2003,

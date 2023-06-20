@@ -107,7 +107,7 @@ REGIONS = {
                                  area_change_reference_year=2003,
                                  glaciological_year_start=0.75),
     'south_asia_east': RGIRegion(rgi_id=15, name='south_asia_east', long_name='South Asia East',
-                                 rgi5_area=14734, rgi6_area=14734, rgi6_area=14734,
+                                 rgi5_area=14734, rgi6_area=14734, rgi7_area=14734,
                                  area_uncertainty_percentage=0.05,
                                  area_change=-0.47,
                                  area_change_reference_year=2003,

@@ -386,3 +386,72 @@ def plot_recalibrated_result_of_data_group(catalogue_trends: DataCatalogue,
     plt.tight_layout()
     plt.savefig(output_filepath)
     plt.close()
+
+
+def plot_combination_of_sources_within_region(catalogue_results: DataCatalogue,
+                                              combined_timeseries: Timeseries,
+                                              region: RGIRegion,
+                                              output_filepath: str):
+
+    _, ax = plt.subplots(2, 1, figsize=(7, 6))
+    colours = get_colours(len(catalogue_results.datasets))
+
+    for count, source_timeseries in enumerate(catalogue_results.datasets):
+        for _, row in source_timeseries.data.as_dataframe().iterrows():
+            time_period = row["end_dates"] - row["start_dates"]
+            ax[0].plot([row["start_dates"], row["end_dates"]], [np.array(row["changes"]) / time_period,
+                                                                np.array(row["changes"]) / time_period],
+                       color=colours[count])
+            ax[0].fill_between([row["start_dates"], row["end_dates"]],
+                               [np.array(row["changes"]) / time_period, np.array(row["changes"]) /
+                                time_period] + np.array(row["errors"]) / time_period,
+                               [np.array(row["changes"]) / time_period,
+                               np.array(row["changes"]) / time_period] - np.array(row["errors"]) / time_period,
+                               alpha=0.15, color=colours[count])
+        ax[0].plot([], [], label="{} - combined solution".format(source_timeseries.data_group.long_name),
+                   color=colours[count])
+    # plot combined solution
+    for _, row in combined_timeseries.data.as_dataframe().iterrows():
+        time_period = row["end_dates"] - row["start_dates"]
+        ax[0].plot([row["start_dates"], row["end_dates"]], [np.array(row["changes"]) / time_period,
+                   np.array(row["changes"]) / time_period], color="black", linestyle="--")
+        ax[0].fill_between([row["start_dates"], row["end_dates"]],
+                           [np.array(row["changes"]) / time_period, np.array(row["changes"]) /
+                            time_period] + np.array(row["errors"]) / time_period,
+                           [np.array(row["changes"]) / time_period,
+                           np.array(row["changes"]) / time_period] - np.array(row["errors"]) / time_period,
+                           alpha=0.15, color="black")
+    ax[0].plot([], [], label="Consensus estimate", color="black", linestyle="--")
+
+    ax[0].axhline(0, color="grey", linewidth=0.9, linestyle="--")
+    ax[0].set_xlabel("Time")
+    ax[0].set_ylabel("Change [{} per year]".format(combined_timeseries.unit))
+
+    # plot cumulative
+    df_combined_cum_trend = combined_timeseries.data.as_cumulative_timeseries()
+    for count, source_timeseries in enumerate(catalogue_results.datasets):
+        df_cum_trend = source_timeseries.data.as_cumulative_timeseries()
+        df_cum_trend["changes"] = apply_vertical_adjustment_for_cumulative_plot(df_cum_trend,
+                                                                                df_combined_cum_trend).changes
+        ax[1].plot(df_cum_trend["dates"], df_cum_trend["changes"],
+                   label="{} - combined solution".format(source_timeseries.data_group.long_name), color=colours[count])
+        ax[1].fill_between(df_cum_trend["dates"], df_cum_trend["changes"] + df_cum_trend["errors"],
+                           df_cum_trend["changes"] - df_cum_trend["errors"], alpha=0.15, color=colours[count])
+    # plot combined solution
+    ax[1].plot(df_combined_cum_trend["dates"], df_combined_cum_trend["changes"],
+               label="Consensus estimate", color="black", linestyle="--")
+    ax[1].fill_between(df_combined_cum_trend["dates"],
+                       df_combined_cum_trend["changes"] + df_combined_cum_trend["errors"],
+                       df_combined_cum_trend["changes"] - df_combined_cum_trend["errors"], alpha=0.15, color="black")
+
+    ax[1].axhline(0, color="grey", linewidth=0.9, linestyle="--")
+    ax[1].legend()
+    ax[1].set_xlabel("Time")
+    ax[1].set_ylabel("Cumulative change [{}]".format(combined_timeseries.unit))
+    ax[0].set_title("Consensus estimate")
+
+    ax[0].set_title("{} : consesus estimate".format(region.long_name))
+
+    plt.tight_layout()
+    plt.savefig(output_filepath)
+    plt.close()

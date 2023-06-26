@@ -6,6 +6,8 @@ from glambie.data.data_catalogue import DataCatalogue
 from glambie.const.data_groups import GLAMBIE_DATA_GROUPS, GlambieDataGroup
 from glambie.data.timeseries import Timeseries
 from glambie.const.constants import YearType
+import numpy as np
+import pandas as pd
 
 log = logging.getLogger(__name__)
 
@@ -175,7 +177,8 @@ def convert_datasets_to_unit_mwe(data_catalogue: DataCatalogue) -> DataCatalogue
     return catalogue_mwe
 
 
-def prepare_seasonal_calibration_dataset(region_config, data_catalogue):
+def prepare_seasonal_calibration_dataset(region_config: RegionRunConfig,
+                                         data_catalogue: DataCatalogue) -> Timeseries:
     # get seasonal calibration dataset and convert to monthly grid
     season_calibration_dataset = data_catalogue.get_filtered_catalogue(
         user_group=region_config.seasonal_correction_dataset["user_group"],
@@ -184,3 +187,26 @@ def prepare_seasonal_calibration_dataset(region_config, data_catalogue):
     season_calibration_dataset = season_calibration_dataset.convert_timeseries_to_monthly_grid()
     season_calibration_dataset = season_calibration_dataset.convert_timeseries_to_unit_mwe()
     return season_calibration_dataset
+
+
+def extend_annual_timeseries_if_outside_trends_period(annual_timeseries: Timeseries,
+                                                      data_catalogue_trends: DataCatalogue,
+                                                      timeseries_for_extension: Timeseries) -> Timeseries:
+    for ds in data_catalogue_trends.datasets:
+        if (min(annual_timeseries.data.start_dates) <= min(ds.data.start_dates)) \
+                and (max(annual_timeseries.data.end_dates) >= max(ds.data.end_dates)):
+            log.info("Extension of annual is performed, as the trends are longer than the annual timeseries")
+            # Combine with other  timeseries to cover the missing timespan
+            object_copy = annual_timeseries.copy()
+            df1 = annual_timeseries.data.as_dataframe()
+            df2 = timeseries_for_extension.data.as_dataframe()
+            df_merged = pd.merge(df1, df2, on=["start_dates", "end_dates"], how="outer")
+            df_merged.changes_x.fillna(df_merged.changes_y, inplace=True)
+            df_merged.errors_x.fillna(df_merged.errors_y, inplace=True)
+            df_merged = df_merged.sort_values(by="start_dates").reset_index()
+            object_copy.data.changes = np.array(df_merged["changes_x"])
+            object_copy.data.errors = np.array(df_merged["errors_x"])
+            object_copy.data.start_dates = np.array(df_merged["start_dates"])
+            object_copy.data.end_dates = np.array(df_merged["end_dates"])
+            annual_timeseries = object_copy
+    return annual_timeseries

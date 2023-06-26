@@ -9,6 +9,7 @@ from glambie.processing.processing_helpers import convert_datasets_to_longterm_t
 from glambie.processing.processing_helpers import convert_datasets_to_annual_trends, convert_datasets_to_unit_mwe
 from glambie.processing.processing_helpers import filter_catalogue_with_config_settings
 from glambie.processing.processing_helpers import prepare_seasonal_calibration_dataset
+from glambie.processing.processing_helpers import extend_annual_timeseries_if_outside_trends_period
 from glambie.data.data_catalogue_helpers import calibrate_timeseries_with_trends_catalogue
 from glambie.plot.processing_plots import plot_all_plots_for_region_data_group_processing
 from glambie.plot.processing_plots import plot_combination_of_sources_within_region
@@ -108,8 +109,16 @@ def _run_region_timeseries_one_source(data_catalogue_annual: DataCatalogue,
                                                                 season_calibration_dataset=seasonal_calibration_dataset)
     # convert to mwe
     data_catalogue_trends = convert_datasets_to_unit_mwe(data_catalogue_trends)
+
+    # now treat case where trends are outside annual combined timeseries
+    annual_combined_full_ext = extend_annual_timeseries_if_outside_trends_period(
+        annual_timeseries=annual_combined,
+        data_catalogue_trends=data_catalogue_trends,
+        timeseries_for_extension=seasonal_calibration_dataset.convert_timeseries_to_annual_trends(year_type=year_type))
+
     # recalibrate
-    catalogue_calibrated_series = calibrate_timeseries_with_trends_catalogue(data_catalogue_trends, annual_combined)
+    catalogue_calibrated_series = calibrate_timeseries_with_trends_catalogue(
+        data_catalogue_trends, annual_combined_full_ext)
     # we dont remove trends as these are calibrated series with trends
     trend_combined, _ = catalogue_calibrated_series.average_timeseries_in_catalogue(remove_trend=False,
                                                                                     out_data_group=data_group)

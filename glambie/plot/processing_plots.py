@@ -403,8 +403,8 @@ def plot_combination_of_sources_within_region(catalogue_results: DataCatalogue,
                                                                 np.array(row["changes"]) / time_period],
                        color=colours[count])
             ax[0].fill_between([row["start_dates"], row["end_dates"]],
-                               [np.array(row["changes"]) / time_period, np.array(row["changes"]) /
-                                time_period] + np.array(row["errors"]) / time_period,
+                               [np.array(row["changes"]) / time_period,
+                               np.array(row["changes"]) / time_period] + np.array(row["errors"]) / time_period,
                                [np.array(row["changes"]) / time_period,
                                np.array(row["changes"]) / time_period] - np.array(row["errors"]) / time_period,
                                alpha=0.15, color=colours[count])

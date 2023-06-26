@@ -44,7 +44,13 @@ REGIONS = {
                               area_uncertainty_percentage=0.05,  # 5% defined in GlamBIE Assessment Algorithm
                               area_change=-0.18,
                               area_change_reference_year=2003,
-                              glaciological_year_start=0.75)}
+                              glaciological_year_start=0.75),
+    'global': RGIRegion(rgi_id=0, name='global', long_name='Global',
+                        rgi6_area=None, rgi7_area=None,  # will need to calculate these
+                        area_uncertainty_percentage=None,
+                        area_change=None,
+                        area_change_reference_year=None,
+                        glaciological_year_start=0)}
 
 
 def get_region_by_id(rgi_id: int) -> RGIRegion:

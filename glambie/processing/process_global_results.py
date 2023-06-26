@@ -16,24 +16,62 @@ def run_global_results(glambie_run_config: GlambieRunConfig,
                        regional_results_catalogue: DataCatalogue,
                        original_data_catalogue: DataCatalogue,
                        output_path_handler: OutputPathHandler) -> Timeseries:
+    """
+    Combines all regional results into a global result
+
+    Parameters
+    ----------
+    glambie_run_config : GlambieRunConfig
+        config object for the run
+    regional_results_catalogue : DataCatalogue
+        Data Catalogue containing the result datasets per region
+    original_data_catalogue : DataCatalogue
+        Data Catalogue of original data used to extract the seasonal calibration dataset for each region
+    output_path_handler : OutputPathHandler
+        object to handle output path. If set to None, no plots / other data will be saved
+
+    Returns
+    -------
+    Timeseries
+        Global timeseries
+    """
     log.info('Starting to combine regional results into global')
     regional_results_catalogue_homogenized = _homogenize_regional_results_to_calendar_year(glambie_run_config,
                                                                                            regional_results_catalogue,
                                                                                            original_data_catalogue)
     global_timeseries = _combine_regional_results_into_global(regional_results_catalogue_homogenized)
-    output_path = output_path_handler.get_plot_output_file_path(region=REGIONS["global"],
-                                                                data_group=GLAMBIE_DATA_GROUPS["consensus"],
-                                                                plot_file_name="1_global_picture.png")
+
     # plot
-    plot_combination_of_regions_to_global(catalogue_region_results=regional_results_catalogue_homogenized,
-                                          global_timeseries=global_timeseries, region=REGIONS["global"],
-                                          output_filepath=output_path)
+    if output_path_handler is not None:
+        output_path = output_path_handler.get_plot_output_file_path(region=REGIONS["global"],
+                                                                    data_group=GLAMBIE_DATA_GROUPS["consensus"],
+                                                                    plot_file_name="1_global_picture.png")
+        plot_combination_of_regions_to_global(catalogue_region_results=regional_results_catalogue_homogenized,
+                                              global_timeseries=global_timeseries, region=REGIONS["global"],
+                                              output_filepath=output_path)
     return global_timeseries
 
 
 def _homogenize_regional_results_to_calendar_year(glambie_run_config: GlambieRunConfig,
                                                   regional_results_catalogue: DataCatalogue,
                                                   original_data_catalogue: DataCatalogue) -> DataCatalogue:
+    """
+    Homogenizes the regional results to calendar year, so that they can be combined
+
+    Parameters
+    ----------
+    glambie_run_config : GlambieRunConfig
+        config object for the run
+    regional_results_catalogue : DataCatalogue
+        Data Catalogue containing the result datasets per region
+    original_data_catalogue : DataCatalogue
+        Data Catalogue of original data used to extract the seasonal calibration dataset for each region
+
+    Returns
+    -------
+    DataCatalogue
+        Data Catalogue with homogenized dataset. Has the same number of datasets as the ' regional_results_catalogue'
+    """
     homogenized_regional_results = []
 
     for region_config in glambie_run_config.regions:
@@ -51,6 +89,19 @@ def _homogenize_regional_results_to_calendar_year(glambie_run_config: GlambieRun
 
 
 def _combine_regional_results_into_global(regional_results_catalogue: DataCatalogue) -> Timeseries:
+    """
+    Combines all regional results into one global timeseries
+
+    Parameters
+    ----------
+    regional_results_catalogue : DataCatalogue
+        regional results (homogenized to the same year)
+
+    Returns
+    -------
+    Timeseries
+        Global timeseries
+    """
 
     # TODO: need to adapt error propagation in this
 

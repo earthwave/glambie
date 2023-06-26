@@ -23,7 +23,26 @@ def run_one_region(glambie_run_config: GlambieRunConfig,
                    region_config: RegionRunConfig,
                    data_catalogue: DataCatalogue,
                    output_path_handler: OutputPathHandler) -> DataCatalogue:
+    """
+    Runs the glambie algorithm for an individual region within the different sources (as specified in the config)
+    and returns a DataCatalogue with one solution per source
 
+    Parameters
+    ----------
+    glambie_run_config : GlambieRunConfig
+        config object for the run
+    region_config : RegionRunConfig
+        run config for a particular region
+    data_catalogue : DataCatalogue
+        data catalogue with input datasets
+    output_path_handler : OutputPathHandler
+        object to handle output path. If set to None, no plots / other data will be saved
+
+    Returns
+    -------
+    DataCatalogue
+        DataCatalogue with one combined solution per glambie data source
+    """
     # filter data catalogue by region
     data_catalogue = data_catalogue.get_filtered_catalogue(
         region_name=region_config.region_name)
@@ -48,13 +67,13 @@ def run_one_region(glambie_run_config: GlambieRunConfig,
         data_catalogue_trends = convert_datasets_to_monthly_grid(data_catalogue_trends)
 
         # run annual and trends calibration timeseries for region
-        trend_combined, _ = _run_region_timeseries_one_source(data_catalogue_annual=data_catalogue_annual,
-                                                              data_catalogue_trends=data_catalogue_trends,
-                                                              seasonal_calibration_dataset=season_calibration_dataset,
-                                                              year_type=region_config.year_type,
-                                                              region=REGIONS[region_config.region_name],
-                                                              data_group=data_group,
-                                                              output_path_handler=output_path_handler)
+        trend_combined = _run_region_timeseries_one_source(data_catalogue_annual=data_catalogue_annual,
+                                                           data_catalogue_trends=data_catalogue_trends,
+                                                           seasonal_calibration_dataset=season_calibration_dataset,
+                                                           year_type=region_config.year_type,
+                                                           region=REGIONS[region_config.region_name],
+                                                           data_group=data_group,
+                                                           output_path_handler=output_path_handler)
         result_datasets.append(trend_combined)
 
     result_catalogue = DataCatalogue.from_list(result_datasets, base_path=data_catalogue.base_path)
@@ -63,18 +82,34 @@ def run_one_region(glambie_run_config: GlambieRunConfig,
 
 def combine_within_one_region(catalogue_data_group_results: DataCatalogue,
                               output_path_handler: OutputPathHandler) -> Timeseries:
+    """
+    Combines the combined estimates from each Glambie Data Group within a region
+
+    Parameters
+    ----------
+    catalogue_data_group_results : DataCatalogue
+        Data Catalogue with data group results, one dataset per data group
+    output_path_handler : OutputPathHandler
+        object to handle output path. If set to None, no plots / other data will be saved
+
+    Returns
+    -------
+    Timeseries
+        Combined/consensus timeseries
+    """
     # combine
     combined_ts, _ = catalogue_data_group_results.average_timeseries_in_catalogue(remove_trend=True,
                                                                                   add_trend_after_averaging=True,
                                                                                   out_data_group=GLAMBIE_DATA_GROUPS[
                                                                                       "consensus"])
-    output_path = output_path_handler.get_plot_output_file_path(region=combined_ts.region,
-                                                                data_group=GLAMBIE_DATA_GROUPS["consensus"],
-                                                                plot_file_name="1_consensus_sources.png")
-    # plot
-    plot_combination_of_sources_within_region(catalogue_results=catalogue_data_group_results,
-                                              combined_timeseries=combined_ts, region=combined_ts.region,
-                                              output_filepath=output_path)
+    if output_path_handler is not None:
+        output_path = output_path_handler.get_plot_output_file_path(region=combined_ts.region,
+                                                                    data_group=GLAMBIE_DATA_GROUPS["consensus"],
+                                                                    plot_file_name="1_consensus_sources.png")
+        # plot
+        plot_combination_of_sources_within_region(catalogue_results=catalogue_data_group_results,
+                                                  combined_timeseries=combined_ts, region=combined_ts.region,
+                                                  output_filepath=output_path)
     return combined_ts
 
 
@@ -84,7 +119,32 @@ def _run_region_timeseries_one_source(data_catalogue_annual: DataCatalogue,
                                       year_type: YearType,
                                       region: RGIRegion,
                                       data_group: GlambieDataGroup,
-                                      output_path_handler: OutputPathHandler) -> DataCatalogue:
+                                      output_path_handler: OutputPathHandler) -> Timeseries:
+    """
+    Runs the glambie algorithm for all datasets for one Glambie Data Group within a region
+
+    Parameters
+    ----------
+    data_catalogue_annual : DataCatalogue
+        Data Catalogue with annual datasets to be used within algorithm
+    data_catalogue_trends : DataCatalogue
+        Data Catalogue with trend datasets to be used within algorithm
+    seasonal_calibration_dataset : Timeseries
+        Seasonal calibration dataset at ~ monthly resolution to be used to homogenize data
+    year_type : YearType
+        type of year to be used, e.g calendar or glaciological
+    region : RGIRegion
+        RGI region
+    data_group : GlambieDataGroup
+        Glambie Data Group which is calculated
+    output_path_handler : OutputPathHandler
+        object to handle output path. If set to None, no plots / other data will be saved
+
+    Returns
+    -------
+    Timeseries
+        timeseries of combined dataset
+    """
 
     data_catalogue_annual_raw = data_catalogue_annual
     data_catalogue_trends_raw = data_catalogue_trends
@@ -139,4 +199,4 @@ def _run_region_timeseries_one_source(data_catalogue_annual: DataCatalogue,
                                                         data_catalogue_calibrated_series=catalogue_calibrated_series,
                                                         timeseries_trend_combined=trend_combined)
 
-    return trend_combined, annual_combined
+    return trend_combined

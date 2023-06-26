@@ -179,6 +179,21 @@ def convert_datasets_to_unit_mwe(data_catalogue: DataCatalogue) -> DataCatalogue
 
 def prepare_seasonal_calibration_dataset(region_config: RegionRunConfig,
                                          data_catalogue: DataCatalogue) -> Timeseries:
+    """
+    Retrievs and prepares the seasonal calibration dataset from a data catalogue
+
+    Parameters
+    ----------
+    region_config : RegionRunConfig
+        region config object, containing information on seasonal calibration dataset
+    data_catalogue : DataCatalogue
+        data catalogue, should contain the seasonal calibration dataset
+
+    Returns
+    -------
+    Timeseries
+        the seasonal calibration dataset
+    """
     # get seasonal calibration dataset and convert to monthly grid
     season_calibration_dataset = data_catalogue.get_filtered_catalogue(
         user_group=region_config.seasonal_correction_dataset["user_group"],
@@ -192,6 +207,25 @@ def prepare_seasonal_calibration_dataset(region_config: RegionRunConfig,
 def extend_annual_timeseries_if_outside_trends_period(annual_timeseries: Timeseries,
                                                       data_catalogue_trends: DataCatalogue,
                                                       timeseries_for_extension: Timeseries) -> Timeseries:
+    """
+    Extends an annual timeseries with another annual timeseries in case the given trends span longer
+    than the annual dataset
+
+    Parameters
+    ----------
+    annual_timeseries : Timeseries
+        annual timeseries to be extended
+    data_catalogue_trends : DataCatalogue
+        trends timeseries te be used as a measure of the span the annual timeseries should have
+    timeseries_for_extension : Timeseries
+        timeseries to be used to extend annual_timeseries
+
+    Returns
+    -------
+    Timeseries
+        Extended annual timeseries.
+        If trends are within 'annual_timeseries' this will be the same as 'annual_timeseries'
+    """
     for ds in data_catalogue_trends.datasets:
         if (min(ds.data.start_dates) < min(annual_timeseries.data.start_dates)) \
                 or (max(ds.data.end_dates) > max(annual_timeseries.data.end_dates)):

@@ -10,6 +10,16 @@ log = logging.getLogger(__name__)
 
 def run_glambie_assessment(glambie_run_config: GlambieRunConfig,
                            output_path_handler: OutputPathHandler):
+    """
+    Runs the glambie assessment algorithm
+
+    Parameters
+    ----------
+    glambie_run_config : GlambieRunConfig
+        Glambie run config object, which specifies the run parameters
+    output_path_handler : OutputPathHandler
+        Run output handler. If None, no plots/csvs etc. will be saved out.
+    """
     data_catalogue_original = _load_catalogue_and_data(glambie_run_config.catalogue_path)
 
     # run regional results
@@ -26,7 +36,23 @@ def run_glambie_assessment(glambie_run_config: GlambieRunConfig,
 def _run_regional_results(glambie_run_config: GlambieRunConfig,
                           data_catalogue: DataCatalogue,
                           output_path_handler: OutputPathHandler) -> DataCatalogue:
+    """
+    Runs the algorithm within each individual region
 
+    Parameters
+    ----------
+    glambie_run_config : GlambieRunConfig
+        Glambie run config object, which specifies the run parameters
+    data_catalogue : DataCatalogue
+        Data Catalogue with all input datasets
+    output_path_handler : OutputPathHandler
+        Run output handler. If None, no plots/csvs etc. will be saved out.
+
+    Returns
+    -------
+    DataCatalogue
+        Data Catalogue with regional results. Contains on timeseries per region sepcified to run within the config.
+    """
     data_group_results_per_region = []
     combined_regional_results = []
     for region_config in glambie_run_config.regions:
@@ -49,7 +75,20 @@ def _run_regional_results(glambie_run_config: GlambieRunConfig,
     return catalogue_combined_regional_results, catalogue_data_group_results_per_region
 
 
-def _load_catalogue_and_data(data_catalogue_json_file_path) -> DataCatalogue:
+def _load_catalogue_and_data(data_catalogue_json_file_path: str) -> DataCatalogue:
+    """
+    Loads data catalogue and reads all data from a json file path
+
+    Parameters
+    ----------
+    data_catalogue_json_file_path : str
+        absolute file path to database metadata file
+
+    Returns
+    -------
+    DataCatalogue
+        Data Catalogue with all data loaded
+    """
     # read catalogue
     catalogue_original = DataCatalogue.from_json_file(data_catalogue_json_file_path)
     catalogue_original.load_all_data()

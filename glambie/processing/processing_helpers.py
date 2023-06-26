@@ -141,9 +141,6 @@ def convert_datasets_to_longterm_trends(data_catalogue: DataCatalogue, year_type
     """
     data_catalogue = convert_datasets_to_monthly_grid(data_catalogue)
     data_catalogue_original = data_catalogue.copy()
-    # first convert to annual so that longterm trend will fit into annual grid
-    # data_catalogue = convert_datasets_to_annual_trends(data_catalogue, year_type=year_type,
-    #                                                    season_calibration_dataset=season_calibration_dataset)
     datasets = []
     for idx, ds in enumerate(data_catalogue.datasets):
         if data_catalogue_original.datasets[idx].data.max_temporal_resolution > 1:

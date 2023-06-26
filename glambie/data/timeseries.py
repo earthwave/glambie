@@ -640,7 +640,8 @@ class Timeseries():
             calibrated_s, dist_mat = calibrate_timeseries_with_trends(self.data.as_dataframe(),
                                                                       seasonal_calibration_dataset.data.as_dataframe())
             # 2) calculate mean calibration timeseries from all the different curves
-            mean_calibrated_ts = combine_calibrated_timeseries(calibrated_s, dist_mat, p_value=p_value)
+            mean_calibrated_ts = combine_calibrated_timeseries(calibrated_s, dist_mat, p_value=p_value,
+                                                               calculate_outside_calibrated_series_period=True)
             df_mean_calibrated = pd.DataFrame({"start_dates": seasonal_calibration_dataset.data
                                                .as_dataframe().start_dates,
                                                "end_dates": seasonal_calibration_dataset.data

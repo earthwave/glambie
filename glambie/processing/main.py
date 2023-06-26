@@ -1,9 +1,9 @@
 import logging
 from glambie.config.config_classes import GlambieRunConfig
 from glambie.data.data_catalogue import DataCatalogue
-from glambie.processing.process_region import run_one_region, combine_within_one_region
+from glambie.processing.process_regional_results import run_one_region, combine_within_one_region
 from glambie.processing.path_handling import OutputPathHandler
-
+from glambie.processing.process_global_results import run_global_results
 
 log = logging.getLogger(__name__)
 
@@ -11,9 +11,16 @@ log = logging.getLogger(__name__)
 def run_glambie_assessment(glambie_run_config: GlambieRunConfig,
                            output_path_handler: OutputPathHandler):
     data_catalogue_original = _load_catalogue_and_data(glambie_run_config.catalogue_path)
+
+    # run regional results
     results_catalogue_combined_per_region, _ = _run_regional_results(
         glambie_run_config, data_catalogue_original, output_path_handler=output_path_handler)
-    _run_global_results(results_catalogue_combined_per_region)
+
+    # run global results
+    run_global_results(glambie_run_config=glambie_run_config,
+                       regional_results_catalogue=results_catalogue_combined_per_region,
+                       original_data_catalogue=data_catalogue_original,
+                       output_path_handler=output_path_handler)
 
 
 def _run_regional_results(glambie_run_config: GlambieRunConfig,
@@ -40,13 +47,6 @@ def _run_regional_results(glambie_run_config: GlambieRunConfig,
         combined_regional_results, base_path=data_catalogue.base_path)
 
     return catalogue_combined_regional_results, catalogue_data_group_results_per_region
-
-
-def _run_global_results(regional_results_catalogue) -> DataCatalogue:
-
-    # TODO: homogenize to calendar year and then combine to global results
-    regional_results_catalogue
-    pass
 
 
 def _load_catalogue_and_data(data_catalogue_json_file_path) -> DataCatalogue:

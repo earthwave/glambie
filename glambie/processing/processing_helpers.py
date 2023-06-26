@@ -173,3 +173,14 @@ def convert_datasets_to_unit_mwe(data_catalogue: DataCatalogue) -> DataCatalogue
         datasets.append(ds.convert_timeseries_to_unit_mwe())
     catalogue_mwe = DataCatalogue.from_list(datasets, base_path=data_catalogue.base_path)
     return catalogue_mwe
+
+
+def prepare_seasonal_calibration_dataset(region_config, data_catalogue):
+    # get seasonal calibration dataset and convert to monthly grid
+    season_calibration_dataset = data_catalogue.get_filtered_catalogue(
+        user_group=region_config.seasonal_correction_dataset["user_group"],
+        data_group=region_config.seasonal_correction_dataset["data_group"]).datasets[0]
+    season_calibration_dataset.load_data()
+    season_calibration_dataset = season_calibration_dataset.convert_timeseries_to_monthly_grid()
+    season_calibration_dataset = season_calibration_dataset.convert_timeseries_to_unit_mwe()
+    return season_calibration_dataset

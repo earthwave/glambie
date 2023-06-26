@@ -4,6 +4,7 @@ from glambie.data.data_catalogue import DataCatalogue
 from glambie.processing.process_regional_results import run_one_region, combine_within_one_region
 from glambie.processing.path_handling import OutputPathHandler
 from glambie.processing.process_global_results import run_global_results
+from typing import Tuple
 
 log = logging.getLogger(__name__)
 
@@ -27,15 +28,16 @@ def run_glambie_assessment(glambie_run_config: GlambieRunConfig,
         glambie_run_config, data_catalogue_original, output_path_handler=output_path_handler)
 
     # run global results
-    run_global_results(glambie_run_config=glambie_run_config,
-                       regional_results_catalogue=results_catalogue_combined_per_region,
-                       original_data_catalogue=data_catalogue_original,
-                       output_path_handler=output_path_handler)
+    if len(results_catalogue_combined_per_region.datasets) > 0:
+        run_global_results(glambie_run_config=glambie_run_config,
+                           regional_results_catalogue=results_catalogue_combined_per_region,
+                           original_data_catalogue=data_catalogue_original,
+                           output_path_handler=output_path_handler)
 
 
 def _run_regional_results(glambie_run_config: GlambieRunConfig,
                           data_catalogue: DataCatalogue,
-                          output_path_handler: OutputPathHandler) -> DataCatalogue:
+                          output_path_handler: OutputPathHandler) -> Tuple[DataCatalogue, DataCatalogue]:
     """
     Runs the algorithm within each individual region
 
@@ -50,8 +52,8 @@ def _run_regional_results(glambie_run_config: GlambieRunConfig,
 
     Returns
     -------
-    DataCatalogue
-        Data Catalogue with regional results. Contains on timeseries per region sepcified to run within the config.
+    Tuple[DataCatalogue, DataCatalogue]
+        - Data Catalogue with regional results. Contains on timeseries per region sepcified to run within the config.
     """
     data_group_results_per_region = []
     combined_regional_results = []
@@ -68,9 +70,9 @@ def _run_regional_results(glambie_run_config: GlambieRunConfig,
         combined_regional_results.append(combined_results)
 
     catalogue_data_group_results_per_region = DataCatalogue.from_list(
-        data_group_results_per_region, base_path=data_catalogue.base_path)
+        data_group_results_per_region)
     catalogue_combined_regional_results = DataCatalogue.from_list(
-        combined_regional_results, base_path=data_catalogue.base_path)
+        combined_regional_results)
 
     return catalogue_combined_regional_results, catalogue_data_group_results_per_region
 

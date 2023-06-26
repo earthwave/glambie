@@ -49,7 +49,7 @@ def filter_catalogue_with_config_settings(data_group: GlambieDataGroup,
     # 2 filter out what has been specified in config for annual datasets
     datasets_annual = data_catalogue.datasets.copy()
     exclude_annual_datasets = region_config.region_run_settings[data_group.name].get("exclude_annual_datasets", [])
-    log.info('Excluding the following datasets from annual calculations: datasets=%s', exclude_annual_datasets)
+    log.info('Excluding the following datasets from ANNUAL calculations: datasets=%s', exclude_annual_datasets)
     for ds in exclude_annual_datasets:
         datasets_annual = [d for d in datasets_annual if d.user_group.lower() != ds.lower()]
     if data_group == GLAMBIE_DATA_GROUPS["demdiff_and_glaciological"]:
@@ -58,7 +58,7 @@ def filter_catalogue_with_config_settings(data_group: GlambieDataGroup,
     # 3 filter out what has been specified in config for longterm trend datasets
     datasets_trend = data_catalogue.datasets.copy()
     exclude_trend_datasets = region_config.region_run_settings[data_group.name].get("exclude_trend_datasets", [])
-    log.info('Excluding the following datasets from trend calculations: datasets=%s', exclude_trend_datasets)
+    log.info('Excluding the following datasets from TREND calculations: datasets=%s', exclude_trend_datasets)
     for ds in exclude_trend_datasets:
         datasets_trend = [d for d in datasets_trend if d.user_group.lower() != ds.lower()]
     if data_group == GLAMBIE_DATA_GROUPS["demdiff_and_glaciological"]:
@@ -193,8 +193,8 @@ def extend_annual_timeseries_if_outside_trends_period(annual_timeseries: Timeser
                                                       data_catalogue_trends: DataCatalogue,
                                                       timeseries_for_extension: Timeseries) -> Timeseries:
     for ds in data_catalogue_trends.datasets:
-        if (min(annual_timeseries.data.start_dates) <= min(ds.data.start_dates)) \
-                and (max(annual_timeseries.data.end_dates) >= max(ds.data.end_dates)):
+        if (min(ds.data.start_dates) < min(annual_timeseries.data.start_dates)) \
+                or (max(ds.data.end_dates) > max(annual_timeseries.data.end_dates)):
             log.info("Extension of annual is performed, as the trends are longer than the annual timeseries")
             # Combine with other  timeseries to cover the missing timespan
             object_copy = annual_timeseries.copy()

@@ -8,6 +8,7 @@ from glambie.const.constants import YearType
 from glambie.processing.processing_helpers import convert_datasets_to_longterm_trends, convert_datasets_to_monthly_grid
 from glambie.processing.processing_helpers import convert_datasets_to_annual_trends, convert_datasets_to_unit_mwe
 from glambie.processing.processing_helpers import filter_catalogue_with_config_settings
+from glambie.processing.processing_helpers import prepare_seasonal_calibration_dataset
 from glambie.data.data_catalogue_helpers import calibrate_timeseries_with_trends_catalogue
 from glambie.plot.processing_plots import plot_all_plots_for_region_data_group_processing
 from glambie.plot.processing_plots import plot_combination_of_sources_within_region
@@ -27,11 +28,7 @@ def run_one_region(glambie_run_config: GlambieRunConfig,
         region_name=region_config.region_name)
 
     # get seasonal calibration dataset and convert to monthly grid
-    season_calibration_dataset = data_catalogue.get_filtered_catalogue(
-        user_group=region_config.seasonal_correction_dataset["user_group"],
-        data_group=region_config.seasonal_correction_dataset["data_group"]).datasets[0]
-    season_calibration_dataset.load_data()
-    season_calibration_dataset = season_calibration_dataset.convert_timeseries_to_monthly_grid()
+    season_calibration_dataset = prepare_seasonal_calibration_dataset(region_config, data_catalogue)
 
     # TODO: also filter all data to 2000? (i.e.remove any data ending pre 2000)
     # TODO: convert to RGIv6 if not already done
@@ -90,10 +87,6 @@ def _run_region_timeseries_one_source(data_catalogue_annual: DataCatalogue,
 
     data_catalogue_annual_raw = data_catalogue_annual
     data_catalogue_trends_raw = data_catalogue_trends
-
-    # in case seasonal calibration dataset hasn't been converted yet
-    seasonal_calibration_dataset = seasonal_calibration_dataset.convert_timeseries_to_monthly_grid()
-    seasonal_calibration_dataset = seasonal_calibration_dataset.convert_timeseries_to_unit_mwe()
 
     # 1) ANNUAL TRENDS
     log.info("Calculating combined annual trends within data group and region...")

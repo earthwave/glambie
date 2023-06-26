@@ -136,13 +136,13 @@ REGIONS = {
                                             area_uncertainty_percentage=0.05,
                                             area_change=-0.27,
                                             area_change_reference_year=1989,
-                                            glaciological_year_start=0.25)
+                                            glaciological_year_start=0.25),
     'global': RGIRegion(rgi_id=0, name='global', long_name='Global',
-                        rgi5_area=None, rgi6_area=None, rgi7_area=None, # will need to calculate these
+                        rgi5_area=None, rgi6_area=None, rgi7_area=None,  # will need to calculate these
                         area_uncertainty_percentage=None,
                         area_change=None,
                         area_change_reference_year=None,
-                        glaciological_year_start=0)}}
+                        glaciological_year_start=0)}
 
 
 def get_region_by_id(rgi_id: int) -> RGIRegion:

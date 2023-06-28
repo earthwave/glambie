@@ -91,10 +91,13 @@ def convert_datasets_to_monthly_grid(data_catalogue: DataCatalogue) -> DataCatal
     return catalogue_monthly_grid
 
 
-def convert_datasets_to_annual_trends(data_catalogue: DataCatalogue, year_type: YearType,
+def convert_datasets_to_annual_trends(data_catalogue: DataCatalogue,
+                                      year_type: YearType,
                                       season_calibration_dataset: Timeseries) -> DataCatalogue:
     """
-    Convert all datasets in data catalogue to annual trends
+    Convert all datasets in data catalogue to annual trends.
+    If an input dataset within the catalogue is at annual resolution, seasonal homogenization is performed.
+    Otherwise the annual timeseries is directly extracted from timeseries.
 
     Parameters
     ----------
@@ -104,6 +107,9 @@ def convert_datasets_to_annual_trends(data_catalogue: DataCatalogue, year_type: 
     year_type : YearType
         type of annual year, e.g hydrological or calendar
 
+    season_calibration_dataset: Timeseries
+        Timeseries dataset for seasonal calibration if trends are at annual resolution.
+
     Returns
     -------
     DataCatalogue
@@ -112,7 +118,7 @@ def convert_datasets_to_annual_trends(data_catalogue: DataCatalogue, year_type: 
     data_catalogue = convert_datasets_to_monthly_grid(data_catalogue)
     datasets = []
     for ds in data_catalogue.datasets:
-        if (ds.data.max_temporal_resolution == 1) and (ds.data.min_temporal_resolution == 1):
+        if ds.data.max_temporal_resolution == ds.data.min_temporal_resolution == 1:
             ds = ds.convert_timeseries_to_unit_mwe()
             datasets.append(ds.convert_timeseries_using_seasonal_homogenization(
                 seasonal_calibration_dataset=season_calibration_dataset, year_type=year_type, p_value=0))
@@ -126,7 +132,9 @@ def convert_datasets_to_annual_trends(data_catalogue: DataCatalogue, year_type: 
 def convert_datasets_to_longterm_trends(data_catalogue: DataCatalogue, year_type: YearType,
                                         season_calibration_dataset: Timeseries) -> DataCatalogue:
     """
-    Convert all datasets in data catalogue to longterm trends
+    Convert all datasets in data catalogue to longterm trends.
+    If dataset in catalogue has a lower resolution than a year, seasonal homogenization is used.
+    Otherwise the trend is directly extracted for the higher resolution timeseries.
 
     Parameters
     ----------
@@ -135,6 +143,9 @@ def convert_datasets_to_longterm_trends(data_catalogue: DataCatalogue, year_type
 
     year_type : YearType
         type of annual year when longterm timeseries should start and end, e.g hydrological or calendar
+
+    season_calibration_dataset: Timeseries
+        Timeseries dataset for seasonal calibration if trends are at lower resolution than 1 year.
 
     Returns
     -------
@@ -180,7 +191,10 @@ def convert_datasets_to_unit_mwe(data_catalogue: DataCatalogue) -> DataCatalogue
 def prepare_seasonal_calibration_dataset(region_config: RegionRunConfig,
                                          data_catalogue: DataCatalogue) -> Timeseries:
     """
-    Retrievs and prepares the seasonal calibration dataset from a data catalogue
+    Retrieves and prepares the seasonal calibration dataset from a data catalogue.
+
+    In this function the seasonal calibration dataset is loaded, standardised date axis to a monthly grid
+    and then converted to unit mwe
 
     Parameters
     ----------
@@ -209,7 +223,8 @@ def extend_annual_timeseries_if_outside_trends_period(annual_timeseries: Timeser
                                                       timeseries_for_extension: Timeseries) -> Timeseries:
     """
     Extends an annual timeseries with another annual timeseries in case the given trends span longer
-    than the annual dataset
+    than the annual dataset.
+    Assumes that 'annual_timeseries' and 'timeseries_for_extension' both follow the same annual grid.
 
     Parameters
     ----------
@@ -226,21 +241,23 @@ def extend_annual_timeseries_if_outside_trends_period(annual_timeseries: Timeser
         Extended annual timeseries.
         If trends are within 'annual_timeseries' this will be the same as 'annual_timeseries'
     """
+    annual_timeseries_copy = annual_timeseries.copy()
     for ds in data_catalogue_trends.datasets:
-        if (min(ds.data.start_dates) < min(annual_timeseries.data.start_dates)) \
-                or (max(ds.data.end_dates) > max(annual_timeseries.data.end_dates)):
+        if (min(ds.data.start_dates) < min(annual_timeseries_copy.data.start_dates)) \
+                or (max(ds.data.end_dates) > max(annual_timeseries_copy.data.end_dates)):
             log.info("Extension of annual is performed, as the trends are longer than the annual timeseries")
-            # Combine with other  timeseries to cover the missing timespan
-            object_copy = annual_timeseries.copy()
-            df1 = annual_timeseries.data.as_dataframe()
-            df2 = timeseries_for_extension.data.as_dataframe()
-            df_merged = pd.merge(df1, df2, on=["start_dates", "end_dates"], how="outer")
+            # Combine with other timeseries to cover the missing timespan
+            df_merged = pd.merge(annual_timeseries_copy.data.as_dataframe(),
+                                 timeseries_for_extension.data.as_dataframe(),
+                                 on=["start_dates", "end_dates"], how="outer")
+            # Fill Nans in 'annual_timeseries' with values from 'timeseries_for_extension'
             df_merged.changes_x.fillna(df_merged.changes_y, inplace=True)
             df_merged.errors_x.fillna(df_merged.errors_y, inplace=True)
             df_merged = df_merged.sort_values(by="start_dates").reset_index()
-            object_copy.data.changes = np.array(df_merged["changes_x"])
-            object_copy.data.errors = np.array(df_merged["errors_x"])
-            object_copy.data.start_dates = np.array(df_merged["start_dates"])
-            object_copy.data.end_dates = np.array(df_merged["end_dates"])
-            annual_timeseries = object_copy
-    return annual_timeseries
+            # now update the annual timeseries object with the extended timeseries
+            annual_timeseries_copy.data.changes = np.array(df_merged["changes_x"])
+            annual_timeseries_copy.data.errors = np.array(df_merged["errors_x"])
+            annual_timeseries_copy.data.start_dates = np.array(df_merged["start_dates"])
+            annual_timeseries_copy.data.end_dates = np.array(df_merged["end_dates"])
+            return annual_timeseries_copy
+    return annual_timeseries_copy

@@ -56,7 +56,12 @@ def _homogenize_regional_results_to_calendar_year(glambie_run_config: GlambieRun
                                                   regional_results_catalogue: DataCatalogue,
                                                   original_data_catalogue: DataCatalogue) -> DataCatalogue:
     """
-    Homogenizes the regional results to calendar year, so that they can be combined
+    Homogenizes the regional results to calendar year using a seasonal calibration dataset.
+
+    A high resolution timeseries with seasonal information is used to 'shift' and correct the current
+    timesteps to calendar years.
+
+    For more information check the Glambie algorithm description document.
 
     Parameters
     ----------
@@ -70,7 +75,7 @@ def _homogenize_regional_results_to_calendar_year(glambie_run_config: GlambieRun
     Returns
     -------
     DataCatalogue
-        Data Catalogue with homogenized dataset. Has the same number of datasets as the ' regional_results_catalogue'
+        Data Catalogue with homogenized dataset. Has the same number of datasets as the 'regional_results_catalogue'
     """
     homogenized_regional_results = []
 
@@ -80,8 +85,8 @@ def _homogenize_regional_results_to_calendar_year(glambie_run_config: GlambieRun
             region_name=region_config.region_name)
         seasonal_calibration_dataset = prepare_seasonal_calibration_dataset(region_config, data_catalogue)
         # step 2: homogenize to calendar year
-        ds = regional_results_catalogue.get_filtered_catalogue(region_name=region_config.region_name).datasets[0]
-        homogenized_regional_results.append(ds.convert_timeseries_using_seasonal_homogenization(
+        data_set = regional_results_catalogue.get_filtered_catalogue(region_name=region_config.region_name).datasets[0]
+        homogenized_regional_results.append(data_set.convert_timeseries_using_seasonal_homogenization(
             seasonal_calibration_dataset=seasonal_calibration_dataset, year_type=YearType.CALENDAR, p_value=0))
 
     result_catalogue = DataCatalogue.from_list(homogenized_regional_results)

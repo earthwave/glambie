@@ -53,7 +53,7 @@ def _run_regional_results(glambie_run_config: GlambieRunConfig,
     Returns
     -------
     Tuple[DataCatalogue, DataCatalogue]
-        - Data Catalogue with regional results. Contains on timeseries per region sepcified to run within the config.
+        - Data Catalogue with regional results. Contains one timeseries per region specified to run within the config.
     """
     data_group_results_per_region = []
     combined_regional_results = []

@@ -627,7 +627,7 @@ class Timeseries():
             raise AssertionError("Resolution of timeseries is below a year. No seasonal homogenization possible.")
         if not self.unit == seasonal_calibration_dataset.unit:
             raise AssertionError("Seasonal calibration dataset and dataset unit should be the same, however "
-                                 "they are units {} and {}.".format(seasonal_calibration_dataset.unit, self.unit))
+                                 f"they are units {seasonal_calibration_dataset.unit} and {self.unit}.")
 
         if year_type == constants.YearType.CALENDAR:
             year_start = 0

@@ -517,7 +517,7 @@ def get_total_trend(start_dates, end_dates, changes, calculate_as_errors=False, 
     pd.DataFrame or single value with overall trend
         'dataframe': pd.DataFrame({'start_dates': start_dates, 'end_dates': end_dates, 'changes': changes})
                      will contain a single row.
-        'value': longterm trend in input unit
+        'value': long-term trend in input unit
 
     """
     if calculate_as_errors:

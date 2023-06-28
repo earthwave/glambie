@@ -95,8 +95,8 @@ def combine_calibrated_timeseries(calibrated_series: np.array,
         by default 2
     calculate_outside_calibrated_series_period : bool, optional
         Only applies when p_value = 0, if p_value > 0, this will be ignored
-        Will extend the mean calibrated series to extend further than the calibration series.
-        This is useful for example when doing seasonal homogenization
+        This will extend the mean calibrated series to extend further than the calibration series.
+        This is useful for example when doing seasonal homogenization.
         by default True
 
     Returns

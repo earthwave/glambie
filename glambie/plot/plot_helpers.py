@@ -1,7 +1,9 @@
 import numpy as np
 import pandas as pd
 import matplotlib as mpl
+import matplotlib.pyplot as plt
 from glambie.util.timeseries_helpers import resample_1d_array, timeseries_as_months
+from glambie.data.timeseries import Timeseries
 
 """
 Handy functions to help making plots
@@ -129,3 +131,125 @@ def apply_vertical_adjustment_for_cumulative_plot(timeseries_to_adjust: pd.DataF
     adjusted_timeseries.changes = adjusted_timeseries.changes + adjustment
 
     return adjusted_timeseries
+
+
+def plot_non_cumulative_timeseries_on_axis(result_dataframe: pd.DataFrame,
+                                           ax: mpl.pyplot.axis,
+                                           colour: str,
+                                           label: str = "",
+                                           linestyle: str = "-",
+                                           plot_errors: bool = True):
+    """
+    Plots a non-cumulative dataframe on a given axis
+
+    Parameters
+    ----------
+    result_dataframe : pd.DataFrame
+        Dataframe to be plotted
+    ax : mpl.pyplot.axis
+        matplotlib axis to be plotted on
+    colour : str
+        hex colour for plot
+    label : str, optional
+        label of dataset, by default ""
+    linestyle : str, optional
+        plot linestyle, by default "-" (solid)
+    plot_errors : bool, optional
+        if true, uncertainty bounds are plotted, by default True
+    """
+    for _, row in result_dataframe.iterrows():  # iterate over each row of the timeseries
+        time_period = row["end_dates"] - row["start_dates"]
+        changes_per_year = np.array(row["changes"]) / time_period
+        ax.plot([row["start_dates"], row["end_dates"]], [changes_per_year, changes_per_year],
+                color=colour, linestyle=linestyle)
+        if plot_errors:
+            ax.fill_between([row["start_dates"], row["end_dates"]],
+                            [changes_per_year, changes_per_year] + np.array(row["errors"]) / time_period,
+                            [changes_per_year, changes_per_year] - np.array(row["errors"]) / time_period,
+                            alpha=0.15, color=colour)
+    # plot label
+    ax.plot([], [], label=label, color=colour)
+
+
+def plot_cumulative_timeseries_on_axis(timeseries: Timeseries,
+                                       ax: mpl.pyplot.axis,
+                                       colour: str,
+                                       timeseries_for_vertical_adjustment: Timeseries = None,
+                                       label: str = "",
+                                       linestyle: str = "-",
+                                       plot_errors: bool = True):
+    """
+    Plots a Timeseries as cumulative timeseries on a given axis
+
+    Parameters
+    ----------
+    timeseries : Timeseries
+        Timeseries object to be plotted
+    ax : mpl.pyplot.axis
+        matplotlib axis to be plotted on
+    colour : str
+        hex colour for plot
+    timeseries_for_vertical_adjustment : Timeseries, optional
+        _description_, by default None
+    label : str, optional
+        label of dataset, by default ""
+    linestyle : str, optional
+        plot linestyle, by default "-" (solid)
+    plot_errors : bool, optional
+        if true, uncertainty bounds are plotted, by default True
+    """
+    df_cum_trend = timeseries.data.as_cumulative_timeseries()
+    if timeseries_for_vertical_adjustment is not None:
+        df_combined_cum_trend = timeseries_for_vertical_adjustment.data.as_cumulative_timeseries()
+        df_cum_trend["changes"] = apply_vertical_adjustment_for_cumulative_plot(df_cum_trend,
+                                                                                df_combined_cum_trend).changes
+    ax.plot(df_cum_trend["dates"], df_cum_trend["changes"], label=label, color=colour, linestyle=linestyle)
+    if plot_errors:
+        ax.fill_between(df_cum_trend["dates"], df_cum_trend["changes"] + df_cum_trend["errors"],
+                        df_cum_trend["changes"] - df_cum_trend["errors"], alpha=0.15, color=colour)
+
+
+def save_plot(output_filepath: str):
+    """
+    Applies tight_layout, saves figure and closes figure.
+
+    Parameters
+    ----------
+    output_filepath : str
+        absolute path for output plot
+    """
+    plt.tight_layout()
+    plt.savefig(output_filepath)
+    plt.close()
+
+
+def add_labels_axlines_and_title(axes: mpl.pyplot.axes,
+                                 unit: str,
+                                 title: str,
+                                 legend_fontsize: int = 9):
+    """
+    Extend plot with labels, legend etc.:
+    - Adds labels to axes with units
+    - Adds title
+    - Adds legend
+    - Adds a horizontal axhline at 0
+
+    Parameters
+    ----------
+    axes : mpl.pyplot.axes
+        axes object with two axis, axes[0] shows non-cumulative timeseries, axes[1] whos the cumulative timeseries
+    unit : str
+        unit for label description, e.g. 'Gt'
+    title : str
+        plot title
+    legend_fontsize : int, optional
+        legend font size, by default 9
+    """
+    axes[0].set_title(title)
+    axes[0].axhline(0, color="grey", linewidth=0.9, linestyle="--")
+    axes[0].set_xlabel("Time")
+    axes[0].set_ylabel("Change [{} per year]".format(unit))
+    axes[1].axhline(0, color="grey", linewidth=0.9, linestyle="--")
+    axes[1].legend(fontsize=legend_fontsize)
+    axes[1].set_xlabel("Time")
+    axes[1].set_ylabel("Cumulative change [{}]".format(unit))

@@ -209,7 +209,7 @@ def plot_cumulative_timeseries_on_axis(timeseries: Timeseries,
                         df_cum_trend["changes"] - df_cum_trend["errors"], alpha=0.15, color=colour)
 
 
-def save_plot(output_filepath: str):
+def finalise_save_to_file_and_close_plot(output_filepath: str):
     """
     Applies tight_layout, saves figure and closes figure.
 
@@ -237,7 +237,7 @@ def add_labels_axlines_and_title(axes: mpl.pyplot.axes,
     Parameters
     ----------
     axes : mpl.pyplot.axes
-        axes object with two axis, axes[0] shows non-cumulative timeseries, axes[1] whos the cumulative timeseries
+        axes object with two axis, axes[0] shows non-cumulative timeseries, axes[1] shows the cumulative timeseries
     unit : str
         unit for label description, e.g. 'Gt'
     title : str

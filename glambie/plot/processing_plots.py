@@ -7,7 +7,7 @@ from glambie.const.regions import RGIRegion
 from glambie.processing.path_handling import OutputPathHandler
 from glambie.processing.processing_helpers import convert_datasets_to_monthly_grid
 from glambie.processing.processing_helpers import convert_datasets_to_unit_mwe
-from glambie.plot.plot_helpers import get_colours, add_labels_axlines_and_title, save_plot
+from glambie.plot.plot_helpers import get_colours, add_labels_axlines_and_title, finalise_save_to_file_and_close_plot
 from glambie.plot.plot_helpers import plot_non_cumulative_timeseries_on_axis, plot_cumulative_timeseries_on_axis
 
 
@@ -127,7 +127,7 @@ def plot_raw_input_data_of_data_group(catalogue_raw: DataCatalogue,
     add_labels_axlines_and_title(
         axes=axes, unit=catalogue_raw.datasets[0].unit, legend_fontsize=9,
         title="{} - {} - {}: raw input data".format(region.long_name, data_group.long_name, category))
-    save_plot(output_filepath)
+    finalise_save_to_file_and_close_plot(output_filepath)
 
 
 def plot_raw_and_homogenized_input_data_of_data_group(catalogue_raw: DataCatalogue,
@@ -166,7 +166,7 @@ def plot_raw_and_homogenized_input_data_of_data_group(catalogue_raw: DataCatalog
     add_labels_axlines_and_title(
         axes=axes, unit=catalogue_raw.datasets[0].unit, legend_fontsize=9,
         title="{} - {} - {}: raw input data".format(region.long_name, data_group.long_name, category))
-    save_plot(output_filepath)
+    finalise_save_to_file_and_close_plot(output_filepath)
 
 
 def plot_homogenized_input_data_of_data_group(catalogue_annual: DataCatalogue,
@@ -194,7 +194,7 @@ def plot_homogenized_input_data_of_data_group(catalogue_annual: DataCatalogue,
     add_labels_axlines_and_title(
         axes=axes, unit=catalogue_annual.datasets[0].unit, legend_fontsize=9,
         title="{} - {}: homogenized input data".format(region.long_name, data_group.long_name))
-    save_plot(output_filepath)
+    finalise_save_to_file_and_close_plot(output_filepath)
 
 
 def plot_annual_variability_of_data_group(catalogue_annual_anomalies: DataCatalogue,
@@ -231,7 +231,7 @@ def plot_annual_variability_of_data_group(catalogue_annual_anomalies: DataCatalo
     add_labels_axlines_and_title(
         axes=axes, unit=catalogue_annual_anomalies.datasets[0].unit, legend_fontsize=7,
         title="{} - {}: annual variability".format(region.long_name, data_group.long_name))
-    save_plot(output_filepath)
+    finalise_save_to_file_and_close_plot(output_filepath)
 
 
 def plot_recalibration_of_annual_variability_with_trends(catalogue_trends: DataCatalogue,
@@ -264,20 +264,14 @@ def plot_recalibration_of_annual_variability_with_trends(catalogue_trends: DataC
             timeseries_for_vertical_adjustment=trend_combined,
             label="Calibrated annual: " + annual.user_group)
 
-    # labels etc
-    axes[0].axhline(0, color='grey', linewidth=0.9, linestyle="--")
-    axes[0].set_ylabel("Change [{} per year]".format(catalogue_trends.datasets[0].unit))
-    axes[1].axhline(0, color='grey', linewidth=0.9, linestyle="--")
-    axes[1].legend(prop={'size': 7})
-    axes[1].set_xlabel("Time")
-    axes[1].set_ylabel("Cumulative change [{}]".format(catalogue_trends.datasets[0].unit))
-    axes[0].set_title("{} - {}: recalibration with trends".format(region.long_name,
-                                                                  data_group.long_name))
+    add_labels_axlines_and_title(
+        axes=axes, unit=catalogue_trends.datasets[0].unit,
+        title="{} - {}: recalibration with trends".format(region.long_name, data_group.long_name), legend_fontsize=7)
 
     add_labels_axlines_and_title(
         axes=axes, unit=catalogue_trends.datasets[0].unit, legend_fontsize=9,
         title="{} - {}: recalibration with trends".format(region.long_name, data_group.long_name))
-    save_plot(output_filepath)
+    finalise_save_to_file_and_close_plot(output_filepath)
 
 
 def plot_recalibrated_result_of_data_group(catalogue_trends: DataCatalogue,
@@ -314,7 +308,7 @@ def plot_recalibrated_result_of_data_group(catalogue_trends: DataCatalogue,
 
     add_labels_axlines_and_title(axes=axes, unit=catalogue_trends.datasets[0].unit, legend_fontsize=9,
                                  title="{} - {}: combined solution".format(region.long_name, data_group.long_name))
-    save_plot(output_filepath)
+    finalise_save_to_file_and_close_plot(output_filepath)
 
 
 def plot_combination_of_sources_within_region(catalogue_results: DataCatalogue,
@@ -351,7 +345,7 @@ def plot_combination_of_sources_within_region(catalogue_results: DataCatalogue,
 
     add_labels_axlines_and_title(axes=axes, unit=combined_timeseries.unit,
                                  title="{}: combined estimate".format(region.long_name), legend_fontsize=9)
-    save_plot(output_filepath)
+    finalise_save_to_file_and_close_plot(output_filepath)
 
 
 def plot_combination_of_regions_to_global(catalogue_region_results: DataCatalogue,
@@ -387,4 +381,4 @@ def plot_combination_of_regions_to_global(catalogue_region_results: DataCatalogu
 
     add_labels_axlines_and_title(axes=axes, unit=global_timeseries.unit,
                                  title="{}: combined estimate".format(region.long_name), legend_fontsize=9)
-    save_plot(output_filepath)
+    finalise_save_to_file_and_close_plot(output_filepath)

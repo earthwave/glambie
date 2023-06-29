@@ -231,14 +231,22 @@ class DataCatalogue():
             df.filter(regex=("changes*")).columns.to_list())].mean(axis=1))
 
         # UNCERTAINTIES -- more information is in GlaMBIE Assessment Algorithm document
-        # propagate observational uncertainties
+        # 1 ) propagate observational uncertainties
         sigma_obs_uncertainty = ((df.filter(regex=("errors*"))**2).sum(axis=1))**0.5
         # divide by 1/n
         sigma_obs_uncertainty = (1 / df.filter(regex=("errors*")).count(axis=1)) * sigma_obs_uncertainty
 
-        # variability of change between sources, times 1.96 as we calculate sigma-2 uncertainties (95%)
-        sigma_variability_uncertainty = 1.96 * np.array(df[df.columns.intersection(
-            df.filter(regex=("changes*")).columns.to_list())].sem(axis=1, ddof=0))
+        # 2) variability of change between sources
+        column_names = df.columns.intersection(df.filter(regex=("changes*")).columns.to_list())
+        # calculate standard deviation of all differences from annual mean: TODO: what to do if rate is removed?
+        df_diff_from_mean = df[column_names].subtract(mean_changes, axis=0)
+        arr_diff_from_mean = df_diff_from_mean[df_diff_from_mean != 0].values.flatten()
+        arr_diff_from_mean = arr_diff_from_mean[~pd.isnull(arr_diff_from_mean)]  # remove nans
+        stdev_differences = np.std(arr_diff_from_mean) if len(arr_diff_from_mean) > 0 else 0
+        # divide stdev_differences by N = number of different observations
+        # df_diff_from_mean.count(axis=1) this will give us the number of values that are not NaN per row
+        # times 1.96 as we calculate sigma-2 uncertainties (95%)
+        sigma_variability_uncertainty = 1.96 * np.array(stdev_differences / df_diff_from_mean.count(axis=1))
 
         # Combine two uncertainty sources assuming they are independent
         uncertainties = (sigma_obs_uncertainty**2 + sigma_variability_uncertainty**2)**0.5

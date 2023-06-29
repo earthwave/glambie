@@ -625,6 +625,9 @@ class Timeseries():
                                  "before performing this operation.")
         if self.data.max_temporal_resolution < 1:
             raise AssertionError("Resolution of timeseries is below a year. No seasonal homogenization possible.")
+        if not self.unit == seasonal_calibration_dataset.unit:
+            raise AssertionError("Seasonal calibration dataset and dataset unit should be the same, however "
+                                 f"they are units {seasonal_calibration_dataset.unit} and {self.unit}.")
 
         if year_type == constants.YearType.CALENDAR:
             year_start = 0
@@ -632,12 +635,13 @@ class Timeseries():
             year_start = self.region.glaciological_year_start
 
         object_copy = self.copy()
-        if not self.timeseries_is_annual_grid():  # if already annual then no need to homogenize
+        if not self.timeseries_is_annual_grid(year_type=year_type):  # if already annual then no need to homogenize
             # 1) calibrate calibration series with trends from timeseries
             calibrated_s, dist_mat = calibrate_timeseries_with_trends(self.data.as_dataframe(),
                                                                       seasonal_calibration_dataset.data.as_dataframe())
             # 2) calculate mean calibration timeseries from all the different curves
-            mean_calibrated_ts = combine_calibrated_timeseries(calibrated_s, dist_mat, p_value=p_value)
+            mean_calibrated_ts = combine_calibrated_timeseries(calibrated_s, dist_mat, p_value=p_value,
+                                                               calculate_outside_calibrated_series_period=True)
             df_mean_calibrated = pd.DataFrame({"start_dates": seasonal_calibration_dataset.data
                                                .as_dataframe().start_dates,
                                                "end_dates": seasonal_calibration_dataset.data

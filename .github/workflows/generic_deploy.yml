@@ -46,6 +46,11 @@ jobs:
         with:
           token: ${{ secrets.EARTHWAVE_ADMIN_PAT }}
 
+      - name: Fix issue with actions/checkout
+        # For some reason we can't run later git commands using this image unless we complete this step
+        run: |
+          git config --global --add safe.directory $GITHUB_WORKSPACE          
+
       - name: Install Google Cloud CLI
         # while there is a github action to do this, it doesn't work in the base CI containers.
         # We keep these tools out of the base image because they're large compared to the rest of the image

@@ -63,3 +63,10 @@ def test_get_csv_output_file_path(path_helper):
         region=region, data_group=GLAMBIE_DATA_GROUPS["altimetry"])
     assert os.path.realpath(plot_file_path).startswith(os.path.abspath(region_data_group_path))
     assert os.path.split(plot_file_path)[1] == plot_file_name
+
+
+def test_get_config_output_folder_path(path_helper):
+    config_path = path_helper.get_config_output_folder_path()
+    assert path_helper.base_path == TESTING_DIR
+    assert os.path.exists(config_path)
+    assert os.path.join(TESTING_DIR, "configs") == config_path

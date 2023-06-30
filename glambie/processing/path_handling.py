@@ -41,6 +41,20 @@ class OutputPathHandler():
         Path(folder_path).mkdir(parents=True, exist_ok=True)
         return folder_path
 
+    def get_config_output_folder_path(self) -> str:
+        """
+        Returns requested folder path for saving configs of a run.
+        If a folder dosen't exist it is iteratively created on the fly.
+
+        Returns
+        -------
+        str
+            output folder path
+        """
+        folder_path = os.path.join(self.base_path, "configs")
+        Path(folder_path).mkdir(parents=True, exist_ok=True)
+        return folder_path
+
     def get_region_and_data_group_output_folder_path(self, region: RGIRegion, data_group: GlambieDataGroup) -> str:
         """
         Returns requested folder path for saving outputs.

@@ -65,7 +65,7 @@ class OutputPathHandler():
     def get_plot_output_file_path(self, region: RGIRegion, data_group: GlambieDataGroup, plot_file_name: str) -> str:
         """
         Returns requested file path for saving output plot.
-        If a folder dosen't exist it is iteratively created on the fly.
+        If a folder doesn't exist it is iteratively created on the fly.
 
         Parameters
         ----------
@@ -84,6 +84,30 @@ class OutputPathHandler():
         folder_path = os.path.join(self.base_path, region.name, data_group.name, "plots")
         Path(folder_path).mkdir(parents=True, exist_ok=True)
         filepath = os.path.join(folder_path, plot_file_name)
+        return filepath
+
+    def get_csv_output_file_path(self, region: RGIRegion, data_group: GlambieDataGroup, csv_file_name: str) -> str:
+        """
+        Returns requested file path for saving output csv.
+        If a folder doesn't exist it is iteratively created on the fly.
+
+        Parameters
+        ----------
+        region : RGIRegion
+            RGI Region of outputs
+        data_group : GlambieDataGroup
+            Glambie Data Group of outputs
+        csv_file_name : str
+            filename of the plot
+
+        Returns
+        -------
+        str
+            output file path of csv
+        """
+        folder_path = os.path.join(self.base_path, region.name, data_group.name, "csvs")
+        Path(folder_path).mkdir(parents=True, exist_ok=True)
+        filepath = os.path.join(folder_path, csv_file_name)
         return filepath
 
 

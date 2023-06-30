@@ -6,5 +6,6 @@ def test_download_csvs_from_bucket():
 
     test_prefix = 'acs'
     downloaded_files = download_csvs_from_bucket(test_prefix)
-    assert os.path.exists('/home/dubbersophie/glambie_data/acs_altimetry_jakob_gourmelen.csv')
+    assert os.path.exists(os.path.join('/data/ox1/working/glambie/temp_local_copies_of_submitted_data',
+                                       'acs_altimetry_jakob_gourmelen.csv'))
     assert len(downloaded_files) == 17

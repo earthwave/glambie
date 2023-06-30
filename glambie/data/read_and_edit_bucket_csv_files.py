@@ -34,7 +34,7 @@ def download_csvs_from_bucket(file_prefix: str) -> list[str]:
 
     for blob in list_of_blobs_in_bucket:
         downloaded_files.append(blob.name)
-        destination_file_path = os.path.join('/home/dubbersophie/glambie_data', blob.name)
+        destination_file_path = os.path.join('/data/ox1/working/glambie/temp_local_copies_of_submitted_data', blob.name)
         with open(destination_file_path, "wb") as temp_file:
             blob.download_to_file(temp_file, raw_download=False)
 

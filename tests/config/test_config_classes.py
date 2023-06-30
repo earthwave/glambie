@@ -1,4 +1,3 @@
-from doctest import OutputChecker
 import os
 import shutil
 

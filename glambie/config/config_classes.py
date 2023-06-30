@@ -6,6 +6,7 @@ import yaml
 import logging
 from abc import ABC, abstractclassmethod
 from glambie.const.constants import YearType
+from glambie.config.yaml_helpers import strip_python_tags
 from glambie.const.data_groups import GLAMBIE_DATA_GROUPS, GlambieDataGroup
 import os
 
@@ -62,7 +63,16 @@ class RegionRunConfig(Config):
 
     def _init_year_type(self):
         if not isinstance(self.year_type, YearType):
+            if isinstance(self.year_type, list):
+                assert len(self.year_type) == 1
+                self.year_type = self.year_type[0]
             self.year_type = YearType(self.year_type)
+
+    def save_to_yaml(self, out_path):
+        yaml_string = yaml.dump(self)
+        yaml_string = strip_python_tags(yaml_string)
+        with open(out_path, 'w') as outfile:
+            outfile.write(yaml_string)
 
 
 @dataclass
@@ -110,3 +120,8 @@ class GlambieRunConfig(Config):
                         raise ValueError(error_msg)
                     new_regions.append(region_config)
         self.regions = new_regions
+
+    def save_to_yaml(self, output_folder_path: str):
+        for region in self.regions:
+            outfile = os.path.join(output_folder_path, f"{region.region_name}.yaml")
+            region.save_to_yaml(outfile)

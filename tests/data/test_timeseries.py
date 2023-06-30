@@ -39,6 +39,18 @@ def example_timeseries_ingested():
     return ts
 
 
+def test_save_as_csv(example_timeseries_ingested):
+    out_csv_path = os.path.join("tests", "test_data", "datastore", "out_csv_test.csv")
+    example_timeseries_ingested.save_data_as_csv(out_csv_path)
+    assert os.path.exists(out_csv_path)
+    df = pd.read_csv(out_csv_path)
+    # check data read from CSV is same as TimeseriesData
+    for column in df:
+        assert np.array_equal(np.array(df[column]), np.array(example_timeseries_ingested.data.as_dataframe()[column]))
+    # tear down
+    os.remove(out_csv_path)
+
+
 def test_data_ingestion(example_timeseries_ingested):
     assert example_timeseries_ingested.data.start_dates is not None
     assert example_timeseries_ingested.is_data_loaded

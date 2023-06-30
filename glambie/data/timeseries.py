@@ -266,6 +266,18 @@ class Timeseries():
         """
         return copy.deepcopy(self)
 
+    def save_data_as_csv(self, csv_outpath: str):
+        """
+        Saves out the timeseries data as CSV.
+
+        Parameters
+        ----------
+        csv_outpath : str
+            absolute file path where CSV should be saved
+        """
+        df_data = self.data.as_dataframe()
+        df_data.to_csv(csv_outpath, index=False)
+
     def convert_timeseries_to_unit_mwe(self, density_of_water: float = constants.DENSITY_OF_WATER_KG_PER_M3,
                                        density_of_ice: float = constants.DENSITY_OF_ICE_KG_PER_M3) -> Timeseries:
         """

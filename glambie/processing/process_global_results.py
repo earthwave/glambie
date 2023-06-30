@@ -43,12 +43,16 @@ def run_global_results(glambie_run_config: GlambieRunConfig,
 
     # plot
     if output_path_handler is not None:
-        output_path = output_path_handler.get_plot_output_file_path(region=REGIONS["global"],
-                                                                    data_group=GLAMBIE_DATA_GROUPS["consensus"],
-                                                                    plot_file_name="1_global_picture.png")
+        plot_output_file = output_path_handler.get_plot_output_file_path(region=REGIONS["global"],
+                                                                         data_group=GLAMBIE_DATA_GROUPS["consensus"],
+                                                                         plot_file_name="1_global_picture.png")
         plot_combination_of_regions_to_global(catalogue_region_results=regional_results_catalogue_homogenized,
                                               global_timeseries=global_timeseries, region=REGIONS["global"],
-                                              output_filepath=output_path)
+                                              output_filepath=plot_output_file)
+        csv_output_file = output_path_handler.get_csv_output_file_path(region=REGIONS["global"],
+                                                                       data_group=GLAMBIE_DATA_GROUPS["consensus"],
+                                                                       csv_file_name="global.csv")
+        global_timeseries.save_data_as_csv(csv_output_file)
     return global_timeseries
 
 

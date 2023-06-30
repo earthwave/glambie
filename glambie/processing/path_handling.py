@@ -86,7 +86,11 @@ class OutputPathHandler():
         filepath = os.path.join(folder_path, plot_file_name)
         return filepath
 
-    def get_csv_output_file_path(self, region: RGIRegion, data_group: GlambieDataGroup, csv_file_name: str) -> str:
+    def get_csv_output_file_path(self,
+                                 region: RGIRegion,
+                                 data_group: GlambieDataGroup,
+                                 csv_file_name: str,
+                                 subfolder: str = "") -> str:
         """
         Returns requested file path for saving output csv.
         If a folder doesn't exist it is iteratively created on the fly.
@@ -99,13 +103,14 @@ class OutputPathHandler():
             Glambie Data Group of outputs
         csv_file_name : str
             filename of the plot
-
+        subfolder : str
+            subfolder in which to save the plot, default ''
         Returns
         -------
         str
             output file path of csv
         """
-        folder_path = os.path.join(self.base_path, region.name, data_group.name, "csvs")
+        folder_path = os.path.join(self.base_path, region.name, data_group.name, "csvs", subfolder)
         Path(folder_path).mkdir(parents=True, exist_ok=True)
         filepath = os.path.join(folder_path, csv_file_name)
         return filepath

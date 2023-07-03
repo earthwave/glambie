@@ -9,20 +9,18 @@ PROJECT_NAME = "glambie"
 _storage_client = Client()
 
 
-def download_csvs_from_bucket(file_prefix: str, local_data_directory_path: str) -> list[str]:
+def download_csvs_from_bucket(local_data_directory_path: str, region_prefix: str = None) -> list[str]:
     """
     Function to download glambie .csv files from the google bucket to a local folder, where they can be checked and
-    edited. Specify which files using the file_prefix parameter
-
-    TO DO: is there an alternative to 'prefix' that will let me select all .csv files in bucket? If yes, set this
-    in function and leave file_prefix as None by default to return all csvs unless otherwise specified.
+    edited. Specify files for a specific region using the region_prefix parameter
 
     Parameters
     ----------
-    file_prefix : str
-        String describing the pattern to look for in the filenames when deciding which to download.
     local_data_directory_path : str
         Path to save local copies of bucket data to.
+    region_prefix : str, Optional
+        String describing the region name pattern to look for in the filenames when deciding which to download,
+        by default None.
 
     Returns
     -------
@@ -30,14 +28,15 @@ def download_csvs_from_bucket(file_prefix: str, local_data_directory_path: str) 
         List of files that have been downloaded to the local directory.
     """
 
-    list_of_blobs_in_bucket = _storage_client.list_blobs(DATA_TRANSFER_BUCKET_NAME, prefix=file_prefix)
+    list_of_blobs_in_bucket = _storage_client.list_blobs(DATA_TRANSFER_BUCKET_NAME, prefix=region_prefix)
     downloaded_files = []
 
     for blob in list_of_blobs_in_bucket:
-        downloaded_files.append(blob.name)
-        destination_file_path = os.path.join(local_data_directory_path, blob.name)
-        with open(destination_file_path, "wb") as temp_file:
-            blob.download_to_file(temp_file, raw_download=False)
+        if '.csv' in blob.name:
+            downloaded_files.append(blob.name)
+            destination_file_path = os.path.join(local_data_directory_path, blob.name)
+            with open(destination_file_path, "wb") as temp_file:
+                blob.download_to_file(temp_file, raw_download=False)
 
     return downloaded_files
 
@@ -47,8 +46,6 @@ def generate_results_dataframe(downloaded_files: list[str]) -> pd.DataFrame:
     Function to generate a dataframe sumamrising which of the files need editing, and what edits need to be made for
     these. Thought about doing the edits at the same time, but wanted to retain a record separate to the files
     themselves of what changes have been made.
-
-    TO DO: Write the dataframe to a .csv - store in repo?
 
     Parameters
     ----------
@@ -62,7 +59,7 @@ def generate_results_dataframe(downloaded_files: list[str]) -> pd.DataFrame:
         standard.
     """
 
-    results_dict = {'file_name': downloaded_files}
+    results_dict = {'local_filepath': downloaded_files, 'file_name': [os.path.basename(a) for a in downloaded_files]}
     results_dataframe = pd.DataFrame.from_dict(results_dict)
 
     results_dataframe['date_check_satisfied'] = np.nan
@@ -70,6 +67,8 @@ def generate_results_dataframe(downloaded_files: list[str]) -> pd.DataFrame:
 
     for file in downloaded_files:
         file_check_dataframe = check_glambie_submission_for_errors(file, results_dataframe)
+
+    file_check_dataframe.to_csv(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'record_of_edited_files.csv'))
 
     return file_check_dataframe
 
@@ -129,12 +128,12 @@ def check_glambie_submission_for_errors(csv_file_path: str, file_check_dataframe
         nodata_check_bool = all(abs(i) < 10000 for i in change_values)
 
     # If all rows passed the date check above, we store date_check_satisfied = True for this file: don't need to edit it
-    file_check_dataframe.loc[file_check_dataframe.file_name.__eq__(
-        csv_file_path), 'date_check_satisfied'] = date_check_bool
+    file_check_dataframe.loc[file_check_dataframe.local_filepath.__eq__(csv_file_path),
+                             'date_check_satisfied'] = date_check_bool
 
     # Likewise if all rows passed the nodata check above, we store nodata_check_satisfied for this file.
-    file_check_dataframe.loc[file_check_dataframe.file_name.__eq__(
-        csv_file_path), 'nodata_check_satisfied'] = nodata_check_bool
+    file_check_dataframe.loc[file_check_dataframe.local_filepath.__eq__(csv_file_path),
+                             'nodata_check_satisfied'] = nodata_check_bool
 
     return file_check_dataframe
 
@@ -158,7 +157,7 @@ def edit_local_copies_of_glambie_csvs(file_check_dataframe: pd.DataFrame):
     for _, file in file_check_dataframe.iterrows():
 
         if not file.date_check_satisfied:
-            submission_data_frame = pd.read_csv(file.file_name)
+            submission_data_frame = pd.read_csv(file.local_filepath)
 
             # Check what the gap is between first end and second start date - if it is a uniform gap then we will fix it
             # here. If it varies, we will need to edit file manually
@@ -169,13 +168,14 @@ def edit_local_copies_of_glambie_csvs(file_check_dataframe: pd.DataFrame):
                 new_end_dates = [datetime.strptime(a, '%d/%m/%Y') + date_gaps[0]
                                  for a in submission_data_frame.end_date]
                 submission_data_frame.end_date = [datetime.strftime(a, '%d/%m/%Y') for a in new_end_dates]
-                submission_data_frame.to_csv(file.file_name)  # write to same file as original
+                submission_data_frame.to_csv(file.local_filepath)  # write to same file as original
             else:
                 # come up with better solution for storing this message
-                print('Issue with dates is more complex than a uniform gap - might need to manually edit this file')
+                print('{}: Issue with dates is more complex than a uniform gap - '
+                      'manually edit this file'.format(file.file_name))
 
         if not file.nodata_check_satisfied:
-            submission_data_frame = pd.read_csv(file.file_name)
+            submission_data_frame = pd.read_csv(file.local_filepath)
 
             if file.unit.values.__contains__('m' or 'mwe'):
                 # delete rows with change values > +/-100 - these numbers need some thought
@@ -186,4 +186,19 @@ def edit_local_copies_of_glambie_csvs(file_check_dataframe: pd.DataFrame):
                 submission_data_frame.drop(submission_data_frame[abs(
                     submission_data_frame.glacier_change_observed) > 10000].index, inplace=True)
 
-            submission_data_frame.to_csv(file.file_name)
+            submission_data_frame.to_csv(file.local_filepath)
+
+
+def main():
+
+    # If you want to download files for a specific region, set the region_prefix and supply here
+    downloaded_files = download_csvs_from_bucket('/path/to/local/folder', region_prefix=None)
+    gdf = generate_results_dataframe(downloaded_files)
+    edit_local_copies_of_glambie_csvs(gdf)
+
+    # Final step that needs to be implemented here is to upload the edited files into the bucket, after copying the
+    # original version of the file into an archive folder
+
+
+if __name__ == "__main__":
+    main()

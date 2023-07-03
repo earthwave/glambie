@@ -323,13 +323,6 @@ class Timeseries():
 
         Parameters
         ----------
-        include_area_change : bool, optional
-            Flag to determine if glacier area changes are taking into account
-            Set to True, the area change and area change reference year are retrieved for the region of the timeseries
-            From the constants and used to calculate Gt for a changing area
-            Note that this will not work that well if the time resolution is low (e.g. multiple years),
-            as it just uses the average between start and end date to determine the area change since
-            the reference year, by default True
         density_of_water: float, optional
             The density of water in Gt per m3, by default constants.DENSITY_OF_WATER_KG_PER_M3
         rgi_area_version: int, optional

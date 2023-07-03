@@ -62,7 +62,7 @@ def generate_results_dataframe(downloaded_files: list[str]) -> pd.DataFrame:
         standard.
     """
 
-    results_dict = {'file_name': [file for file in downloaded_files]}
+    results_dict = {'file_name': downloaded_files}
     results_dataframe = pd.DataFrame.from_dict(results_dict)
 
     results_dataframe['date_check_satisfied'] = np.nan
@@ -172,7 +172,7 @@ def edit_local_copies_of_glambie_csvs(file_check_dataframe: pd.DataFrame):
                 submission_data_frame.to_csv(file.file_name)  # write to same file as original
             else:
                 # come up with better solution for storing this message
-                print('Issue with dates is more complext than a uniform gap - might need to manually edit this file')
+                print('Issue with dates is more complex than a uniform gap - might need to manually edit this file')
 
         if not file.nodata_check_satisfied:
             submission_data_frame = pd.read_csv(file.file_name)

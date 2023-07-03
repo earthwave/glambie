@@ -95,7 +95,8 @@ def _homogenize_regional_results_to_calendar_year(glambie_run_config: GlambieRun
 
 def _combine_regional_results_into_global(regional_results_catalogue: DataCatalogue) -> Timeseries:
     """
-    Combines all regional results into one global timeseries
+    Combines all regional results into one global timeseries.
+    Assumes that timeseries are all in same grid and resolution temporally (e.g. calendar year).
 
     Parameters
     ----------

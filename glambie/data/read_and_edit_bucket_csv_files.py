@@ -9,19 +9,20 @@ PROJECT_NAME = "glambie"
 _storage_client = Client()
 
 
-def download_csvs_from_bucket(file_prefix: str) -> list[str]:
+def download_csvs_from_bucket(file_prefix: str, local_data_directory_path: str) -> list[str]:
     """
     Function to download glambie .csv files from the google bucket to a local folder, where they can be checked and
     edited. Specify which files using the file_prefix parameter
 
     TO DO: is there an alternative to 'prefix' that will let me select all .csv files in bucket? If yes, set this
     in function and leave file_prefix as None by default to return all csvs unless otherwise specified.
-    TO DO: remove hardcoded home directory path, replace with temporary directory?
 
     Parameters
     ----------
     file_prefix : str
         String describing the pattern to look for in the filenames when deciding which to download.
+    local_data_directory_path : str
+        Path to save local copies of bucket data to.
 
     Returns
     -------
@@ -34,7 +35,7 @@ def download_csvs_from_bucket(file_prefix: str) -> list[str]:
 
     for blob in list_of_blobs_in_bucket:
         downloaded_files.append(blob.name)
-        destination_file_path = os.path.join('/data/ox1/working/glambie/temp_local_copies_of_submitted_data', blob.name)
+        destination_file_path = os.path.join(local_data_directory_path, blob.name)
         with open(destination_file_path, "wb") as temp_file:
             blob.download_to_file(temp_file, raw_download=False)
 
@@ -61,7 +62,7 @@ def generate_results_dataframe(downloaded_files: list[str]) -> pd.DataFrame:
         standard.
     """
 
-    results_dict = {'file_name': [os.path.basename(file) for file in downloaded_files]}
+    results_dict = {'file_name': [file for file in downloaded_files]}
     results_dataframe = pd.DataFrame.from_dict(results_dict)
 
     results_dataframe['date_check_satisfied'] = np.nan
@@ -104,7 +105,7 @@ def check_glambie_submission_for_errors(csv_file_path: str, file_check_dataframe
     # First, check for any non equal end_dates and subsequent start_dates
     start_dates = submission_data_frame.start_date.values
     end_dates = submission_data_frame.end_date.values
-    start_dates.append(np.nan)  # Add an extra element to the end of this list for check below
+    start_dates = np.append(start_dates, np.nan)  # Add an extra element to the end of this list for check below
 
     date_check_bool = True
     nodata_check_bool = True
@@ -121,18 +122,19 @@ def check_glambie_submission_for_errors(csv_file_path: str, file_check_dataframe
     # remove these rows instead of setting an arbitrary nodata value. Extreme value threshold needs to be different
     # depending on the units used.
     change_values = submission_data_frame.glacier_change_observed.values
-    if submission_data_frame.unit.__contains__('m' or 'mwe'):
+
+    if submission_data_frame.unit.values.__contains__('m' or 'mwe'):
         nodata_check_bool = all(abs(i) < 100 for i in change_values)  # check that all changes in list are < +/-100
-    elif submission_data_frame.unit.__contains__('Gt'):
+    elif submission_data_frame.unit.values.__contains__('Gt'):
         nodata_check_bool = all(abs(i) < 10000 for i in change_values)
 
     # If all rows passed the date check above, we store date_check_satisfied = True for this file: don't need to edit it
-    file_check_dataframe.loc[file_check_dataframe.files.__eq__(os.path.basename(csv_file_path)),
-                             'date_check_satisfied'] = date_check_bool
+    file_check_dataframe.loc[file_check_dataframe.file_name.__eq__(
+        csv_file_path), 'date_check_satisfied'] = date_check_bool
 
     # Likewise if all rows passed the nodata check above, we store nodata_check_satisfied for this file.
-    file_check_dataframe.loc[file_check_dataframe.files.__eq__(os.path.basename(csv_file_path)),
-                             'nodata_check_satisfied'] = nodata_check_bool
+    file_check_dataframe.loc[file_check_dataframe.file_name.__eq__(
+        csv_file_path), 'nodata_check_satisfied'] = nodata_check_bool
 
     return file_check_dataframe
 
@@ -153,10 +155,10 @@ def edit_local_copies_of_glambie_csvs(file_check_dataframe: pd.DataFrame):
         standard.
     """
 
-    for _, row in file_check_dataframe.iterrows():
+    for _, file in file_check_dataframe.iterrows():
 
-        if not row.date_check_satisfied:
-            submission_data_frame = pd.read_csv(row.file_name)
+        if not file.date_check_satisfied:
+            submission_data_frame = pd.read_csv(file.file_name)
 
             # Check what the gap is between first end and second start date - if it is a uniform gap then we will fix it
             # here. If it varies, we will need to edit file manually
@@ -167,21 +169,21 @@ def edit_local_copies_of_glambie_csvs(file_check_dataframe: pd.DataFrame):
                 new_end_dates = [datetime.strptime(a, '%d/%m/%Y') + date_gaps[0]
                                  for a in submission_data_frame.end_date]
                 submission_data_frame.end_date = [datetime.strftime(a, '%d/%m/%Y') for a in new_end_dates]
-                submission_data_frame.to_csv(row.file_name)  # write to same file as original
+                submission_data_frame.to_csv(file.file_name)  # write to same file as original
             else:
                 # come up with better solution for storing this message
                 print('Issue with dates is more complext than a uniform gap - might need to manually edit this file')
 
-        if not row.nodata_check_satisfied:
-            submission_data_frame = pd.read_csv(row.file_name)
+        if not file.nodata_check_satisfied:
+            submission_data_frame = pd.read_csv(file.file_name)
 
-            if row.unit.__contains__('m' or 'mwe'):
+            if file.unit.values.__contains__('m' or 'mwe'):
                 # delete rows with change values > +/-100 - these numbers need some thought
                 submission_data_frame.drop(submission_data_frame[abs(
                     submission_data_frame.glacier_change_observed) > 100].index, inplace=True)
-            elif row.unit.__contains__('Gt'):
+            elif file.unit.values.__contains__('Gt'):
                 # delete rows with change values > +/-10000
                 submission_data_frame.drop(submission_data_frame[abs(
                     submission_data_frame.glacier_change_observed) > 10000].index, inplace=True)
 
-            submission_data_frame.to_csv(row.file_name)
+            submission_data_frame.to_csv(file.file_name)

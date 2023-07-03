@@ -142,7 +142,7 @@ class Timeseries():
 
     def __init__(self, region: RGIRegion = None, data_group: GlambieDataGroup = None, data_filepath: str = None,
                  data: TimeseriesData = None, user: str = None, user_group: str = None,
-                 rgi_version: int = None, unit: str = None):
+                 rgi_version: int = None, unit: str = None, area_change_applied: bool = False):
         """
         Class containing meta data and data from of an individual timeseries.
 
@@ -169,6 +169,8 @@ class Timeseries():
             which version of rgi has been used, e.g. 6 or 7, by default None
         unit : str, optional
             unit the timeseries is in, e.g. m, mwe or gt, by default None
+        area_change_applied: bool, optional
+            If set to False, area change has not been applied yet, if set to True it has been applied, by default True
         """
         self.user = user
         self.user_group = user_group
@@ -180,6 +182,7 @@ class Timeseries():
         self.data = data
         if self.data is not None:
             self.is_data_loaded = True
+        self.area_change_applied = area_change_applied
 
     def load_data(self) -> TimeseriesData:
         """Reads data into class from specified filepath
@@ -357,7 +360,12 @@ class Timeseries():
         ------
         NotImplementedError
             For units to be converted that are not implemented yet
+        AssertionError
+            When area_change_applied is True, as it will give incorrect values when converting to Gigatonnes.
         """
+        if self.area_change_applied:
+            raise AssertionError("Cannot convert dataset to Gt. Area change needs to be removed first.")
+
         # get area
         if rgi_area_version == 6:
             glacier_area = self.region.rgi6_area
@@ -412,9 +420,22 @@ class Timeseries():
         Timeseries
             A copy of the Timeseries object containing the converted timeseries data.
 
+        Raises
+        ------
+        AssertionError
+            When units are not either 'm' or 'mwe'
+        AssertionError
+            When trying to apply area change on a dataset where it's already applied
+        AssertionError
+            When trying to remove area change on a dataset where it's not already applied
         """
         if self.unit not in ["mwe", "m"]:
-            raise AssertionError("Area change should only applied to 'm' or 'mwe'.")
+            raise AssertionError("Area change should only be applied/removed to 'm' or 'mwe'.")
+        if self.area_change_applied and apply_change:
+            raise AssertionError("Area change is already applied to current dataset. Cannot be applied again.")
+        if not self.area_change_applied and not apply_change:
+            raise AssertionError("Area change is not applied to current dataset. Cannot be removed.")
+
         # get area
         if rgi_area_version == 6:
             glacier_area = self.region.rgi6_area
@@ -423,7 +444,7 @@ class Timeseries():
 
         object_copy = self.copy()
         # conversion with area change
-        area_chnage_reference_year = self.region.area_change_reference_year
+        area_change_reference_year = self.region.area_change_reference_year
         area_change = self.region.area_change
         adjusted_changes = []
         adjusted_areas = []
@@ -431,7 +452,7 @@ class Timeseries():
         df = self.data.as_dataframe()
         for start_date, end_date, change in zip(df["start_dates"], df["end_dates"], df["changes"]):
             t_i = (start_date + end_date) / 2
-            adjusted_area = glacier_area + (t_i - area_chnage_reference_year) * (area_change / 100) * glacier_area
+            adjusted_area = glacier_area + (t_i - area_change_reference_year) * (area_change / 100) * glacier_area
             if apply_change:
                 adjusted_changes.append(glacier_area / adjusted_area * change)
             else:  # remove change
@@ -442,6 +463,7 @@ class Timeseries():
         # area_unc is calculated as a % of the total area. % can be defined individually per region.
         # area_unc = area * self.region.area_uncertainty_percentage  # use individual glacier area unc
         object_copy.data.changes = np.array(adjusted_changes)
+        object_copy.area_change_applied = apply_change  # store if has been applied or not
         return object_copy
 
     def convert_timeseries_to_monthly_grid(self) -> Timeseries:

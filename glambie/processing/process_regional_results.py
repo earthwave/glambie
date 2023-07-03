@@ -80,7 +80,7 @@ def run_one_region(glambie_run_config: GlambieRunConfig,
         # save out with area change applied
         trend_combined.save_data_as_csv(output_path_handler.get_csv_output_file_path(
             region=trend_combined.region, data_group=data_group,
-            csv_file_name=f"{data_group}_final_with_area_change.csv"))
+            csv_file_name=f"{data_group.name}_final_with_area_change.csv"))
         result_datasets.append(trend_combined)
 
     result_catalogue = DataCatalogue.from_list(result_datasets, base_path=data_catalogue.base_path)

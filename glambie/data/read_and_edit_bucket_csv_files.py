@@ -41,7 +41,7 @@ def download_csvs_from_bucket(local_data_directory_path: str, region_prefix: str
     return downloaded_files
 
 
-def generate_results_dataframe(downloaded_files: list[str]) -> pd.DataFrame:
+def generate_results_dataframe(downloaded_files: list[str], local_path: str) -> pd.DataFrame:
     """
     Function to generate a dataframe sumamrising which of the files need editing, and what edits need to be made for
     these. Thought about doing the edits at the same time, but wanted to retain a record separate to the files
@@ -51,6 +51,8 @@ def generate_results_dataframe(downloaded_files: list[str]) -> pd.DataFrame:
     ----------
     downloaded_files : list[str]
         List of files that have been downloaded to the local directory.
+    local_data_directory_path : str
+        Path where local copies of bucket are saved.
 
     Returns
     -------
@@ -64,11 +66,12 @@ def generate_results_dataframe(downloaded_files: list[str]) -> pd.DataFrame:
 
     results_dataframe['date_check_satisfied'] = np.nan
     results_dataframe['nodata_check_satisfied'] = np.nan
+    results_dataframe['file_edited'] = False
 
     for file in downloaded_files:
         file_check_dataframe = check_glambie_submission_for_errors(file, results_dataframe)
 
-    file_check_dataframe.to_csv(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'record_of_edited_files.csv'))
+    file_check_dataframe.to_csv(os.path.join(local_path, 'record_of_edited_files.csv'))
 
     return file_check_dataframe
 
@@ -98,7 +101,7 @@ def check_glambie_submission_for_errors(csv_file_path: str, file_check_dataframe
     pd.DataFrame
         Dataframe containing input dataframe updated with the results of the checks for one file.
     """
-
+    print(os.path.basename(csv_file_path))
     submission_data_frame = pd.read_csv(csv_file_path)
 
     # First, check for any non equal end_dates and subsequent start_dates
@@ -122,9 +125,9 @@ def check_glambie_submission_for_errors(csv_file_path: str, file_check_dataframe
     # depending on the units used.
     change_values = submission_data_frame.glacier_change_observed.values
 
-    if submission_data_frame.unit.values.__contains__('m' or 'mwe'):
+    if 'm' in submission_data_frame.unit.values[0]:  # check if units are m or mwe
         nodata_check_bool = all(abs(i) < 100 for i in change_values)  # check that all changes in list are < +/-100
-    elif submission_data_frame.unit.values.__contains__('Gt'):
+    elif 'Gt' in submission_data_frame.unit.values[0]:  # check if units are Gt
         nodata_check_bool = all(abs(i) < 10000 for i in change_values)
 
     # If all rows passed the date check above, we store date_check_satisfied = True for this file: don't need to edit it
@@ -138,7 +141,7 @@ def check_glambie_submission_for_errors(csv_file_path: str, file_check_dataframe
     return file_check_dataframe
 
 
-def edit_local_copies_of_glambie_csvs(file_check_dataframe: pd.DataFrame):
+def edit_local_copies_of_glambie_csvs(file_check_dataframe: pd.DataFrame) -> pd.DataFrame:
     """
     Function to edit the local copies of glambie csvs that didn't pass the checks run by
     check_glambie_submission_for_errors. Save out updated copies to the same local filepath.
@@ -169,6 +172,9 @@ def edit_local_copies_of_glambie_csvs(file_check_dataframe: pd.DataFrame):
                                  for a in submission_data_frame.end_date]
                 submission_data_frame.end_date = [datetime.strftime(a, '%d/%m/%Y') for a in new_end_dates]
                 submission_data_frame.to_csv(file.local_filepath)  # write to same file as original
+                # Record that the file has been edited
+                file_check_dataframe.loc[file_check_dataframe.local_filepath.__eq__(
+                    file.local_filepath), 'file_edited'] = True
             else:
                 # come up with better solution for storing this message
                 print('{}: Issue with dates is more complex than a uniform gap - '
@@ -177,23 +183,29 @@ def edit_local_copies_of_glambie_csvs(file_check_dataframe: pd.DataFrame):
         if not file.nodata_check_satisfied:
             submission_data_frame = pd.read_csv(file.local_filepath)
 
-            if file.unit.values.__contains__('m' or 'mwe'):
+            if 'm' in submission_data_frame.unit.values[0]:
                 # delete rows with change values > +/-100 - these numbers need some thought
                 submission_data_frame.drop(submission_data_frame[abs(
                     submission_data_frame.glacier_change_observed) > 100].index, inplace=True)
-            elif file.unit.values.__contains__('Gt'):
+            elif 'Gt' in submission_data_frame.unit.values[0]:
                 # delete rows with change values > +/-10000
                 submission_data_frame.drop(submission_data_frame[abs(
                     submission_data_frame.glacier_change_observed) > 10000].index, inplace=True)
 
             submission_data_frame.to_csv(file.local_filepath)
+            # Record that the file has been edited
+            file_check_dataframe.loc[file_check_dataframe.local_filepath.__eq__(
+                file.local_filepath), 'file_edited'] = True
+
+    return file_check_dataframe
 
 
 def main():
 
+    local_path = '/path/to/local/folder'
     # If you want to download files for a specific region, set the region_prefix and supply here
-    downloaded_files = download_csvs_from_bucket('/path/to/local/folder', region_prefix=None)
-    gdf = generate_results_dataframe(downloaded_files)
+    downloaded_files = download_csvs_from_bucket(local_path, region_prefix=None)
+    gdf = generate_results_dataframe(downloaded_files, local_path)
     edit_local_copies_of_glambie_csvs(gdf)
 
     # Final step that needs to be implemented here is to upload the edited files into the bucket, after copying the

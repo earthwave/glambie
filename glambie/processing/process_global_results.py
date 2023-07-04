@@ -99,7 +99,7 @@ def _homogenize_regional_results_to_calendar_year(glambie_run_config: GlambieRun
 def _combine_regional_results_into_global(regional_results_catalogue: DataCatalogue) -> Timeseries:
     """
     Combines all regional results into one global timeseries.
-    Assumes that timeseries are all in same grid and resolution temporally (e.g. calendar year).
+    Assumes that timeseries are all in same grid and resolution temporally (e.g. calendar year) and of unit mwe.
 
     Parameters
     ----------
@@ -109,19 +109,21 @@ def _combine_regional_results_into_global(regional_results_catalogue: DataCatalo
     Returns
     -------
     Timeseries
-        Global timeseries
+        Globally aggregated timeseries
     """
-    # TODO: need to adapt error propagation in this
     assert regional_results_catalogue.datasets_are_same_unit()
     assert regional_results_catalogue.datasets[0].unit == "mwe"
 
     # merge all dataframes
     catalogue_dfs = [ds.data.as_dataframe() for ds in regional_results_catalogue.datasets]
+    # calculate global area for weighted mean
     total_area = np.sum([ds.region.rgi6_area for ds in regional_results_catalogue.datasets])
 
-    # multiply with area
+    # multiply changes and errors with area for each region
     for _, (df, ds) in enumerate(zip(catalogue_dfs, regional_results_catalogue.datasets)):
-        df["changes"] = df["changes"] * ds.region.rgi6_area
+        df["changes"] = (df["changes"] * ds.region.rgi6_area)
+        # apply weighted mean error propagation
+        df["errors"] = (df["errors"] * ds.region.rgi6_area)**2
         # ds.data.errors = ds.data.changes * ds.region.rgi6_area
     # calculate weighted mean
     df = reduce(lambda left, right: left.merge(right, how="outer", on=["start_dates", "end_dates"]), catalogue_dfs)
@@ -130,14 +132,15 @@ def _combine_regional_results_into_global(regional_results_catalogue: DataCatalo
     mean_changes = np.array(df[df.columns.intersection(
         df.filter(regex=("changes*")).columns.to_list())].sum(axis=1)) / total_area
 
-    # TODO: implement error propagation
-    uncertainties = np.zeros(len(mean_changes))
+    # apply square root to errors and divide by total area
+    mean_uncertainties = np.sqrt(np.array(df[df.columns.intersection(
+        df.filter(regex=("errors*")).columns.to_list())].sum(axis=1))) / total_area
 
-    # make Timeseries object with combined solution
+    # make timeseries object with combined solution
     ts_data = TimeseriesData(start_dates=np.array(start_dates),
                              end_dates=np.array(end_dates),
                              changes=np.array(mean_changes),
-                             errors=np.array(uncertainties),
+                             errors=np.array(mean_uncertainties),
                              glacier_area_reference=None,
                              glacier_area_observed=None)
     # use this as a reference for filling metadata

@@ -47,13 +47,12 @@ def test_combine_regional_results_into_global(example_catalogue):
     assert np.array_equal(expected_result, combined_result.data.changes)
 
 
-# def test_combine_regional_results_into_global_errors(example_catalogue):
-#     combined_result = _combine_regional_results_into_global(regional_results_catalogue=example_catalogue)
-#     dataset1 = example_catalogue.datasets[0]
-#     dataset2 = example_catalogue.datasets[1]
-#     expected_changes = (dataset1.data.changes * dataset1.region.rgi6_area
-#                         + dataset2.data.changes * dataset2.region.rgi6_area) / (
-#         dataset1.region.rgi6_area + dataset2.region.rgi6_area)
-#     s_global = dataset1.region.rgi6_area + dataset2.region.rgi6_area
-#     #expected_errors = (dataset1.data.errors /)
-#     assert np.array_equal(expected_changes, combined_result.data.changes)
+def test_combine_regional_results_into_global_errors(example_catalogue):
+    combined_result = _combine_regional_results_into_global(regional_results_catalogue=example_catalogue)
+    dataset1 = example_catalogue.datasets[0]
+    dataset2 = example_catalogue.datasets[1]
+    total_area = dataset1.region.rgi6_area + dataset2.region.rgi6_area
+    # rules of weighted mean error propagation
+    expected_errors = np.sqrt((dataset1.data.errors**2 * dataset1.region.rgi6_area**2)
+                              + (dataset2.data.errors**2 * dataset2.region.rgi6_area**2)) / total_area
+    assert np.array_equal(expected_errors, combined_result.data.errors)

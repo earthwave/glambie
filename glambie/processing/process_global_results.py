@@ -2,12 +2,15 @@ import logging
 from glambie.config.config_classes import GlambieRunConfig
 from glambie.const.regions import REGIONS
 from glambie.data.data_catalogue import DataCatalogue
-from glambie.data.timeseries import Timeseries
+from glambie.data.timeseries import Timeseries, TimeseriesData
 from glambie.const.constants import YearType
 from glambie.processing.path_handling import OutputPathHandler
 from glambie.processing.processing_helpers import prepare_seasonal_calibration_dataset
 from glambie.const.data_groups import GLAMBIE_DATA_GROUPS
 from glambie.plot.processing_plots import plot_combination_of_regions_to_global
+import numpy as np
+from functools import reduce
+
 
 log = logging.getLogger(__name__)
 
@@ -108,30 +111,37 @@ def _combine_regional_results_into_global(regional_results_catalogue: DataCatalo
     Timeseries
         Global timeseries
     """
-
     # TODO: need to adapt error propagation in this
-
     assert regional_results_catalogue.datasets_are_same_unit()
     assert regional_results_catalogue.datasets[0].unit == "mwe"
 
-    # Multiply by area to calculate area weighted mean
-    regional_results_catalogue = regional_results_catalogue.copy()  # make sure we dont edit existing datasets
-    total_area = 0
-    for ds in regional_results_catalogue.datasets:
-        ds.data.changes = ds.data.changes * ds.region.rgi6_area
-        ds.data.errors = ds.data.changes * ds.region.rgi6_area
-        total_area = total_area + ds.region.rgi6_area
+    # merge all dataframes
+    catalogue_dfs = [ds.data.as_dataframe() for ds in regional_results_catalogue.datasets]
+    total_area = np.sum([ds.region.rgi6_area for ds in regional_results_catalogue.datasets])
 
-    # combine all regions into global
-    combined_ts, _ = regional_results_catalogue.average_timeseries_in_catalogue(remove_trend=True,
-                                                                                add_trend_after_averaging=True,
-                                                                                out_data_group=GLAMBIE_DATA_GROUPS[
-                                                                                    "consensus"])
-    # divide by area
-    combined_ts.data.changes = combined_ts.data.changes / (total_area / len(regional_results_catalogue.datasets))
-    # PLACEHOLDER FOR ERROR CALC FOR NOW
-    combined_ts.data.errors = combined_ts.data.errors * 0
+    # multiply with area
+    for _, (df, ds) in enumerate(zip(catalogue_dfs, regional_results_catalogue.datasets)):
+        df["changes"] = df["changes"] * ds.region.rgi6_area
+        # ds.data.errors = ds.data.changes * ds.region.rgi6_area
+    # calculate weighted mean
+    df = reduce(lambda left, right: left.merge(right, how="outer", on=["start_dates", "end_dates"]), catalogue_dfs)
+    df = df.sort_values(by="start_dates")
+    start_dates, end_dates = np.array(df["start_dates"]), np.array(df["end_dates"])
+    mean_changes = np.array(df[df.columns.intersection(
+        df.filter(regex=("changes*")).columns.to_list())].sum(axis=1)) / total_area
 
-    combined_ts.region = REGIONS["global"]
+    # TODO: implement error propagation
+    uncertainties = np.zeros(len(mean_changes))
 
-    return combined_ts
+    # make Timeseries object with combined solution
+    ts_data = TimeseriesData(start_dates=np.array(start_dates),
+                             end_dates=np.array(end_dates),
+                             changes=np.array(mean_changes),
+                             errors=np.array(uncertainties),
+                             glacier_area_reference=None,
+                             glacier_area_observed=None)
+    # use this as a reference for filling metadata
+    reference_dataset_for_metadata = regional_results_catalogue.datasets[0]
+
+    return Timeseries(region=REGIONS["global"], data_group=GLAMBIE_DATA_GROUPS["consensus"],
+                      data=ts_data, unit=reference_dataset_for_metadata.unit)

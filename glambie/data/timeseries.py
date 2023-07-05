@@ -170,6 +170,8 @@ class Timeseries():
         unit : str, optional
             unit the timeseries is in, e.g. m, mwe or gt, by default None
         area_change_applied: bool, optional
+            A parameter storing if a timeseries rate has been converted using varying glacier area, which assumes
+            that the glacier area is not static over time.
             If set to False, area change has not been applied yet, if set to True it has been applied, by default True
         """
         self.user = user

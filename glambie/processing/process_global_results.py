@@ -120,12 +120,12 @@ def _combine_regional_results_into_global(regional_results_catalogue: DataCatalo
     total_area = np.sum([ds.region.rgi6_area for ds in regional_results_catalogue.datasets])
 
     # multiply changes and errors with area for each region
-    for _, (df, ds) in enumerate(zip(catalogue_dfs, regional_results_catalogue.datasets)):
+    for df, ds in zip(catalogue_dfs, regional_results_catalogue.datasets):
         df["changes"] = (df["changes"] * ds.region.rgi6_area)
         # apply weighted mean error propagation
         df["errors"] = (df["errors"] * ds.region.rgi6_area)**2
-        # ds.data.errors = ds.data.changes * ds.region.rgi6_area
     # calculate weighted mean
+    # join all catalogues by start and end dates. The resulting dataframe has a set of columns with repeating prefixes
     df = reduce(lambda left, right: left.merge(right, how="outer", on=["start_dates", "end_dates"]), catalogue_dfs)
     df = df.sort_values(by="start_dates")
     start_dates, end_dates = np.array(df["start_dates"]), np.array(df["end_dates"])
@@ -137,10 +137,10 @@ def _combine_regional_results_into_global(regional_results_catalogue: DataCatalo
         df.filter(regex=("errors*")).columns.to_list())].sum(axis=1))) / total_area
 
     # make timeseries object with combined solution
-    ts_data = TimeseriesData(start_dates=np.array(start_dates),
-                             end_dates=np.array(end_dates),
-                             changes=np.array(mean_changes),
-                             errors=np.array(mean_uncertainties),
+    ts_data = TimeseriesData(start_dates=start_dates,
+                             end_dates=end_dates,
+                             changes=mean_changes,
+                             errors=mean_uncertainties,
                              glacier_area_reference=None,
                              glacier_area_observed=None)
     # use this as a reference for filling metadata

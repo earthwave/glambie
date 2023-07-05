@@ -46,7 +46,7 @@ def example_catalogue_small():
         }]})
 
 
-def test_data_catalogue_can_be_initiated(example_catalogue):
+def test_data_catalogue_can_be_instantiated(example_catalogue):
     assert example_catalogue is not None
 
 
@@ -94,6 +94,10 @@ def test_as_dataframe(example_catalogue):
 def test_data_catalogue_from_file():
     catalogue = DataCatalogue.from_json_file(os.path.join('tests', 'test_data', 'datastore', 'meta.json'))
     assert len(catalogue.datasets) == 4
+
+
+def test_data_catalogue_from_submission_system():
+    pytest.fail('not yet implemented')
 
 
 def test_data_catalogue_regions(example_catalogue):

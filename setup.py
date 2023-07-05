@@ -32,9 +32,11 @@ setup(
     # in order to allow pip to resolve multiple installed packages properly.
     # requirements.txt should contain a specific known working version instead.
     install_requires=[
+        'google-cloud-storage',
         'numpy>1.15',
         'pandas>1.2',
         'matplotlib>3.0',
         'scipy>1.6',
+        'pyyaml'
     ],
 )

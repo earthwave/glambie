@@ -7,6 +7,8 @@ class GlambieDataGroup():
     long_name: str  # might add some more here later
 
 
+# Note that these are related to but are not exactly the same as
+# the "Observational Sources" within ew_glambie_data_cleaner.
 GLAMBIE_DATA_GROUPS = {
     'altimetry': GlambieDataGroup(name='altimetry', long_name='Altimetry'),
     'demdiff': GlambieDataGroup(name='demdiff', long_name='DEM differencing'),

@@ -6,9 +6,11 @@ from typing import Tuple
 import warnings
 
 from glambie.const.data_groups import GLAMBIE_DATA_GROUPS, GlambieDataGroup
-from glambie.const.regions import REGIONS
+from glambie.const.regions import REGIONS, REGIONS_BY_SHORT_NAME
 from glambie.const.regions import RGIRegion
 from glambie.data.timeseries import Timeseries, TimeseriesData
+from glambie.data.submission_system_interface import (
+    fetch_all_submission_metadata, fetch_timeseries_dataframe, SUBMISSION_SYSTEM_FLAG)
 import pandas as pd
 import numpy as np
 import copy
@@ -17,13 +19,47 @@ from functools import reduce
 
 class DataCatalogue():
     """Class containing a catalogue of datasets
-
-    This only contains metadata - all actual data loaded by client.
     """
 
     def __init__(self, base_path: str, datasets: list[Timeseries]):
         self._base_path = base_path
         self._datasets = datasets
+
+    @staticmethod
+    def from_glambie_submission_system() -> DataCatalogue:
+        """
+        Loads a catalogue from the GlaMBIE submission system.
+
+        Where a submission does not have an RGI Version
+        (because we introduced this requirement partway through the process), we substitute 6.0.
+
+        To get the unit, we need to load the file and check.
+
+        Returns
+        -------
+        DataCatalogue
+            data catalogue containing the metadata of datasets, the actual timeseries data will be lazily loaded
+        """
+        submission_system_metadata = fetch_all_submission_metadata()
+
+        datasets = []
+        for metadata in submission_system_metadata:
+            datasets.append(
+                Timeseries(
+                    region=REGIONS_BY_SHORT_NAME[metadata['region'].upper()],
+                    data_group=GLAMBIE_DATA_GROUPS[
+                        metadata['observational_source'].replace('dem_differencing', 'demdiff')],
+                    data_filepath=SUBMISSION_SYSTEM_FLAG,
+                    user=metadata['lead_author_name'],
+                    user_group=metadata['user_group'],
+                    rgi_version=metadata.get('rgi_version_select', '6.0')))
+
+            data = fetch_timeseries_dataframe(
+                datasets[-1].user_group, datasets[-1].region, datasets[-1].data_group)
+            datasets[-1].unit = data['unit'].iloc[0]
+
+        return DataCatalogue(SUBMISSION_SYSTEM_FLAG, datasets)
+
 
     @staticmethod
     def from_json_file(metadata_file_path: str) -> DataCatalogue:
@@ -38,7 +74,7 @@ class DataCatalogue():
         Returns
         -------
         DataCatalogue
-            data catalogue containing the metadata of datasets, the actual timeseries data will lazy loaded
+            data catalogue containing the metadata of datasets, the actual timeseries data will be lazily loaded
         """
         with open(metadata_file_path) as json_file:
             return DataCatalogue.from_dict(json.load(json_file))
@@ -56,7 +92,7 @@ class DataCatalogue():
         Returns
         -------
         DataCatalogue
-            data catalogue containing the metadata of datasets, the actual timeseries data will lazy loaded
+            data catalogue containing the metadata of datasets, the actual timeseries data will be lazily loaded
         """
         base_path = os.path.join(*meta_data_dict['base_path'])
         datasets_dict = meta_data_dict['datasets']

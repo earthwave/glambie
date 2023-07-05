@@ -21,7 +21,7 @@ from glambie.const.regions import RGIRegion
 _storage_client = storage.Client(project='glambie')
 
 _SUBMISSIONS_BUCKET_URI = 'gs://glambie-submissions'
-SUBMISSION_SYSTEM_FLAG = 'use_submission_system'
+SUBMISSION_SYSTEM_FLAG = 'glambie_submission_system'
 
 
 def fetch_timeseries_dataframe(user_group: str, region: RGIRegion, data_group: GlambieDataGroup) -> pd.DataFrame:

@@ -54,12 +54,19 @@ class DataCatalogue():
                     user_group=metadata['user_group'],
                     rgi_version=metadata.get('rgi_version_select', '6.0')))
 
+            # we need to load the data anyway to get the unit, so may as well keep it loaded.
             data = fetch_timeseries_dataframe(
                 datasets[-1].user_group, datasets[-1].region, datasets[-1].data_group)
             datasets[-1].unit = data['unit'].iloc[0]
+            datasets[-1].data = TimeseriesData(
+                start_dates=np.array(data['start_date_fractional']),
+                end_dates=np.array(data['end_date_fractional']),
+                changes=np.array(data['glacier_change_observed']),
+                errors=np.array(data['glacier_change_uncertainty']),
+                glacier_area_reference=np.array(data['glacier_area_reference']),
+                glacier_area_observed=np.array(data['glacier_area_observed']))
 
         return DataCatalogue(SUBMISSION_SYSTEM_FLAG, datasets)
-
 
     @staticmethod
     def from_json_file(metadata_file_path: str) -> DataCatalogue:

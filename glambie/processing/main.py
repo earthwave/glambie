@@ -1,6 +1,7 @@
 import logging
 from glambie.config.config_classes import GlambieRunConfig
 from glambie.data.data_catalogue import DataCatalogue
+from glambie.data.submission_system_interface import SUBMISSION_SYSTEM_FLAG
 from glambie.processing.process_regional_results import run_one_region, combine_within_one_region
 from glambie.processing.path_handling import OutputPathHandler
 from glambie.processing.process_global_results import run_global_results
@@ -77,13 +78,13 @@ def _run_regional_results(glambie_run_config: GlambieRunConfig,
     return catalogue_combined_regional_results, catalogue_data_group_results_per_region
 
 
-def _load_catalogue_and_data(data_catalogue_json_file_path: str) -> DataCatalogue:
+def _load_catalogue_and_data(data_catalogue_path: str) -> DataCatalogue:
     """
-    Loads data catalogue and reads all data from a json file path
+    Loads data catalogue and reads all data from a file path, or the submission system.
 
     Parameters
     ----------
-    data_catalogue_json_file_path : str
+    data_catalogue_path : str
         absolute file path to database metadata file
 
     Returns
@@ -92,6 +93,9 @@ def _load_catalogue_and_data(data_catalogue_json_file_path: str) -> DataCatalogu
         Data Catalogue with all data loaded
     """
     # read catalogue
-    catalogue_original = DataCatalogue.from_json_file(data_catalogue_json_file_path)
-    catalogue_original.load_all_data()
-    return catalogue_original
+    if data_catalogue_path == SUBMISSION_SYSTEM_FLAG:
+        catalogue = DataCatalogue.from_glambie_submission_system()
+    else:
+        catalogue = DataCatalogue.from_json_file(data_catalogue_path)
+    catalogue.load_all_data()
+    return catalogue

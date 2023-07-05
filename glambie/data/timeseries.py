@@ -363,10 +363,10 @@ class Timeseries():
         NotImplementedError
             For units to be converted that are not implemented yet
         AssertionError
-            When area_change_applied is True. Varying glacier area should only be applied to specific changes (meters
-            or meters water equivalent) and this should be removed before convertin to Gigatonnes as we are using
-            a constant ar
-            as it will give incorrect values when converting to Gigatonnes.
+            When area_change_applied is True. 
+            Varying glacier area should only be applied to specific changes (meters or meters water equivalent)
+            and should be removed before converting to Gigatonnes as we are using a constant area when converting 
+            to Gigatonnes. For more information refer to the GlaMBIE algorithm description document section 4.3.
         """
         if self.area_change_applied:
             raise AssertionError("Cannot convert dataset to Gt. Area change needs to be removed first.")

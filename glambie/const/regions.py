@@ -10,7 +10,7 @@ class RGIRegion():
     rgi6_area: float
     rgi7_area: float
     area_uncertainty_percentage: float  # area uncertainty would be area_uncertainty_percentage * area
-    area_change: float  # glacier are change rate for a region (per year)
+    area_change: float  # glacier area change rate for a region (per year)
     area_change_reference_year: int  # reference year of the change rate, i.e. the year when the RGI area was correct
     glaciological_year_start: float  # decimal of when the glaciological year starts, e.g. 0.75 would be October
 

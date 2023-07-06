@@ -41,14 +41,16 @@ class TimeseriesData():
     For more information check the GlaMBIE Assessment Framework,
     or the data submission instructions on the GlaMBIE website.
     """
-    start_dates: np.ndarray  # start date of change observed
-    end_dates: np.ndarray  # end date of change observed
-    changes: np.ndarray  # change observed between start and end date
-    errors: np.ndarray  # errors of observed change
+    start_dates: np.ndarray  # start date of change observed.
+    end_dates: np.ndarray  # end date of change observed.
+    changes: np.ndarray  # change observed between start and end date.
+    errors: np.ndarray  # errors of observed change.
     # Area of region taken from a reference glacier mask: e.g. Randolph Glacier Inventory v6.0 or v7.0.
     glacier_area_reference: np.ndarray
     # Area of region supplied alongside the timeseries data, a measurement made by the data provider.
     glacier_area_observed: np.ndarray
+    hydrological_correction_value: np.ndarray  # A correction value used specifically for gravimetry.
+    remarks: np.ndarray  # An extra column for per-timeseries string comments.
 
     @property
     def min_start_date(self) -> float:
@@ -93,11 +95,13 @@ class TimeseriesData():
 
     def as_dataframe(self):
         return pd.DataFrame({'start_dates': self.start_dates,
-                            'end_dates': self.end_dates,
+                             'end_dates': self.end_dates,
                              'changes': self.changes,
                              'errors': self.errors,
                              'glacier_area_reference': self.glacier_area_reference,
-                             'glacier_area_observed': self.glacier_area_observed
+                             'glacier_area_observed': self.glacier_area_observed,
+                             'hydrological_correction_value': self.hydrological_correction_value,
+                             'remarks': self.remarks
                              })
 
     def as_cumulative_timeseries(self) -> pd.DataFrame:
@@ -143,7 +147,7 @@ class Timeseries():
 
     def __init__(self, region: RGIRegion = None, data_group: GlambieDataGroup = None, data_filepath: str = None,
                  data: TimeseriesData = None, user: str = None, user_group: str = None,
-                 rgi_version: int = None, unit: str = None):
+                 rgi_version: int = None, unit: str = None, additional_metadata: dict = None):
         """
         Class containing meta data and data from of an individual timeseries.
 
@@ -170,6 +174,8 @@ class Timeseries():
             which version of rgi has been used, e.g. 6 or 7, by default None
         unit : str, optional
             unit the timeseries is in, e.g. m, mwe or gt, by default None
+        additional_metadata : dict, optional
+            additional metadata fields collected by the submission system, but not directly used within the study.
         """
         self.user = user
         self.user_group = user_group
@@ -179,6 +185,7 @@ class Timeseries():
         self.unit = unit
         self.data_filepath = data_filepath
         self.data = data
+        self.additional_metadata = additional_metadata
         if self.data is not None:
             self.is_data_loaded = True
 
@@ -192,33 +199,41 @@ class Timeseries():
         else:
             data = pd.read_csv(self.data_filepath)
 
-        self.data = TimeseriesData(start_dates=np.array(data['start_date_fractional']),
-                                   end_dates=np.array(data['end_date_fractional']),
-                                   changes=np.array(data['glacier_change_observed']),
-                                   errors=np.array(data['glacier_change_uncertainty']),
-                                   glacier_area_reference=np.array(data['glacier_area_reference']),
-                                   glacier_area_observed=np.array(data['glacier_area_observed']))
+        self.data = TimeseriesData(
+            start_dates=np.array(data['start_date_fractional']),
+            end_dates=np.array(data['end_date_fractional']),
+            changes=np.array(data['glacier_change_observed']),
+            errors=np.array(data['glacier_change_uncertainty']),
+            glacier_area_reference=np.array(data['glacier_area_reference']),
+            glacier_area_observed=np.array(data['glacier_area_observed']),
+            hydrological_correction_value=(
+                np.array(data['hydrological_correction_value'])
+                if 'hydrological_correction_value' in data.columns else None),
+            remarks=(
+                np.array(data['remarks'])
+                if 'remarks' in data.columns else None))
         self.is_data_loaded = True
         return self.data
 
     def metadata_as_dataframe(self) -> pd.DataFrame:
         """
-        Returns meta data for a timeseries dataset as a dataframe
+        Returns meta data for a timeseries dataset as a dataframe.
 
         Returns
         -------
         pd.DataFrame
             Dataframe containing dataset meta data
         """
-        region = self.region.name if self.region is not None else None
-        data_group = self.data_group.name if self.data_group is not None else None
-        return pd.DataFrame({'data_group': data_group,
-                             'region': region,
-                             'user': self.user,
-                             'user_group': self.user_group,
-                             'rgi_version': self.rgi_version,
-                             'unit': self.unit
-                             }, index=[0])
+        metadata_dict = {
+            'data_group': getattr(self.data_group, 'name', None),
+            'region': getattr(self.region, 'name', None),
+            'user': self.user,
+            'user_group': self.user_group,
+            'rgi_version': self.rgi_version,
+            'unit': self.unit
+        }
+        metadata_dict.update(self.additional_metadata)
+        return pd.DataFrame(metadata_dict, index=[0])
 
     def timeseries_is_monthly_grid(self):
         """
@@ -470,8 +485,11 @@ class Timeseries():
                 object_copy.data = TimeseriesData(start_dates=np.array(start_dates),
                                                   end_dates=np.array(end_dates),
                                                   changes=np.array(changes),
-                                                  errors=np.array(errors), glacier_area_observed=None,
-                                                  glacier_area_reference=None)
+                                                  errors=np.array(errors),
+                                                  glacier_area_observed=None,
+                                                  glacier_area_reference=None,
+                                                  hydrological_correction_value=None,
+                                                  remarks=None)
 
         return object_copy  # return copy of itself
 
@@ -579,7 +597,9 @@ class Timeseries():
                                           end_dates=np.array(trend["end_dates"]),
                                           changes=np.array(trend["changes"]),
                                           errors=np.array([trend_errors]), glacier_area_observed=None,
-                                          glacier_area_reference=None)
+                                          glacier_area_reference=None,
+                                          hydrological_correction_value=None,
+                                          remarks=None)
 
         return object_copy  # return copy of itself
 

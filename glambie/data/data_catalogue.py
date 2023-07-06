@@ -44,6 +44,11 @@ class DataCatalogue():
 
         datasets = []
         for metadata in submission_system_metadata:
+            # create a reduced dict that only contains the metadata fields that this repo does not directly use.
+            additional_metadata = {
+                k: v for k, v in metadata.items() if k not in [
+                    'region', 'observational_source', 'lead_author_name', 'user_group', 'rgi_version_select']}
+
             datasets.append(
                 Timeseries(
                     region=REGIONS_BY_SHORT_NAME[metadata['region'].upper()],
@@ -52,7 +57,8 @@ class DataCatalogue():
                     data_filepath=SUBMISSION_SYSTEM_FLAG,
                     user=metadata['lead_author_name'],
                     user_group=metadata['user_group'],
-                    rgi_version=metadata.get('rgi_version_select', '6.0')))
+                    rgi_version=metadata.get('rgi_version_select', '6.0'),
+                    additional_metadata=additional_metadata))
 
             # we need to load the data anyway to get the unit, so may as well keep it loaded.
             data = fetch_timeseries_dataframe(
@@ -64,7 +70,11 @@ class DataCatalogue():
                 changes=np.array(data['glacier_change_observed']),
                 errors=np.array(data['glacier_change_uncertainty']),
                 glacier_area_reference=np.array(data['glacier_area_reference']),
-                glacier_area_observed=np.array(data['glacier_area_observed']))
+                glacier_area_observed=np.array(data['glacier_area_observed']),
+                hydrological_correction_value=(
+                    np.array(data['hydrological_correction_value'])
+                    if 'hydrological_correction_value' in data.columns else None),
+                remarks=np.array(data['remarks']))
 
         return DataCatalogue(SUBMISSION_SYSTEM_FLAG, datasets)
 
@@ -307,7 +317,9 @@ class DataCatalogue():
                                  changes=np.array(df_mean_annual["changes"]),
                                  errors=np.array(df_mean_annual["errors"]),
                                  glacier_area_reference=None,
-                                 glacier_area_observed=None)
+                                 glacier_area_observed=None,
+                                 hydrological_correction_value=None,
+                                 remarks=None)
         reference_dataset_for_metadata = self.datasets[0]  # use this as a reference for filling metadata
 
         return Timeseries(region=reference_dataset_for_metadata.region, data_group=out_data_group,

@@ -19,7 +19,8 @@ def example_timeseries():
     ts = Timeseries(rgi_version=6,
                     unit='m',
                     data_group=GLAMBIE_DATA_GROUPS['demdiff'],
-                    data_filepath=os.path.join("tests", "test_data", "datastore", "central_asia_demdiff_sharks.csv"))
+                    data_filepath=os.path.join("tests", "test_data", "datastore", "central_asia_demdiff_sharks.csv"),
+                    additional_metadata={'toves': 'slithy', 'mome raths': 'outgrabe'})
     return ts
 
 
@@ -30,7 +31,9 @@ def example_timeseries_ingested():
                           changes=np.array([2., 5.]),
                           errors=np.array([1., 1.2]),
                           glacier_area_reference=np.array([10000, 10000]),
-                          glacier_area_observed=np.array([10000, 10000]))
+                          glacier_area_observed=np.array([10000, 10000]),
+                          hydrological_correction_value=None,
+                          remarks=np.array(['thunder', 'lightning']))
     ts = Timeseries(rgi_version=6,
                     unit='m',
                     data_group=GLAMBIE_DATA_GROUPS['demdiff'],

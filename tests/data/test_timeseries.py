@@ -42,6 +42,18 @@ def example_timeseries_ingested():
     return ts
 
 
+def test_save_as_csv(example_timeseries_ingested):
+    out_csv_path = os.path.join("tests", "test_data", "datastore", "out_csv_test.csv")
+    example_timeseries_ingested.save_data_as_csv(out_csv_path)
+    assert os.path.exists(out_csv_path)
+    df = pd.read_csv(out_csv_path)
+    # check data read from CSV is same as TimeseriesData
+    for column in df:
+        assert np.array_equal(np.array(df[column]), np.array(example_timeseries_ingested.data.as_dataframe()[column]))
+    # tear down
+    os.remove(out_csv_path)
+
+
 def test_data_ingestion(example_timeseries_ingested):
     assert example_timeseries_ingested.data.start_dates is not None
     assert example_timeseries_ingested.is_data_loaded
@@ -362,6 +374,7 @@ def test_apply_area_change(example_timeseries_ingested):
     timeseries_area_change = example_timeseries_ingested.apply_area_change(rgi_area_version=6, apply_change=True)
     assert not np.array_equal(example_timeseries_ingested.data.changes, np.array(timeseries_area_change.data.changes))
     assert timeseries_area_change.data.changes[-1] > 5.0
+    assert timeseries_area_change.area_change_applied
 
 
 def test_apply_area_change_convert_to_gt_equals_same(example_timeseries_ingested):
@@ -387,9 +400,29 @@ def test_apply_area_change_and_remove(example_timeseries_ingested):
     timeseries_area_change_removed = timeseries_area_change.apply_area_change(rgi_area_version=6, apply_change=False)
     assert np.array_equal(example_timeseries_ingested.data.changes,
                           np.array(timeseries_area_change_removed.data.changes))
+    assert timeseries_area_change.area_change_applied
+    assert not timeseries_area_change_removed.area_change_applied
 
 
 def test_apply_area_change_and_wrong_unit(example_timeseries_ingested):
     example_timeseries_ingested.unit = "gt"
     with pytest.raises(AssertionError):
         example_timeseries_ingested.apply_area_change(rgi_area_version=6, apply_change=True)
+
+
+def test_apply_area_change_when_already_applied(example_timeseries_ingested):
+    timeseries_area_change = example_timeseries_ingested.apply_area_change(rgi_area_version=6, apply_change=True)
+    with pytest.raises(AssertionError):
+        timeseries_area_change.apply_area_change(rgi_area_version=6, apply_change=True)
+
+
+def test_remove_area_change_when_already_removed(example_timeseries_ingested):
+    assert not example_timeseries_ingested.area_change_applied
+    with pytest.raises(AssertionError):
+        example_timeseries_ingested.apply_area_change(rgi_area_version=6, apply_change=False)
+
+
+def test_raises_assertion_error_when_converting_to_gt_with_area_change_applied(example_timeseries_ingested):
+    timeseries_area_change = example_timeseries_ingested.apply_area_change(rgi_area_version=6, apply_change=True)
+    with pytest.raises(AssertionError):
+        timeseries_area_change.convert_timeseries_to_unit_gt()

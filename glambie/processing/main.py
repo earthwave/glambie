@@ -22,6 +22,11 @@ def run_glambie_assessment(glambie_run_config: GlambieRunConfig,
     output_path_handler : OutputPathHandler
         Run output handler. If None, no plots/csvs etc. will be saved out.
     """
+    # save out configs
+    if output_path_handler is not None:
+        glambie_run_config.save_to_yaml(output_path_handler.get_config_output_folder_path())
+
+    # load catalogue
     data_catalogue_original = _load_catalogue_and_data(glambie_run_config.catalogue_path)
 
     # run regional results

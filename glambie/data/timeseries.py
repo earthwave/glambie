@@ -154,7 +154,8 @@ class Timeseries():
 
     def __init__(self, region: RGIRegion = None, data_group: GlambieDataGroup = None, data_filepath: str = None,
                  data: TimeseriesData = None, user: str = None, user_group: str = None,
-                 rgi_version: int = None, unit: str = None, additional_metadata: dict = None):
+                 rgi_version: int = None, unit: str = None, additional_metadata: dict = None,
+                 area_change_applied: bool = False):
         """
         Class containing meta data and data from of an individual timeseries.
 
@@ -183,6 +184,10 @@ class Timeseries():
             unit the timeseries is in, e.g. m, mwe or gt, by default None
         additional_metadata : dict, optional
             additional metadata fields collected by the submission system, but not directly used within the study.
+        area_change_applied: bool, optional
+            A parameter storing if a timeseries rate has been converted using varying glacier area, which assumes
+            that the glacier area is not static over time.
+            If set to False, area change has not been applied yet, if set to True it has been applied, by default True
         """
         self.user = user
         self.user_group = user_group
@@ -195,6 +200,7 @@ class Timeseries():
         self.additional_metadata = additional_metadata
         if self.data is not None:
             self.is_data_loaded = True
+        self.area_change_applied = area_change_applied
 
     def load_data(self) -> TimeseriesData:
         """Reads data into class from specified filepath
@@ -292,6 +298,18 @@ class Timeseries():
         """
         return copy.deepcopy(self)
 
+    def save_data_as_csv(self, csv_outpath: str):
+        """
+        Saves out the timeseries data as CSV.
+
+        Parameters
+        ----------
+        csv_outpath : str
+            absolute file path where CSV should be saved
+        """
+        df_data = self.data.as_dataframe()
+        df_data.to_csv(csv_outpath, index=False)
+
     def convert_timeseries_to_unit_mwe(self, density_of_water: float = constants.DENSITY_OF_WATER_KG_PER_M3,
                                        density_of_ice: float = constants.DENSITY_OF_ICE_KG_PER_M3) -> Timeseries:
         """
@@ -364,7 +382,15 @@ class Timeseries():
         ------
         NotImplementedError
             For units to be converted that are not implemented yet
+        AssertionError
+            When area_change_applied is True.
+            Varying glacier area should only be applied to specific changes (meters or meters water equivalent)
+            and should be removed before converting to Gigatonnes as we are using a constant area when converting
+            to Gigatonnes. For more information refer to the GlaMBIE algorithm description document section 4.3.
         """
+        if self.area_change_applied:
+            raise AssertionError("Cannot convert dataset to Gt. Area change needs to be removed first.")
+
         # get area
         if rgi_area_version == 6:
             glacier_area = self.region.rgi6_area
@@ -419,9 +445,22 @@ class Timeseries():
         Timeseries
             A copy of the Timeseries object containing the converted timeseries data.
 
+        Raises
+        ------
+        AssertionError
+            When units are not either 'm' or 'mwe'
+        AssertionError
+            When trying to apply area change on a dataset where it's already applied
+        AssertionError
+            When trying to remove area change on a dataset where it's not already applied
         """
         if self.unit not in ["mwe", "m"]:
-            raise AssertionError("Area change should only applied to 'm' or 'mwe'.")
+            raise AssertionError("Area change should only be applied/removed to 'm' or 'mwe'.")
+        if self.area_change_applied and apply_change:
+            raise AssertionError("Area change is already applied to current dataset. Cannot be applied again.")
+        if not self.area_change_applied and not apply_change:
+            raise AssertionError("Area change is not applied to current dataset. Cannot be removed.")
+
         # get area
         if rgi_area_version == 6:
             glacier_area = self.region.rgi6_area
@@ -430,7 +469,7 @@ class Timeseries():
 
         object_copy = self.copy()
         # conversion with area change
-        area_chnage_reference_year = self.region.area_change_reference_year
+        area_change_reference_year = self.region.area_change_reference_year
         area_change = self.region.area_change
         adjusted_changes = []
         adjusted_areas = []
@@ -438,13 +477,14 @@ class Timeseries():
         df = self.data.as_dataframe()
         for start_date, end_date, change in zip(df["start_dates"], df["end_dates"], df["changes"]):
             t_i = (start_date + end_date) / 2
-            adjusted_area = glacier_area + (t_i - area_chnage_reference_year) * (area_change / 100) * glacier_area
+            adjusted_area = glacier_area + (t_i - area_change_reference_year) * (area_change / 100) * glacier_area
             if apply_change:
                 adjusted_changes.append(glacier_area / adjusted_area * change)
             else:  # remove change
                 adjusted_changes.append(change / (glacier_area / adjusted_area))
             adjusted_areas.append(adjusted_area)
         object_copy.data.changes = np.array(adjusted_changes)
+        object_copy.area_change_applied = apply_change  # store if has been applied or not
         return object_copy
 
     def convert_timeseries_to_monthly_grid(self) -> Timeseries:

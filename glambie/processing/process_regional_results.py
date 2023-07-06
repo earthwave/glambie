@@ -10,6 +10,7 @@ from glambie.processing.processing_helpers import convert_datasets_to_annual_tre
 from glambie.processing.processing_helpers import filter_catalogue_with_config_settings
 from glambie.processing.processing_helpers import prepare_seasonal_calibration_dataset
 from glambie.processing.processing_helpers import extend_annual_timeseries_if_outside_trends_period
+from glambie.processing.output_helpers import save_all_csvs_for_region_data_group_processing
 from glambie.data.data_catalogue_helpers import calibrate_timeseries_with_trends_catalogue
 from glambie.plot.processing_plots import plot_all_plots_for_region_data_group_processing
 from glambie.plot.processing_plots import plot_combination_of_sources_within_region
@@ -74,6 +75,12 @@ def run_one_region(glambie_run_config: GlambieRunConfig,
                                                            region=REGIONS[region_config.region_name],
                                                            data_group=data_group,
                                                            output_path_handler=output_path_handler)
+        # apply area change
+        trend_combined = trend_combined.apply_area_change(rgi_area_version=6, apply_change=True)
+        # save out with area change applied
+        trend_combined.save_data_as_csv(output_path_handler.get_csv_output_file_path(
+            region=trend_combined.region, data_group=data_group,
+            csv_file_name=f"{data_group.name}_final_with_area_change.csv"))
         result_datasets.append(trend_combined)
 
     result_catalogue = DataCatalogue.from_list(result_datasets, base_path=data_catalogue.base_path)
@@ -110,6 +117,10 @@ def combine_within_one_region(catalogue_data_group_results: DataCatalogue,
         plot_combination_of_sources_within_region(catalogue_results=catalogue_data_group_results,
                                                   combined_timeseries=combined_ts, region=combined_ts.region,
                                                   output_filepath=output_path)
+        # save csv
+        combined_ts.save_data_as_csv(output_path_handler.get_csv_output_file_path(
+            region=combined_ts.region, data_group=GLAMBIE_DATA_GROUPS["consensus"],
+            csv_file_name=f"consensus_{combined_ts.region.name}.csv"))
     return combined_ts
 
 
@@ -198,5 +209,15 @@ def _run_region_timeseries_one_source(data_catalogue_annual: DataCatalogue,
                                                         data_catalogue_trends_homogenized=data_catalogue_trends,
                                                         data_catalogue_calibrated_series=catalogue_calibrated_series,
                                                         timeseries_trend_combined=trend_combined)
-
+        save_all_csvs_for_region_data_group_processing(output_path_handler=output_path_handler,
+                                                       region=region,
+                                                       data_group=data_group,
+                                                       data_catalogue_annual_raw=data_catalogue_annual_raw,
+                                                       data_catalogue_trends_raw=data_catalogue_trends_raw,
+                                                       data_catalogue_annual_homogenized=data_catalogue_annual,
+                                                       data_catalogue_annual_anomalies=catalogue_annual_anomalies,
+                                                       timeseries_annual_combined=annual_combined,
+                                                       data_catalogue_trends_homogenized=data_catalogue_trends,
+                                                       data_catalogue_calibrated_series=catalogue_calibrated_series,
+                                                       timeseries_trend_combined=trend_combined)
     return trend_combined

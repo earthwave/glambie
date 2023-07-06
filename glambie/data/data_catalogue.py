@@ -276,7 +276,8 @@ class DataCatalogue():
                 df["changes"] = df["changes"] - df_sub["changes"].mean()
                 data_catalogue_out.datasets[idx].data.changes = np.array(df["changes"])
                 means_over_period.append(df_sub["changes"].mean())
-
+        # join all catalogues by start and end dates
+        # the resulting dataframe has a set of columns with repeating prefixes
         df = reduce(lambda left, right: left.merge(right, how="outer", on=["start_dates", "end_dates"]), catalogue_dfs)
         df = df.sort_values(by="start_dates")
         start_dates, end_dates = np.array(df["start_dates"]), np.array(df["end_dates"])

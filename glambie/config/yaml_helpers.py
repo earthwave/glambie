@@ -1,22 +1,44 @@
+from glambie.const.constants import YearType
+import yaml
 
-def strip_python_tags(yaml_string: str):
+
+def year_type_class_representer(
+        yaml_dumper: yaml.dumper.Dumper,
+        object_to_represent: YearType) -> yaml.nodes.MappingNode:
     """
-    Strips the python tags from a yaml
+    Class representer for YearType
 
     Parameters
     ----------
-    yaml_string : str
-        yaml string
+    yaml_dumper : yaml.dumper.Dumper
+        yaml dumper
+    object_to_represent : YearType
+        YearType object to represent
 
     Returns
     -------
-    _type_
-        stripped yaml string
+    yaml.nodes.MappingNode
+        yaml map
     """
-    result = []
-    for line in yaml_string.splitlines():
-        idx = line.find("!!python/")
-        if idx > -1:
-            line = line[:idx]
-        result.append(line)
-    return '\n'.join(result)
+    return yaml_dumper.represent_data(object_to_represent.value)
+
+
+def region_run_config_class_representer(
+        yaml_dumper: yaml.dumper.Dumper,
+        object_to_represent) -> yaml.nodes.MappingNode:
+    """
+    Class representer for RegionRunConfig
+
+    Parameters
+    ----------
+    yaml_dumper : yaml.dumper.Dumper
+        yaml dumper
+    object_to_represent : RegionRunConfig
+        RegionRunConfig object to represent
+
+    Returns
+    -------
+    yaml.nodes.MappingNode
+        yaml map
+    """
+    return yaml_dumper.represent_dict(object_to_represent.__dict__)

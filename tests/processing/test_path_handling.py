@@ -4,29 +4,22 @@ from glambie.processing.path_handling import OutputPathHandler
 from glambie.const.regions import REGIONS
 from glambie.const.data_groups import GLAMBIE_DATA_GROUPS
 import pytest
-import shutil
-
-TESTING_DIR = os.path.join("tests", "test_output_path_handler")
 
 
-@pytest.fixture(scope="session", autouse=True)
-def path_helper():
-    def remove_test_dir():
-        shutil.rmtree(TESTING_DIR)
-    yield OutputPathHandler(TESTING_DIR)
-    # Cleanup a testing directory once we are finished.
-    remove_test_dir()
+@pytest.fixture()
+def path_helper(tmp_path: os.PathLike):
+    return OutputPathHandler(tmp_path)
 
 
-def test_get_region_output_folder_path(path_helper):
+def test_get_region_output_folder_path(path_helper: OutputPathHandler, tmp_path: os.PathLike):
     region = REGIONS["iceland"]
     region_path = path_helper.get_region_output_folder_path(region=region)
-    assert path_helper.base_path == TESTING_DIR
+    assert path_helper.base_path == tmp_path
     assert os.path.exists(region_path)
-    assert os.path.join(TESTING_DIR, region.name) == region_path
+    assert os.path.join(tmp_path, region.name) == region_path
 
 
-def test_get_region_and_data_group_output_folder_path(path_helper):
+def test_get_region_and_data_group_output_folder_path(path_helper: OutputPathHandler):
     region = REGIONS["central_asia"]
     path = path_helper.get_region_and_data_group_output_folder_path(region=region,
                                                                     data_group=GLAMBIE_DATA_GROUPS["altimetry"])
@@ -36,7 +29,7 @@ def test_get_region_and_data_group_output_folder_path(path_helper):
     assert os.path.realpath(path).startswith(os.path.abspath(region_path))
 
 
-def test_get_plot_output_file_path(path_helper):
+def test_get_plot_output_file_path(path_helper: OutputPathHandler):
     region = REGIONS["svalbard"]
     plot_file_name = "test.png"
     plot_file_path = path_helper.get_plot_output_file_path(region=region,
@@ -51,7 +44,7 @@ def test_get_plot_output_file_path(path_helper):
     assert os.path.split(plot_file_path)[1] == plot_file_name
 
 
-def test_get_csv_output_file_path(path_helper):
+def test_get_csv_output_file_path(path_helper: OutputPathHandler):
     region = REGIONS["svalbard"]
     plot_file_name = "test.csv"
     plot_file_path = path_helper.get_plot_output_file_path(
@@ -65,8 +58,8 @@ def test_get_csv_output_file_path(path_helper):
     assert os.path.split(plot_file_path)[1] == plot_file_name
 
 
-def test_get_config_output_folder_path(path_helper):
+def test_get_config_output_folder_path(path_helper: OutputPathHandler, tmp_path: os.PathLike):
     config_path = path_helper.get_config_output_folder_path()
-    assert path_helper.base_path == TESTING_DIR
+    assert path_helper.base_path == tmp_path
     assert os.path.exists(config_path)
-    assert os.path.join(TESTING_DIR, "configs") == config_path
+    assert os.path.join(tmp_path, "configs") == config_path

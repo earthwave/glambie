@@ -1,24 +1,11 @@
 import os
-import shutil
 
 from glambie.config.config_classes import GlambieRunConfig
 from glambie.config.config_classes import RegionRunConfig
 from glambie.const.constants import YearType
 from glambie.const.data_groups import GlambieDataGroup
-from glambie.processing.path_handling import OutputPathHandler
 import pytest
 import yaml
-
-TESTING_DIR = os.path.join("tests", "test_config_outputs")
-
-
-@pytest.fixture(scope="session", autouse=True)
-def output_path_handler():
-    def remove_test_dir():
-        shutil.rmtree(TESTING_DIR)
-    yield OutputPathHandler(TESTING_DIR)
-    # Cleanup a testing directory once we are finished.
-    remove_test_dir()
 
 
 def test_glambie_run_config_from_dict_raises_key_error():
@@ -44,9 +31,9 @@ def test_glambie_run_config_regions_from_file():
     assert config.regions[0].seasonal_correction_dataset["user_group"] == "wgms_sine"
 
 
-def test_write_glambie_region_config_to_yaml(output_path_handler):
+def test_write_glambie_region_config_to_yaml(tmp_path):
     yaml_inpath = os.path.join('tests', 'test_data', 'configs', 'test_config_svalbard.yaml')
-    yaml_outpath = os.path.join(output_path_handler.get_config_output_folder_path(), "test-out-svalbard.yaml")
+    yaml_outpath = os.path.join(tmp_path, "test-out-svalbard.yaml")
     config = RegionRunConfig.from_yaml(yaml_inpath)
     config.save_to_yaml(yaml_outpath)
     # check config file exists:

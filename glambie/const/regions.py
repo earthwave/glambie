@@ -205,5 +205,5 @@ REGIONS = {
         glaciological_year_start=0.25)
 }
 
-REGIONS_BY_ID = {r.rgi_id: r for r in REGIONS}
-REGIONS_BY_SHORT_NAME = {r.short_name: r for r in REGIONS}
+REGIONS_BY_ID = {r.rgi_id: r for r in REGIONS.values()}
+REGIONS_BY_SHORT_NAME = {r.short_name: r for r in REGIONS.values()}

@@ -1,9 +1,11 @@
 import os
+from unittest.mock import patch
 
 from glambie.data.data_catalogue import DataCatalogue
 import pytest
 import copy
 import numpy as np
+import pandas as pd
 
 
 @pytest.fixture()
@@ -97,7 +99,38 @@ def test_data_catalogue_from_file():
 
 
 def test_data_catalogue_from_submission_system():
-    pytest.fail('not yet implemented')
+    with (patch('glambie.data.data_catalogue.fetch_all_submission_metadata') as mock_fetch_metadata,
+          patch('glambie.data.data_catalogue.fetch_timeseries_dataframe') as mock_fetch_dataframe):
+        # return two fake metadata dicts
+        mock_fetch_metadata.return_value = [
+            {'region': 'ISL',
+             'observational_source': 'altimetry',
+             'lead_author_name': 'Gunnar Gunnarsson',
+             'user_group': 'authors-altimetry',
+             'rgi_version_select': '6.0',
+             'lead_author_date_of_birth': 'May 18th 1889'},
+            {'region': 'ISL',
+             'observational_source': 'gravimetry',
+             'lead_author_name': 'Gunnar Gunnarsson',
+             'user_group': 'authors-gravimetry',
+             'rgi_version_select': '6.0',
+             'lead_author_date_of_birth': 'May 18th 1889'}
+        ]
+        # and return some fake data
+        mock_fetch_dataframe.return_value = pd.DataFrame({
+            'unit': ['m'],
+            'start_date_fractional': [1],
+            'end_date_fractional': [2],
+            'glacier_change_observed': [3],
+            'glacier_change_uncertainty': [4],
+            'glacier_area_reference': [5],
+            'glacier_area_observed': [6],
+            'remarks': ['are we the baddies']
+        })
+        catalogue = DataCatalogue.from_glambie_submission_system()
+    assert len(catalogue.datasets) == 2
+    assert catalogue.datasets_are_same_unit()
+    assert catalogue.datasets[1].additional_metadata['lead_author_date_of_birth'] == 'May 18th 1889'
 
 
 def test_data_catalogue_regions(example_catalogue):

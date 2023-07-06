@@ -94,15 +94,22 @@ class TimeseriesData():
         return len(self.dates)
 
     def as_dataframe(self):
-        return pd.DataFrame({'start_dates': self.start_dates,
-                             'end_dates': self.end_dates,
-                             'changes': self.changes,
-                             'errors': self.errors,
-                             'glacier_area_reference': self.glacier_area_reference,
-                             'glacier_area_observed': self.glacier_area_observed,
-                             'hydrological_correction_value': self.hydrological_correction_value,
-                             'remarks': self.remarks
-                             })
+        return pd.DataFrame({
+            'start_dates': self.start_dates,
+            'end_dates': self.end_dates,
+            'changes': self.changes,
+            'errors': self.errors,
+            'glacier_area_reference': self.glacier_area_reference,
+            'glacier_area_observed': self.glacier_area_observed,
+            'hydrological_correction_value': (
+                self.hydrological_correction_value
+                if self.hydrological_correction_value is not None
+                else np.full(len(self.changes), None)),
+            'remarks': (
+                self.remarks
+                if self.remarks is not None
+                else np.full(len(self.changes), None)),
+        })
 
     def as_cumulative_timeseries(self) -> pd.DataFrame:
         """
@@ -232,7 +239,8 @@ class Timeseries():
             'rgi_version': self.rgi_version,
             'unit': self.unit
         }
-        metadata_dict.update(self.additional_metadata)
+        if self.additional_metadata is not None:
+            metadata_dict.update(self.additional_metadata)
         return pd.DataFrame(metadata_dict, index=[0])
 
     def timeseries_is_monthly_grid(self):

@@ -85,7 +85,7 @@ def test_max_temporal_resolution(example_timeseries_ingested):
 
 def test_data_as_dataframe(example_timeseries_ingested):
     df = example_timeseries_ingested.data.as_dataframe()
-    assert df.shape == (2, 6)
+    assert df.shape == (2, 8)
 
 
 def test_metadata_as_dataframe(example_timeseries):
@@ -279,6 +279,7 @@ def test_convert_timeseries_to_annual_trends_up_sampling(example_timeseries_inge
     example_timeseries_ingested.data.errors = np.array([1.0])
     example_timeseries_ingested.data.glacier_area_reference = None
     example_timeseries_ingested.data.glacier_area_observed = None
+    example_timeseries_ingested.data.remarks = np.array(['wibble'])
 
     example_timeseries_converted = example_timeseries_ingested.convert_timeseries_to_annual_trends()
     assert example_timeseries_converted.timeseries_is_annual_grid()

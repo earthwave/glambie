@@ -10,6 +10,7 @@ This module provides access functions for that bucket.
 from io import BytesIO
 import json
 import os
+import re
 from typing import List, Optional
 
 from google.cloud import storage
@@ -46,7 +47,7 @@ def fetch_timeseries_dataframe(user_group: str, region: RGIRegion, data_group: G
     csv_name_in_bucket = "_".join(
         [region.short_name.lower(),
          data_group.name.lower().replace("demdiff", "dem_differencing"),
-         user_group.lower()]) + '.csv'
+         user_group.replace(" ", "_").lower()]) + '.csv'
 
     with BytesIO() as buffer:
         _storage_client.download_blob_to_file(_SUBMISSIONS_BUCKET_URI + '/' + csv_name_in_bucket, buffer)
@@ -115,7 +116,7 @@ def download_dataset_information_file(
     dataset_information_filename = "_".join(
         [data_group.name.lower().replace("demdiff", "dem_differencing"),
          'dataset_information',
-         user_group]) + '.pdf'
+         re.sub(r'[^0-9a-zA-Z]+', '-', user_group)]) + '.pdf'
 
     assert os.path.exists(target_directory), \
         f"Cannot download dataset information file to directory {target_directory} because it does not exist."

@@ -101,7 +101,7 @@ def download_dataset_information_file(
     """
     Download a dataset information file from the submission system.
 
-    The file will be downloaded to a temporary directory.
+    The file will be downloaded to a specified target directory.
 
     Parameters
     ----------

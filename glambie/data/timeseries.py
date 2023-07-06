@@ -340,13 +340,6 @@ class Timeseries():
 
         Parameters
         ----------
-        include_area_change : bool, optional
-            Flag to determine if glacier area changes are taking into account
-            Set to True, the area change and area change reference year are retrieved for the region of the timeseries
-            From the constants and used to calculate Gt for a changing area
-            Note that this will not work that well if the time resolution is low (e.g. multiple years),
-            as it just uses the average between start and end date to determine the area change since
-            the reference year, by default True
         density_of_water: float, optional
             The density of water in Gt per m3, by default constants.DENSITY_OF_WATER_KG_PER_M3
         rgi_area_version: int, optional
@@ -396,7 +389,7 @@ class Timeseries():
             # First, convert elevation change uncertaintiesr in mwe to Gt
             object_copy.data.errors = np.array(meters_water_equivalent_to_gigatonnes(
                 self.data.errors, area_km2=glacier_area, density_of_water=density_of_water))
-            # Second, include density uncertainty in uncertainty
+            # Second, include area uncertainty in uncertainty
             df = object_copy.data.as_dataframe()
             # also see formula in Glambie Assessment Algorithm document, section 5.2 Homogenization of data
             uncertainties_gt = df.changes.abs() * ((df.errors / df.changes)**2 + (area_unc / area)**2)**0.5
@@ -463,10 +456,6 @@ class Timeseries():
             else:  # remove change
                 adjusted_changes.append(change / (glacier_area / adjusted_area))
             adjusted_areas.append(adjusted_area)
-        # @TODO: add uncertainty ?
-        # area = np.array(adjusted_areas)
-        # area_unc is calculated as a % of the total area. % can be defined individually per region.
-        # area_unc = area * self.region.area_uncertainty_percentage  # use individual glacier area unc
         object_copy.data.changes = np.array(adjusted_changes)
         object_copy.area_change_applied = apply_change  # store if has been applied or not
         return object_copy

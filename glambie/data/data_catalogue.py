@@ -10,7 +10,7 @@ from glambie.const.regions import REGIONS, REGIONS_BY_SHORT_NAME
 from glambie.const.regions import RGIRegion
 from glambie.data.timeseries import Timeseries, TimeseriesData
 from glambie.data.submission_system_interface import (
-    fetch_all_submission_metadata, fetch_timeseries_dataframe, SUBMISSION_SYSTEM_BASEPATH)
+    fetch_all_submission_metadata, fetch_timeseries_dataframe, SUBMISSION_SYSTEM_BASEPATH_PLACEHOLDER)
 import pandas as pd
 import numpy as np
 import copy
@@ -54,7 +54,7 @@ class DataCatalogue():
                     region=REGIONS_BY_SHORT_NAME[metadata['region'].upper()],
                     data_group=GLAMBIE_DATA_GROUPS[
                         metadata['observational_source'].replace('dem_differencing', 'demdiff')],
-                    data_filepath=SUBMISSION_SYSTEM_BASEPATH,
+                    data_filepath=SUBMISSION_SYSTEM_BASEPATH_PLACEHOLDER,
                     user=metadata['lead_author_name'],
                     user_group=metadata['user_group'],
                     rgi_version=metadata.get('rgi_version_select', '6.0'),
@@ -76,7 +76,7 @@ class DataCatalogue():
                     if 'hydrological_correction_value' in data.columns else None),
                 remarks=np.array(data['remarks']))
 
-        return DataCatalogue(SUBMISSION_SYSTEM_BASEPATH, datasets)
+        return DataCatalogue(SUBMISSION_SYSTEM_BASEPATH_PLACEHOLDER, datasets)
 
     @staticmethod
     def from_json_file(metadata_file_path: str) -> DataCatalogue:

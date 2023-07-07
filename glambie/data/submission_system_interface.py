@@ -27,7 +27,7 @@ _SUBMISSIONS_BUCKET_URI = 'gs://glambie-submissions'
 # which is not the case. This is a design flaw, but rather than redesigning those classes we're simply going to add a
 # "fake basepath" to indicate that the data has actually come from the submission system instead,
 # which is not a filesystem location.
-SUBMISSION_SYSTEM_BASEPATH = 'glambie_submission_system'
+SUBMISSION_SYSTEM_BASEPATH_PLACEHOLDER = 'glambie_submission_system'
 
 
 def _download_blob(blob_uri: str) -> Union[pd.DataFrame, dict]:

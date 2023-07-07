@@ -3,6 +3,8 @@ import numpy as np
 import pandas as pd
 from datetime import datetime
 from google.cloud.storage import Client
+from dateutil.relativedelta import relativedelta
+from glambie.util.timeseries_helpers import interpolate_change_per_day_to_fill_gaps
 
 DATA_TRANSFER_BUCKET_NAME = "glambie-submissions"
 PROJECT_NAME = "glambie"
@@ -66,7 +68,6 @@ def generate_results_dataframe(downloaded_files: list[str], local_path: str) -> 
 
     results_dataframe['date_check_satisfied'] = np.nan
     results_dataframe['nodata_check_satisfied'] = np.nan
-    results_dataframe['file_edited'] = False
 
     for file in downloaded_files:
         file_check_dataframe = check_glambie_submission_for_errors(file, results_dataframe)
@@ -156,29 +157,56 @@ def edit_local_copies_of_glambie_csvs(file_check_dataframe: pd.DataFrame) -> pd.
         Dataframe containing results of checks for inconsistencies within the csv files compared to the expected glambie
         standard.
     """
+    file_check_dataframe['reason_for_edit'] = ['-' for i in range(len(file_check_dataframe))]
 
     for _, file in file_check_dataframe.iterrows():
-
         if not file.date_check_satisfied:
             submission_data_frame = pd.read_csv(file.local_filepath)
-
             # Check what the gap is between first end and second start date - if it is a uniform gap then we will fix it
             # here. If it varies, we will need to edit file manually
             date_gaps = [datetime.strptime(submission_data_frame.start_date[i + 1], '%d/%m/%Y') - datetime.strptime(
                 submission_data_frame.end_date[i], '%d/%m/%Y') for i in range(len(submission_data_frame) - 1)]
-            if all(i == date_gaps[0] for i in date_gaps):
-                # Add the same date_gap onto all end_dates to make them equal to the subsequent start_date
-                new_end_dates = [datetime.strptime(a, '%d/%m/%Y') + date_gaps[0]
+            date_gaps_in_days = [a.days for a in date_gaps]
+
+            # 1) Are all gaps 1 day
+            if all(i == 1 for i in date_gaps_in_days):
+                new_end_dates = [datetime.strptime(a, '%d/%m/%Y') + relativedelta(days=1)
                                  for a in submission_data_frame.end_date]
                 submission_data_frame.end_date = [datetime.strftime(a, '%d/%m/%Y') for a in new_end_dates]
-                submission_data_frame.to_csv(file.local_filepath)  # write to same file as original
-                # Record that the file has been edited
-                file_check_dataframe.loc[file_check_dataframe.local_filepath.__eq__(
-                    file.local_filepath), 'file_edited'] = True
+                file_check_dataframe.loc[file_check_dataframe.local_filepath.__eq__(file.local_filepath),
+                                         'reason_for_edit'] = 'Day gap between end dates and subsequent start dates'
+
+            # 2) Is it a gravimetry file with a GRACE gap?
             else:
-                # come up with better solution for storing this message
-                print('{}: Issue with dates is more complex than a uniform gap - '
-                      'manually edit this file'.format(file.file_name))
+                if any(i > 350 for i in date_gaps_in_days) & ('gravimetry' in file.local_filepath):
+                    non_grace_gaps = [i for i in date_gaps_in_days if i < 300]
+                    # If the GRACE gap is the only gap, we won't edit.
+                    if all(i == 0 for i in non_grace_gaps):
+                        file_check_dataframe.loc[
+                            file_check_dataframe.local_filepath.__eq__(file.local_filepath),
+                            'reason_for_edit'] = 'No edits needed for this file, only data gap is due to GRACE missions'
+
+                # 3) Remaining possibility is that it is a gravimetry file with non-GRACE gaps that need interpolating
+                elif ('gravimetry' in file.local_filepath):
+                    submission_data_frame = interpolate_change_per_day_to_fill_gaps(submission_data_frame)
+                    file_check_dataframe.loc[
+                        file_check_dataframe.local_filepath.__eq__(file.local_filepath),
+                        'reason_for_edit'] = 'Gravimetry file with valid gaps - these have been interpolated'
+                else:
+                    # If it is not a gravimetry file, then the data it contains is invalid.
+                    file_check_dataframe.loc[
+                        file_check_dataframe.local_filepath.__eq__(file.local_filepath),
+                        'reason_for_edit'] = 'Non-gravimetry file with gaps in data - inspect manually'
+
+                # removing all remaining small day gaps by setting end_date(i) = start_date(i+1)
+                updated_end_dates = []
+                for i in range(len(submission_data_frame.end_date) - 1):
+                    updated_end_dates.append(submission_data_frame.start_date[i + 1])
+                updated_end_dates.append(submission_data_frame['end_date'].tolist()[-1])
+                submission_data_frame['end_date'] = updated_end_dates
+
+            # Save out to same path as original file
+            submission_data_frame.to_csv(file.local_filepath)
 
         if not file.nodata_check_satisfied:
             submission_data_frame = pd.read_csv(file.local_filepath)
@@ -194,8 +222,8 @@ def edit_local_copies_of_glambie_csvs(file_check_dataframe: pd.DataFrame) -> pd.
 
             submission_data_frame.to_csv(file.local_filepath)
             # Record that the file has been edited
-            file_check_dataframe.loc[file_check_dataframe.local_filepath.__eq__(
-                file.local_filepath), 'file_edited'] = True
+            file_check_dataframe.loc[file_check_dataframe.local_filepath.__eq__(file.local_filepath),
+                                     'reason_for_edit'] = 'Random nodata value was used - these rows have been removed'
 
     return file_check_dataframe
 

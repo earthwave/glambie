@@ -5,6 +5,9 @@ import math
 from scipy import interpolate
 from typing import Tuple
 import pandas as pd
+import datetime
+from dateutil.relativedelta import relativedelta
+from glambie.util.date_helpers import datetime_dates_to_fractional_years
 
 
 def contains_duplicates(x: np.array) -> bool:
@@ -582,3 +585,79 @@ def get_average_trends_over_new_time_periods(start_dates, end_dates, changes, ne
     return pd.DataFrame({"start_dates": new_start_dates,
                          "end_dates": new_end_dates,
                          "changes": annual_changes})
+
+
+def interpolate_change_per_day_to_fill_gaps(input_dataframe):
+    """
+    Use this function to fill gaps in an elevation change time series that have a non-uniform temporal resolution.
+    Linear interpolation is performed on elevation_change_per_day values, to fill gaps in the input timeseries. An
+    overall elevation change in the data gap is then added to the original dataframe.
+
+    Parameters
+    ----------
+    timeseries_dataframe : _type_
+        _description_
+    """
+    date_gaps = [datetime.strptime(input_dataframe.start_date[i + 1], '%d/%m/%Y') - datetime.strptime(
+        input_dataframe.end_date[i], '%d/%m/%Y') for i in range(len(input_dataframe) - 1)]
+    date_gaps_in_days = [a.days for a in date_gaps]
+    input_dataframe['date_gap_days'] = np.append(date_gaps_in_days, [0])
+
+    start_dates = [datetime.strptime(a, '%d/%m/%Y') for a in input_dataframe.start_date]
+    end_dates = [datetime.strptime(a, '%d/%m/%Y') for a in input_dataframe.end_date]
+    new_start_dates, new_end_dates, new_changes, new_errors = [], [], [], []
+
+    for i in range(len(input_dataframe.start_date) - 1):
+        current_start_date = start_dates[i]
+        current_end_date = end_dates[i]
+        new_start_dates.append(current_start_date)
+        new_end_dates.append(current_end_date)
+        new_changes.append(input_dataframe.glacier_change_observed[i])
+        new_errors.append(input_dataframe.glacier_change_uncertainty[i])
+
+        if date_gaps_in_days[i] > 1:
+            gap_start_date = current_end_date + relativedelta(days=1)
+            gap_end_date = start_dates[i + 1] - relativedelta(days=1)
+            new_start_dates.append(gap_start_date)
+            new_end_dates.append(gap_end_date)
+            new_changes.append(np.nan)
+            new_errors.append(np.nan)
+
+    interpolated_dataframe = pd.DataFrame()
+    interpolated_dataframe['start_date'] = [datetime.strftime(a, '%d/%m/%Y') for a in new_start_dates]
+    interpolated_dataframe['end_date'] = [datetime.strftime(a, '%d/%m/%Y') for a in new_end_dates]
+    interpolated_dataframe['glacier_change_observed'] = new_changes
+    interpolated_dataframe['glacier_change_uncertainty'] = new_errors
+
+    # calculate days covered by each row
+    date_gaps = [datetime.strptime(interpolated_dataframe['end_date'][i], '%d/%m/%Y') - datetime.strptime(
+        interpolated_dataframe['start_date'][i], '%d/%m/%Y') for i in range(len(interpolated_dataframe))]
+    date_gaps_in_days = [a.days for a in date_gaps]
+    interpolated_dataframe['days_covered'] = date_gaps_in_days
+
+    # calculate change per day in each row
+    interpolated_dataframe['glacier_change_per_day'] = [
+        a / b for a, b in zip(interpolated_dataframe.glacier_change_observed, interpolated_dataframe.days_covered)]
+    interpolated_dataframe['glacier_change_uncertainty_per_day'] = [
+        a / b for a, b in zip(interpolated_dataframe.glacier_change_uncertainty, interpolated_dataframe.days_covered)]
+
+    dates_list_fractional = datetime_dates_to_fractional_years(new_start_dates)
+    interpolated_dataframe['date_fractional'] = dates_list_fractional
+
+    # Linear interpolation of glacier_change_per_day to fill gaps
+    df = pd.DataFrame({'time': interpolated_dataframe['date_fractional'],
+                       'mass': interpolated_dataframe['glacier_change_per_day'],
+                       'error': interpolated_dataframe['glacier_change_uncertainty_per_day']})
+    df_int = df.interpolate(method='linear')
+
+    interpolated_dataframe['glacier_change_per_day'] = df_int['mass'].values.tolist()
+    interpolated_dataframe['glacier_change_uncertainty_per_day'] = df_int['error'].values.tolist()
+
+    # Convert back to glacier_change_observed
+    interpolated_dataframe['glacier_change_observed'] = [
+        a * b for a, b in zip(interpolated_dataframe.glacier_change_per_day, interpolated_dataframe.days_covered)]
+    interpolated_dataframe['glacier_change_uncertainty'] = [
+        a * b for a, b in zip(interpolated_dataframe.glacier_change_uncertainty_per_day,
+                              interpolated_dataframe.days_covered)]
+
+    return interpolated_dataframe

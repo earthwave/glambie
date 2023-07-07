@@ -146,7 +146,9 @@ def _combine_regional_results_into_global(regional_results_catalogue: DataCatalo
                              changes=mean_changes,
                              errors=mean_uncertainties,
                              glacier_area_reference=None,
-                             glacier_area_observed=None)
+                             glacier_area_observed=None,
+                             hydrological_correction_value=None,
+                             remarks=None)
     # use this as a reference for filling metadata
     reference_dataset_for_metadata = regional_results_catalogue.datasets[0]
 

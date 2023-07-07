@@ -17,7 +17,9 @@ def example_catalogue():
                            changes=np.array([2., 5.]),
                            errors=np.array([1., 1.2]),
                            glacier_area_reference=np.array([None, None]),
-                           glacier_area_observed=np.array([None, None]))
+                           glacier_area_observed=np.array([None, None]),
+                           hydrological_correction_value=None,
+                           remarks=None)
     ts1 = Timeseries(rgi_version=6,
                      unit='mwe',
                      data_group=GLAMBIE_DATA_GROUPS['consensus'],
@@ -28,7 +30,9 @@ def example_catalogue():
                            changes=np.array([3., 4.]),
                            errors=np.array([0.9, 1.1]),
                            glacier_area_reference=np.array([None, None]),
-                           glacier_area_observed=np.array([None, None]))
+                           glacier_area_observed=np.array([None, None]),
+                           hydrological_correction_value=None,
+                           remarks=None)
     ts2 = Timeseries(rgi_version=6,
                      unit='mwe',
                      data_group=GLAMBIE_DATA_GROUPS['consensus'],

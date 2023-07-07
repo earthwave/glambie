@@ -19,7 +19,8 @@ def example_timeseries():
     ts = Timeseries(rgi_version=6,
                     unit='m',
                     data_group=GLAMBIE_DATA_GROUPS['demdiff'],
-                    data_filepath=os.path.join("tests", "test_data", "datastore", "central_asia_demdiff_sharks.csv"))
+                    data_filepath=os.path.join("tests", "test_data", "datastore", "central_asia_demdiff_sharks.csv"),
+                    additional_metadata={'toves': 'slithy', 'mome raths': 'outgrabe'})
     return ts
 
 
@@ -30,7 +31,9 @@ def example_timeseries_ingested():
                           changes=np.array([2., 5.]),
                           errors=np.array([1., 1.2]),
                           glacier_area_reference=np.array([10000, 10000]),
-                          glacier_area_observed=np.array([10000, 10000]))
+                          glacier_area_observed=np.array([10000, 10000]),
+                          hydrological_correction_value=None,
+                          remarks=np.array(['thunder', 'lightning']))
     ts = Timeseries(rgi_version=6,
                     unit='m',
                     data_group=GLAMBIE_DATA_GROUPS['demdiff'],
@@ -39,16 +42,13 @@ def example_timeseries_ingested():
     return ts
 
 
-def test_save_as_csv(example_timeseries_ingested):
-    out_csv_path = os.path.join("tests", "test_data", "datastore", "out_csv_test.csv")
+def test_save_as_csv(tmp_path, example_timeseries_ingested):
+    out_csv_path = os.path.join(tmp_path, "out_csv_test.csv")
     example_timeseries_ingested.save_data_as_csv(out_csv_path)
     assert os.path.exists(out_csv_path)
     df = pd.read_csv(out_csv_path)
     # check data read from CSV is same as TimeseriesData
-    for column in df:
-        assert np.array_equal(np.array(df[column]), np.array(example_timeseries_ingested.data.as_dataframe()[column]))
-    # tear down
-    os.remove(out_csv_path)
+    pd.testing.assert_frame_equal(df, example_timeseries_ingested.data.as_dataframe(), check_dtype=False)
 
 
 def test_data_ingestion(example_timeseries_ingested):
@@ -94,7 +94,7 @@ def test_max_temporal_resolution(example_timeseries_ingested):
 
 def test_data_as_dataframe(example_timeseries_ingested):
     df = example_timeseries_ingested.data.as_dataframe()
-    assert df.shape == (2, 6)
+    assert df.shape == (2, 8)
 
 
 def test_metadata_as_dataframe(example_timeseries):
@@ -288,6 +288,7 @@ def test_convert_timeseries_to_annual_trends_up_sampling(example_timeseries_inge
     example_timeseries_ingested.data.errors = np.array([1.0])
     example_timeseries_ingested.data.glacier_area_reference = None
     example_timeseries_ingested.data.glacier_area_observed = None
+    example_timeseries_ingested.data.remarks = np.array(['wibble'])
 
     example_timeseries_converted = example_timeseries_ingested.convert_timeseries_to_annual_trends()
     assert example_timeseries_converted.timeseries_is_annual_grid()

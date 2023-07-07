@@ -90,7 +90,12 @@ jobs:
       - uses: actions/checkout@v3
         # we need to use the EARTHWAVE ADMIN PAT so that we have permission to push tags.
         with:
-          token: ${{ secrets.EARTHWAVE_ADMIN_PAT }}      
+          token: ${{ secrets.EARTHWAVE_ADMIN_PAT }}
+
+      - name: Fix issue with actions/checkout
+        # For some reason we can't run later git commands using this image unless we complete this step
+        run: |
+          git config --global --add safe.directory $GITHUB_WORKSPACE
 
       - name: Prepare repository for interaction
         # we have to manually set the username and email before we can commit and push

@@ -44,7 +44,7 @@ def main():
 
     # set up logging
     setup_logging(log_level=log_level)
-    log.info('Initiating GlaMBIE algorithm with config file = %s log_level=%s', config_path, log_level)
+    log.info('Initiating GlaMBIE algorithm with config file = %s log_level = %s', config_path, log_level)
 
     if not args.quiet:
         output_path_handler = get_output_path_handler_with_timestamped_subfolder(glambie_run_config.result_base_path)

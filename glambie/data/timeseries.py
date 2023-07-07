@@ -9,7 +9,7 @@ import warnings
 
 from glambie.const.data_groups import GlambieDataGroup
 from glambie.const.regions import RGIRegion
-from glambie.data.submission_system_interface import fetch_timeseries_dataframe, SUBMISSION_SYSTEM_FLAG
+from glambie.data.submission_system_interface import fetch_timeseries_dataframe, SUBMISSION_SYSTEM_BASEPATH
 from glambie.util.mass_height_conversions import \
     meters_to_meters_water_equivalent
 from glambie.util.mass_height_conversions import \
@@ -207,7 +207,7 @@ class Timeseries():
         """
         if self.data_filepath is None:
             raise ValueError("Can not load data: file path not set")
-        elif self.data_filepath == SUBMISSION_SYSTEM_FLAG:
+        elif self.data_filepath == SUBMISSION_SYSTEM_BASEPATH:
             data = fetch_timeseries_dataframe(self.user_group, self.region, self.data_group)
         else:
             data = pd.read_csv(self.data_filepath)

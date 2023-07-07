@@ -62,7 +62,7 @@ def test_download_dataset_information_file(tmp_path: os.PathLike):
         # note this mock covers *both* download calls!
         mock_storage_client.download_blob_to_file.side_effect = create_file_download_func("I'm a PDF, honest!")
 
-        submission_system_interface.download_dataset_information_file(
+        submission_system_interface.download_dataset_information_file_to_disk(
             user_group='tourists', data_group=GLAMBIE_DATA_GROUPS['altimetry'], target_directory=tmp_path)
 
         expected_output_path = os.path.join(tmp_path, "altimetry_dataset_information_tourists.pdf")

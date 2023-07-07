@@ -1,7 +1,7 @@
 import logging
 from glambie.config.config_classes import GlambieRunConfig
 from glambie.data.data_catalogue import DataCatalogue
-from glambie.data.submission_system_interface import SUBMISSION_SYSTEM_FLAG
+from glambie.data.submission_system_interface import SUBMISSION_SYSTEM_BASEPATH
 from glambie.processing.process_regional_results import run_one_region, combine_within_one_region
 from glambie.processing.path_handling import OutputPathHandler
 from glambie.processing.process_global_results import run_global_results
@@ -98,7 +98,7 @@ def _load_catalogue_and_data(data_catalogue_path: str) -> DataCatalogue:
         Data Catalogue with all data loaded
     """
     # read catalogue
-    if data_catalogue_path == SUBMISSION_SYSTEM_FLAG:
+    if data_catalogue_path == SUBMISSION_SYSTEM_BASEPATH:
         catalogue = DataCatalogue.from_glambie_submission_system()
     else:
         catalogue = DataCatalogue.from_json_file(data_catalogue_path)

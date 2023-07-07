@@ -10,7 +10,7 @@ from glambie.const.regions import REGIONS, REGIONS_BY_SHORT_NAME
 from glambie.const.regions import RGIRegion
 from glambie.data.timeseries import Timeseries, TimeseriesData
 from glambie.data.submission_system_interface import (
-    fetch_all_submission_metadata, fetch_timeseries_dataframe, SUBMISSION_SYSTEM_FLAG)
+    fetch_all_submission_metadata, fetch_timeseries_dataframe, SUBMISSION_SYSTEM_BASEPATH)
 import pandas as pd
 import numpy as np
 import copy
@@ -38,7 +38,7 @@ class DataCatalogue():
         Returns
         -------
         DataCatalogue
-            data catalogue containing the metadata of datasets, the actual timeseries data will be lazily loaded
+            Data catalogue (actually all of the data, not just metadata) containing data for GlaMBIE.
         """
         submission_system_metadata = fetch_all_submission_metadata()
 
@@ -54,7 +54,7 @@ class DataCatalogue():
                     region=REGIONS_BY_SHORT_NAME[metadata['region'].upper()],
                     data_group=GLAMBIE_DATA_GROUPS[
                         metadata['observational_source'].replace('dem_differencing', 'demdiff')],
-                    data_filepath=SUBMISSION_SYSTEM_FLAG,
+                    data_filepath=SUBMISSION_SYSTEM_BASEPATH,
                     user=metadata['lead_author_name'],
                     user_group=metadata['user_group'],
                     rgi_version=metadata.get('rgi_version_select', '6.0'),
@@ -76,7 +76,7 @@ class DataCatalogue():
                     if 'hydrological_correction_value' in data.columns else None),
                 remarks=np.array(data['remarks']))
 
-        return DataCatalogue(SUBMISSION_SYSTEM_FLAG, datasets)
+        return DataCatalogue(SUBMISSION_SYSTEM_BASEPATH, datasets)
 
     @staticmethod
     def from_json_file(metadata_file_path: str) -> DataCatalogue:
@@ -91,7 +91,8 @@ class DataCatalogue():
         Returns
         -------
         DataCatalogue
-            data catalogue containing the metadata of datasets, the actual timeseries data will be lazily loaded
+            Data Catalogue for GlaMBIE.
+            The data will be lazily loaded into the catalogue as required, gradually turning it into a full database.
         """
         with open(metadata_file_path) as json_file:
             return DataCatalogue.from_dict(json.load(json_file))
@@ -109,7 +110,8 @@ class DataCatalogue():
         Returns
         -------
         DataCatalogue
-            data catalogue containing the metadata of datasets, the actual timeseries data will be lazily loaded
+            Data Catalogue for GlaMBIE.
+            The data will be lazily loaded into the catalogue as required, gradually turning it into a full database.
         """
         base_path = os.path.join(*meta_data_dict['base_path'])
         datasets_dict = meta_data_dict['datasets']
@@ -141,7 +143,8 @@ class DataCatalogue():
         Returns
         -------
         DataCatalogue
-            data catalogue containing the metadata of datasets
+            Data Catalogue for GlaMBIE.
+            The data will be lazily loaded into the catalogue as required, gradually turning it into a full database.
         """
         return DataCatalogue(base_path, datasets_list)
 

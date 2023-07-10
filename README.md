@@ -18,9 +18,10 @@ conda activate glambie
 ### Installation For Use (requires Google Cloud authentication)
 If you are willing to authenticate with the Google Cloud Platform, you can install this package without
 having to clone this repository. This is a better option for those looking to simply use the software rather than develop it.
+Note that you will need to authenticate with the Google Cloud anyway in order to access the submissions made to the GlaMBIE Submission System.
 
 If you want to develop (i.e. change) this package, or you are unable to authenticate with the Google Cloud,
-please read the next section instead.
+please read the "Installation For Development" section instead.
 
 To work with the Google Cloud, first ensure that you have installed the [Google Cloud command line interface](https://cloud.google.com/sdk/docs/install).
 
@@ -29,10 +30,21 @@ Next, install the pip keyring backend necessary to authenticate with Google Clou
 pip install keyrings.google-artifactregistry-auth
 ```
 
-Authenticate with the google cloud. One means of doing this that works well in the terminal is:
+Authenticate with the google cloud in such a manner as to provide access to the GlaMBIE Submission System.
+One means of doing this that works well in the terminal is:
 ```
-gcloud auth login --no-launch-browser
+gcloud auth application-default login
 ```
+
+After that, you'll need to run:
+```
+gcloud auth application-default set-quota-project glambie
+```
+
+If you still experience access permissions errors when trying to load data from the GlaMBIE Submission System,
+it is likely that you either intentionally do not have access (i.e. you are not a member of the GlaMBIE consortium),
+or you have not yet requested access from [support@earthwave.co.uk](mailto:support@earthwave.co.uk).
+When requesting access, please quote your full google email address.
 
 The package can now be installed from the GlaMBIE Python Artifact repository: 
 ```
@@ -69,6 +81,9 @@ You should now be able to run and pass the unit tests simply by running:
 ```
 pytest
 ```
+
+Note that you will still need to complete the `gcloud auth` steps described in the previous section
+to use data from the GLaMBIE Submission System.
 
 Pushing directly to main is prohibited. If you wish your work to be included, first push a separate branch to
 the repository and then open a Pull Request. All branches that have not received a commit for more than 30 days

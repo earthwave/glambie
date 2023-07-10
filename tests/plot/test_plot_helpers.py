@@ -12,7 +12,9 @@ def timeseries_data_example1():
                           changes=np.array([2., 5.]),
                           errors=np.array([1., 1.2]),
                           glacier_area_reference=np.array([10000, 10000]),
-                          glacier_area_observed=np.array([10000, 10000]))
+                          glacier_area_observed=np.array([10000, 10000]),
+                          hydrological_correction_value=None,
+                          remarks=np.array(['thunder', 'lightning']))
 
 
 @pytest.fixture()
@@ -22,7 +24,9 @@ def timeseries_data_example2():
                           changes=np.array([3., 6.]),
                           errors=np.array([1., 1.2]),
                           glacier_area_reference=np.array([10000, 10000]),
-                          glacier_area_observed=np.array([10000, 10000]))
+                          glacier_area_observed=np.array([10000, 10000]),
+                          hydrological_correction_value=None,
+                          remarks=np.array(['thunder', 'lightning']))
 
 
 def test_apply_vertical_adjustment_for_cumulative_plot(timeseries_data_example1, timeseries_data_example2):

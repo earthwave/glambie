@@ -264,12 +264,27 @@ def extend_annual_timeseries_if_outside_trends_period(annual_timeseries: Timeser
 
 
 def check_and_handle_gaps_in_timeseries(data_catalogue: DataCatalogue) -> DataCatalogue:
+    """
+    Checks all datasets in a timeseries if they have a temporal gap, and if so, splits them up into multiple datasets
+    without gaps. If no gaps are found, the datasets stay the same.
+
+    Parameters
+    ----------
+    data_catalogue : DataCatalogue
+        data catalogue with input datasets
+
+    Returns
+    -------
+    DataCatalogue
+        data catalogue with new datasets containing no gaps.
+        will contain more datasets than input data catalogue when gaps were found.
+    """
     new_datasets = []
     for timeseries in data_catalogue.datasets:
         if not timeseries.data.is_cumulative_valid():  # if invalid convert to handle the gaps
             # 1 split timeseries dataframe
             df_data = timeseries.data.as_dataframe()
-            split_dataframes = split_timeseries_at_gaps(df_data)
+            split_dataframes = slice_timeseries_at_gaps(df_data)
             # 2 add split timeseries to new_datasets
             for split_timeseries in split_dataframes:
                 timeseries_copy = timeseries.copy()
@@ -287,7 +302,21 @@ def check_and_handle_gaps_in_timeseries(data_catalogue: DataCatalogue) -> DataCa
     return new_data_catalogue
 
 
-def split_timeseries_at_gaps(df_timeseries: pd.DataFrame) -> list[pd.DataFrame]:
+def slice_timeseries_at_gaps(df_timeseries: pd.DataFrame) -> list[pd.DataFrame]:
+    """
+    Splits a dataframe into separate chunks/slices to remove temporal gaps in the timeseries.
+
+    Parameters
+    ----------
+    df_timeseries : pd.DataFrame
+        pandas dataframe containing a timeseries and the columns 'start_dates' and 'end_dates'.
+        If 'end_date' != 'start_date' for any consecutive rows this is considered as a time gap.
+
+    Returns
+    -------
+    list[pd.DataFrame]
+        a list with slices of the original dataframe. All new dataframes within the list are gapless.
+    """
     split_indices = []
     split_timeseries_dataframes = []
     for idx, end_date in enumerate(df_timeseries["end_dates"].iloc[:-1]):

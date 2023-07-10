@@ -1,5 +1,5 @@
 from glambie.processing.processing_helpers import filter_catalogue_with_config_settings
-from glambie.processing.processing_helpers import split_timeseries_at_gaps
+from glambie.processing.processing_helpers import slice_timeseries_at_gaps
 from glambie.processing.processing_helpers import check_and_handle_gaps_in_timeseries
 from glambie.const.data_groups import GLAMBIE_DATA_GROUPS
 from glambie.data.data_catalogue import DataCatalogue
@@ -141,11 +141,11 @@ def test_filter_catalogue_with_config_settings_demdiff_and_glaciological(example
     assert any(d.user_group == "sloths" for d in datasets_trend.datasets)
 
 
-def test_split_timeseries_at_gaps():
+def test_slice_timeseries_at_gaps():
     ts = pd.DataFrame({"start_dates": [2012, 2013, 2015, 2016, 2020],
                        "end_dates": [2013, 2014, 2016, 2017, 2023],
                        "changes": [2, 3, 4, 5, 6]})
-    split_ts_result = split_timeseries_at_gaps(ts)
+    split_ts_result = slice_timeseries_at_gaps(ts)
     expected_split_ts_result = [
         pd.DataFrame({"start_dates": [2012, 2013],
                       "end_dates": [2013, 2014],

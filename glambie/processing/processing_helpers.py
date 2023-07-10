@@ -261,3 +261,43 @@ def extend_annual_timeseries_if_outside_trends_period(annual_timeseries: Timeser
             annual_timeseries_copy.data.end_dates = np.array(df_merged["end_dates"])
             return annual_timeseries_copy
     return annual_timeseries_copy
+
+
+def check_and_handle_gaps_in_timeseries(data_catalogue: DataCatalogue) -> DataCatalogue:
+    new_datasets = []
+    for timeseries in data_catalogue.datasets:
+        if not timeseries.data.is_cumulative_valid():  # if invalid convert to handle the gaps
+            # 1 split timeseries dataframe
+            df_data = timeseries.data.as_dataframe()
+            split_dataframes = split_timeseries_at_gaps(df_data)
+            # 2 add split timeseries to new_datasets
+            for split_timeseries in split_dataframes:
+                timeseries_copy = timeseries.copy()
+                timeseries_copy.data.changes = np.array(split_timeseries["changes"])
+                timeseries_copy.data.errors = np.array(split_timeseries["errors"])
+                timeseries_copy.data.start_dates = np.array(split_timeseries["start_dates"])
+                timeseries_copy.data.end_dates = np.array(split_timeseries["end_dates"])
+                timeseries_copy.data.glacier_area_observed = None
+                timeseries_copy.data.glacier_area_reference = None
+                new_datasets.append(timeseries_copy)
+        else:  # or else append original
+            new_datasets.append(timeseries)
+
+    new_data_catalogue = DataCatalogue.from_list(new_datasets, base_path=data_catalogue.base_path)
+    return new_data_catalogue
+
+
+def split_timeseries_at_gaps(df_timeseries: pd.DataFrame) -> list[pd.DataFrame]:
+    split_indices = []
+    split_timeseries_dataframes = []
+    for idx, end_date in enumerate(df_timeseries["end_dates"].iloc[:-1]):
+        # If end_date != start_date for any of the consecutive rows, append to indices where df is split
+        if end_date != df_timeseries["start_dates"].iloc[idx + 1]:
+            split_indices.append(idx)
+    previous_index = 0
+    for split_index in split_indices:
+        split_timeseries_dataframes.append(df_timeseries.iloc[previous_index:split_index + 1].reset_index(drop=True))
+        previous_index = split_index + 1
+    # plus append last / full split in the end
+    split_timeseries_dataframes.append(df_timeseries.iloc[previous_index:].reset_index(drop=True))
+    return split_timeseries_dataframes

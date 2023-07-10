@@ -147,10 +147,6 @@ def edit_local_copies_of_glambie_csvs(file_check_dataframe: pd.DataFrame) -> pd.
     Function to edit the local copies of glambie csvs that didn't pass the checks run by
     check_glambie_submission_for_errors. Save out updated copies to the same local filepath.
 
-    TO DO: there are some cases where date_gaps will contain lots of 1s, and then some e.g. 31, 62 where whole months
-    are missing. This is allowed, and we would want to edit these files in the if statement below. Currently they won't
-    be edited as not all of the gaps are the same size.
-
     Parameters
     ----------
     file_check_dataframe : pd.DataFrame
@@ -162,19 +158,18 @@ def edit_local_copies_of_glambie_csvs(file_check_dataframe: pd.DataFrame) -> pd.
     for _, file in file_check_dataframe.iterrows():
         if not file.date_check_satisfied:
             submission_data_frame = pd.read_csv(file.local_filepath)
-            # Check what the gap is between first end and second start date - if it is a uniform gap then we will fix it
-            # here. If it varies, we will need to edit file manually
+
             date_gaps = [datetime.strptime(submission_data_frame.start_date[i + 1], '%d/%m/%Y') - datetime.strptime(
                 submission_data_frame.end_date[i], '%d/%m/%Y') for i in range(len(submission_data_frame) - 1)]
             date_gaps_in_days = [a.days for a in date_gaps]
 
-            # 1) Are all gaps 1 day
+            # 1) Are all gaps 1 day?
             if all(i == 1 for i in date_gaps_in_days):
                 new_end_dates = [datetime.strptime(a, '%d/%m/%Y') + relativedelta(days=1)
                                  for a in submission_data_frame.end_date]
                 submission_data_frame.end_date = [datetime.strftime(a, '%d/%m/%Y') for a in new_end_dates]
                 file_check_dataframe.loc[file_check_dataframe.local_filepath.__eq__(file.local_filepath),
-                                         'reason_for_edit'] = 'Day gap between end dates and subsequent start dates'
+                                         'reason_for_edit'] = '1 day gap between every row'
 
             # 2) Is it a gravimetry file with a GRACE gap?
             else:
@@ -184,26 +179,19 @@ def edit_local_copies_of_glambie_csvs(file_check_dataframe: pd.DataFrame) -> pd.
                     if all(i == 0 for i in non_grace_gaps):
                         file_check_dataframe.loc[
                             file_check_dataframe.local_filepath.__eq__(file.local_filepath),
-                            'reason_for_edit'] = 'No edits needed for this file, only data gap is due to GRACE missions'
+                            'reason_for_edit'] = 'Only data gap is due to GRACE missions'
 
                 # 3) Remaining possibility is that it is a gravimetry file with non-GRACE gaps that need interpolating
                 elif ('gravimetry' in file.local_filepath):
                     submission_data_frame = interpolate_change_per_day_to_fill_gaps(submission_data_frame)
                     file_check_dataframe.loc[
                         file_check_dataframe.local_filepath.__eq__(file.local_filepath),
-                        'reason_for_edit'] = 'Gravimetry file with valid gaps - these have been interpolated'
+                        'reason_for_edit'] = 'interpolated valid gaps in grav file'
                 else:
                     # If it is not a gravimetry file, then the data it contains is invalid.
                     file_check_dataframe.loc[
                         file_check_dataframe.local_filepath.__eq__(file.local_filepath),
                         'reason_for_edit'] = 'Non-gravimetry file with gaps in data - inspect manually'
-
-                # removing all remaining small day gaps by setting end_date(i) = start_date(i+1)
-                updated_end_dates = []
-                for i in range(len(submission_data_frame.end_date) - 1):
-                    updated_end_dates.append(submission_data_frame.start_date[i + 1])
-                updated_end_dates.append(submission_data_frame['end_date'].tolist()[-1])
-                submission_data_frame['end_date'] = updated_end_dates
 
             # Save out to same path as original file
             submission_data_frame.to_csv(file.local_filepath)

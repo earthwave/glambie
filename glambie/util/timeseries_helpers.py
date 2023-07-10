@@ -598,13 +598,13 @@ def interpolate_change_per_day_to_fill_gaps(input_dataframe):
     timeseries_dataframe : _type_
         _description_
     """
-    date_gaps = [datetime.strptime(input_dataframe.start_date[i + 1], '%d/%m/%Y') - datetime.strptime(
+    date_gaps = [datetime.datetime.strptime(input_dataframe.start_date[i + 1], '%d/%m/%Y') - datetime.datetime.strptime(
         input_dataframe.end_date[i], '%d/%m/%Y') for i in range(len(input_dataframe) - 1)]
     date_gaps_in_days = [a.days for a in date_gaps]
     input_dataframe['date_gap_days'] = np.append(date_gaps_in_days, [0])
 
-    start_dates = [datetime.strptime(a, '%d/%m/%Y') for a in input_dataframe.start_date]
-    end_dates = [datetime.strptime(a, '%d/%m/%Y') for a in input_dataframe.end_date]
+    start_dates = [datetime.datetime.strptime(a, '%d/%m/%Y') for a in input_dataframe.start_date]
+    end_dates = [datetime.datetime.strptime(a, '%d/%m/%Y') for a in input_dataframe.end_date]
     new_start_dates, new_end_dates, new_changes, new_errors = [], [], [], []
 
     for i in range(len(input_dataframe.start_date) - 1):
@@ -624,14 +624,15 @@ def interpolate_change_per_day_to_fill_gaps(input_dataframe):
             new_errors.append(np.nan)
 
     interpolated_dataframe = pd.DataFrame()
-    interpolated_dataframe['start_date'] = [datetime.strftime(a, '%d/%m/%Y') for a in new_start_dates]
-    interpolated_dataframe['end_date'] = [datetime.strftime(a, '%d/%m/%Y') for a in new_end_dates]
+    interpolated_dataframe['start_date'] = [datetime.datetime.strftime(a, '%d/%m/%Y') for a in new_start_dates]
+    interpolated_dataframe['end_date'] = [datetime.datetime.strftime(a, '%d/%m/%Y') for a in new_end_dates]
     interpolated_dataframe['glacier_change_observed'] = new_changes
     interpolated_dataframe['glacier_change_uncertainty'] = new_errors
 
     # calculate days covered by each row
-    date_gaps = [datetime.strptime(interpolated_dataframe['end_date'][i], '%d/%m/%Y') - datetime.strptime(
-        interpolated_dataframe['start_date'][i], '%d/%m/%Y') for i in range(len(interpolated_dataframe))]
+    date_gaps = [
+        datetime.datetime.strptime(interpolated_dataframe['end_date'][i], '%d/%m/%Y') - datetime.datetime.strptime(
+            interpolated_dataframe['start_date'][i], '%d/%m/%Y') for i in range(len(interpolated_dataframe))]
     date_gaps_in_days = [a.days for a in date_gaps]
     interpolated_dataframe['days_covered'] = date_gaps_in_days
 
@@ -659,5 +660,12 @@ def interpolate_change_per_day_to_fill_gaps(input_dataframe):
     interpolated_dataframe['glacier_change_uncertainty'] = [
         a * b for a, b in zip(interpolated_dataframe.glacier_change_uncertainty_per_day,
                               interpolated_dataframe.days_covered)]
+
+    # removing all remaining small day gaps by setting end_date(i) = start_date(i+1)
+    updated_end_dates = []
+    for i in range(len(interpolated_dataframe.end_date) - 1):
+        updated_end_dates.append(interpolated_dataframe.start_date[i + 1])
+    updated_end_dates.append(interpolated_dataframe['end_date'].tolist()[-1])
+    interpolated_dataframe['end_date'] = updated_end_dates
 
     return interpolated_dataframe

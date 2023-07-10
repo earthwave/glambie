@@ -1,0 +1,28 @@
+# config yaml file for iceland
+---
+region_name: central_asia
+year_type: glaciological # glaciological or calendar
+
+seasonal_correction_dataset:
+  user_group: Huss_monthly
+  data_group: combined
+  # user_group: UZH_GlaciolSineWave
+  # data_group: glaciological
+
+region_run_settings:
+  altimetry:
+    exclude_annual_datasets :
+    - Ke
+    - Treichler_ICESat
+    exclude_trend_datasets :
+    - XX
+  gravimetry:
+    exclude_annual_datasets :
+    - XX
+    exclude_trend_datasets :
+    - XX
+  demdiff_and_glaciological :
+    exclude_annual_datasets : # glaciological datasets
+    - UZH_GlaciolSineWave
+    exclude_trend_datasets : # demdiff datasets
+    - XXX

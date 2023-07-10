@@ -125,7 +125,7 @@ def plot_raw_input_data_of_data_group(catalogue_raw: DataCatalogue,
             label="Dataset: " + ds.user_group)
 
     add_labels_axlines_and_title(
-        axes=axes, unit=catalogue_raw.datasets[0].unit, legend_fontsize=9,
+        axes=axes, unit=catalogue_raw.datasets[0].unit, legend_fontsize=7,
         title="{} - {} - {}: raw input data".format(region.long_name, data_group.long_name, category))
     finalise_save_to_file_and_close_plot(output_filepath)
 
@@ -150,7 +150,7 @@ def plot_raw_and_homogenized_input_data_of_data_group(catalogue_raw: DataCatalog
     for count, ds in enumerate(catalogue_homogenized.datasets):
         plot_non_cumulative_timeseries_on_axis(
             result_dataframe=ds.data.as_dataframe(), ax=axes[0], colour=colours[count], linestyle="--",
-            plot_errors=plot_errors, label="Dataset (raw): " + ds.user_group)
+            plot_errors=plot_errors, label="Dataset (homog.): " + ds.user_group)
 
     # plot cumulative timeseries
     for count, (ds_raw, ds_homog) in enumerate(zip(catalogue_raw.datasets, catalogue_homogenized.datasets)):
@@ -161,10 +161,10 @@ def plot_raw_and_homogenized_input_data_of_data_group(catalogue_raw: DataCatalog
         plot_cumulative_timeseries_on_axis(
             timeseries=ds_homog, ax=axes[1], colour=colours[count], plot_errors=plot_errors, linestyle="--",
             timeseries_for_vertical_adjustment=trend_combined,
-            label="Dataset: " + ds_homog.user_group)
+            label="Dataset (homog.): " + ds_homog.user_group)
 
     add_labels_axlines_and_title(
-        axes=axes, unit=catalogue_raw.datasets[0].unit, legend_fontsize=9,
+        axes=axes, unit=catalogue_raw.datasets[0].unit, legend_fontsize=7,
         title="{} - {} - {}: raw input data".format(region.long_name, data_group.long_name, category))
     finalise_save_to_file_and_close_plot(output_filepath)
 
@@ -192,7 +192,7 @@ def plot_homogenized_input_data_of_data_group(catalogue_annual: DataCatalogue,
             label="Dataset: " + ds.user_group)
 
     add_labels_axlines_and_title(
-        axes=axes, unit=catalogue_annual.datasets[0].unit, legend_fontsize=9,
+        axes=axes, unit=catalogue_annual.datasets[0].unit, legend_fontsize=7,
         title="{} - {}: homogenized input data".format(region.long_name, data_group.long_name))
     finalise_save_to_file_and_close_plot(output_filepath)
 
@@ -256,7 +256,7 @@ def plot_recalibration_of_annual_variability_with_trends(catalogue_trends: DataC
     # plot cumulative
     for count, (trends, annual) in enumerate(zip(catalogue_trends.datasets, catalogue_calibrated_series.datasets)):
         plot_cumulative_timeseries_on_axis(
-            timeseries=trends, ax=axes[1], colour=colours[count], plot_errors=plot_errors, linestyle="--",
+            timeseries=trends, ax=axes[1], colour=colours[count], plot_errors=plot_errors,
             timeseries_for_vertical_adjustment=trend_combined,
             label="Trend: " + trends.user_group)
         plot_cumulative_timeseries_on_axis(
@@ -269,7 +269,7 @@ def plot_recalibration_of_annual_variability_with_trends(catalogue_trends: DataC
         title="{} - {}: recalibration with trends".format(region.long_name, data_group.long_name), legend_fontsize=7)
 
     add_labels_axlines_and_title(
-        axes=axes, unit=catalogue_trends.datasets[0].unit, legend_fontsize=9,
+        axes=axes, unit=catalogue_trends.datasets[0].unit, legend_fontsize=7,
         title="{} - {}: recalibration with trends".format(region.long_name, data_group.long_name))
     finalise_save_to_file_and_close_plot(output_filepath)
 
@@ -299,14 +299,14 @@ def plot_recalibrated_result_of_data_group(catalogue_trends: DataCatalogue,
         plot_cumulative_timeseries_on_axis(
             timeseries=timeseries, ax=axes[1], colour=colours[count], plot_errors=plot_errors, linestyle="--",
             timeseries_for_vertical_adjustment=trend_combined,
-            label="Calibrated annual series: {}".format(ds.user_group))
+            label="Calibrated annual series: {}".format(timeseries.user_group))
 
     plot_cumulative_timeseries_on_axis(
         timeseries=trend_combined, ax=axes[1], colour="black", plot_errors=plot_errors, linestyle="--",
         timeseries_for_vertical_adjustment=None,
         label="{} - combined solution".format(data_group.long_name))
 
-    add_labels_axlines_and_title(axes=axes, unit=catalogue_trends.datasets[0].unit, legend_fontsize=9,
+    add_labels_axlines_and_title(axes=axes, unit=catalogue_trends.datasets[0].unit, legend_fontsize=7,
                                  title="{} - {}: combined solution".format(region.long_name, data_group.long_name))
     finalise_save_to_file_and_close_plot(output_filepath)
 
@@ -344,7 +344,7 @@ def plot_combination_of_sources_within_region(catalogue_results: DataCatalogue,
         label="Consensus estimate")
 
     add_labels_axlines_and_title(axes=axes, unit=combined_timeseries.unit,
-                                 title="{}: combined estimate".format(region.long_name), legend_fontsize=9)
+                                 title="{}: combined estimate".format(region.long_name), legend_fontsize=7)
     finalise_save_to_file_and_close_plot(output_filepath)
 
 
@@ -380,5 +380,5 @@ def plot_combination_of_regions_to_global(catalogue_region_results: DataCatalogu
         timeseries_for_vertical_adjustment=None, label="Global estimate")
 
     add_labels_axlines_and_title(axes=axes, unit=global_timeseries.unit,
-                                 title="{}: combined estimate".format(region.long_name), legend_fontsize=9)
+                                 title="{}: combined estimate".format(region.long_name), legend_fontsize=7)
     finalise_save_to_file_and_close_plot(output_filepath)

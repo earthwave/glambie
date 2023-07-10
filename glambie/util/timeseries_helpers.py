@@ -668,4 +668,9 @@ def interpolate_change_per_day_to_fill_gaps(input_dataframe):
     updated_end_dates.append(interpolated_dataframe['end_date'].tolist()[-1])
     interpolated_dataframe['end_date'] = updated_end_dates
 
+    # then remove row that has been interpolated for GRACE gap, as this value will be much bigger than the rest
+    # (check for start date == 1/7/2017, not super robust)
+    interpolated_dataframe.drop(
+        interpolated_dataframe.loc[interpolated_dataframe.start_date.__eq__('01/07/2017')].index, inplace=True)
+
     return interpolated_dataframe

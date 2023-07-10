@@ -3,7 +3,6 @@ import numpy as np
 import pandas as pd
 from datetime import datetime
 from google.cloud.storage import Client
-from dateutil.relativedelta import relativedelta
 from glambie.util.timeseries_helpers import interpolate_change_per_day_to_fill_gaps
 
 DATA_TRANSFER_BUCKET_NAME = "glambie-submissions"
@@ -41,6 +40,17 @@ def download_csvs_from_bucket(local_data_directory_path: str, region_prefix: str
                 blob.download_to_file(temp_file, raw_download=False)
 
     return downloaded_files
+
+
+def upload_edited_files_to_bucket(file_dataframe: pd.DataFrame):
+
+    for _, file in file_dataframe.iterrows():
+        file_to_upload = file.local_filepath
+
+        bucket = _storage_client.get_bucket(DATA_TRANSFER_BUCKET_NAME)
+        blob = bucket.blob(file_to_upload)
+        blob.upload_from_filename(file_to_upload)
+        print('Edited version of {} uploaded to bucket'.format(file.file_name))
 
 
 def generate_results_dataframe(downloaded_files: list[str], local_path: str) -> pd.DataFrame:
@@ -163,13 +173,17 @@ def edit_local_copies_of_glambie_csvs(file_check_dataframe: pd.DataFrame) -> pd.
                 submission_data_frame.end_date[i], '%d/%m/%Y') for i in range(len(submission_data_frame) - 1)]
             date_gaps_in_days = [a.days for a in date_gaps]
 
-            # 1) Are all gaps 1 day?
-            if all(i == 1 for i in date_gaps_in_days):
-                new_end_dates = [datetime.strptime(a, '%d/%m/%Y') + relativedelta(days=1)
-                                 for a in submission_data_frame.end_date]
-                submission_data_frame.end_date = [datetime.strftime(a, '%d/%m/%Y') for a in new_end_dates]
+            # 1) Are all gaps 1 or 2 days? We are  aware of some submissions where leap years haven't been taken into
+            # account, resulting in mostly 1 day gaps and a small number of 2 day gaps.
+            if all(i <= 2 for i in date_gaps_in_days):
+                updated_end_dates = []
+                for i in range(len(submission_data_frame.end_date) - 1):
+                    updated_end_dates.append(submission_data_frame.start_date[i + 1])
+                updated_end_dates.append(submission_data_frame['end_date'].tolist()[-1])
+                submission_data_frame['end_date'] = updated_end_dates
+
                 file_check_dataframe.loc[file_check_dataframe.local_filepath.__eq__(file.local_filepath),
-                                         'reason_for_edit'] = '1 day gap between every row'
+                                         'reason_for_edit'] = '1 or 2 day gap between every row'
 
             # 2) Is it a gravimetry file with a GRACE gap?
             else:
@@ -211,7 +225,7 @@ def edit_local_copies_of_glambie_csvs(file_check_dataframe: pd.DataFrame) -> pd.
             submission_data_frame.to_csv(file.local_filepath)
             # Record that the file has been edited
             file_check_dataframe.loc[file_check_dataframe.local_filepath.__eq__(file.local_filepath),
-                                     'reason_for_edit'] = 'Random nodata value was used - these rows have been removed'
+                                     'reason_for_edit'] = 'Random no data value was used'
 
     return file_check_dataframe
 
@@ -221,11 +235,12 @@ def main():
     local_path = '/path/to/local/folder'
     # If you want to download files for a specific region, set the region_prefix and supply here
     downloaded_files = download_csvs_from_bucket(local_path, region_prefix=None)
-    gdf = generate_results_dataframe(downloaded_files, local_path)
-    edit_local_copies_of_glambie_csvs(gdf)
+    file_check_results_dataframe = generate_results_dataframe(downloaded_files, local_path)
+    record_of_edits_dataframe = edit_local_copies_of_glambie_csvs(file_check_results_dataframe)
 
     # Final step that needs to be implemented here is to upload the edited files into the bucket, after copying the
     # original version of the file into an archive folder
+    upload_edited_files_to_bucket(record_of_edits_dataframe)
 
 
 if __name__ == "__main__":

@@ -39,7 +39,8 @@ def calibrate_timeseries_with_trends_catalogue(catalogue_with_trends: DataCatalo
         calibrated_s, dist_mat = calibrate_timeseries_with_trends(ds.data.as_dataframe(),
                                                                   calibration_timeseries.data.as_dataframe())
         # 2) calculate mean calibration timeseries from all the different curves
-        mean_calibrated_ts = combine_calibrated_timeseries(calibrated_s, dist_mat, p_value=0)
+        mean_calibrated_ts = combine_calibrated_timeseries(calibrated_s, dist_mat, p_value=0,
+                                                           calculate_outside_calibrated_series_period=False)
         df_mean_calibrated = pd.DataFrame({"start_dates": calibration_timeseries.data
                                            .as_dataframe().start_dates,
                                            "end_dates": calibration_timeseries.data
@@ -71,8 +72,11 @@ def calibrate_timeseries_with_trends_catalogue(catalogue_with_trends: DataCatalo
         ds_copy.data = TimeseriesData(start_dates=np.array(df_mean_calibrated_na_removed["start_dates"]),
                                       end_dates=np.array(df_mean_calibrated_na_removed["end_dates"]),
                                       changes=np.array(df_mean_calibrated_na_removed["changes"]),
-                                      errors=np.array(uncertainties_calibrated_series), glacier_area_observed=None,
-                                      glacier_area_reference=None)
+                                      errors=np.array(uncertainties_calibrated_series),
+                                      glacier_area_observed=None,
+                                      glacier_area_reference=None,
+                                      hydrological_correction_value=None,
+                                      remarks=None)
         calibrated_series.append(ds_copy)
 
     catalogue_calibrated_series = DataCatalogue.from_list(calibrated_series)

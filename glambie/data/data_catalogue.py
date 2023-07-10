@@ -6,9 +6,11 @@ from typing import Tuple
 import warnings
 
 from glambie.const.data_groups import GLAMBIE_DATA_GROUPS, GlambieDataGroup
-from glambie.const.regions import REGIONS
+from glambie.const.regions import REGIONS, REGIONS_BY_SHORT_NAME
 from glambie.const.regions import RGIRegion
 from glambie.data.timeseries import Timeseries, TimeseriesData
+from glambie.data.submission_system_interface import (
+    fetch_all_submission_metadata, fetch_timeseries_dataframe, SUBMISSION_SYSTEM_BASEPATH_PLACEHOLDER)
 import pandas as pd
 import numpy as np
 import copy
@@ -17,13 +19,64 @@ from functools import reduce
 
 class DataCatalogue():
     """Class containing a catalogue of datasets
-
-    This only contains metadata - all actual data loaded by client.
     """
 
     def __init__(self, base_path: str, datasets: list[Timeseries]):
         self._base_path = base_path
         self._datasets = datasets
+
+    @staticmethod
+    def from_glambie_submission_system() -> DataCatalogue:
+        """
+        Loads a catalogue from the GlaMBIE submission system.
+
+        Where a submission does not have an RGI Version
+        (because we introduced this requirement partway through the process), we substitute 6.0.
+
+        To get the unit, we need to load the file and check.
+
+        Returns
+        -------
+        DataCatalogue
+            Data catalogue (actually all of the data, not just metadata) containing data for GlaMBIE.
+        """
+        submission_system_metadata = fetch_all_submission_metadata()
+
+        datasets = []
+        for metadata in submission_system_metadata:
+            # create a reduced dict that only contains the metadata fields that this repo does not directly use.
+            additional_metadata = {
+                k: v for k, v in metadata.items() if k not in [
+                    'region', 'observational_source', 'lead_author_name', 'user_group', 'rgi_version_select']}
+
+            datasets.append(
+                Timeseries(
+                    region=REGIONS_BY_SHORT_NAME[metadata['region'].upper()],
+                    data_group=GLAMBIE_DATA_GROUPS[
+                        metadata['observational_source'].replace('dem_differencing', 'demdiff')],
+                    data_filepath=SUBMISSION_SYSTEM_BASEPATH_PLACEHOLDER,
+                    user=metadata['lead_author_name'],
+                    user_group=metadata['user_group'],
+                    rgi_version=metadata.get('rgi_version_select', '6.0'),
+                    additional_metadata=additional_metadata))
+
+            # we need to load the data anyway to get the unit, so may as well keep it loaded.
+            data = fetch_timeseries_dataframe(
+                datasets[-1].user_group, datasets[-1].region, datasets[-1].data_group)
+            datasets[-1].unit = data['unit'].iloc[0]
+            datasets[-1].data = TimeseriesData(
+                start_dates=np.array(data['start_date_fractional']),
+                end_dates=np.array(data['end_date_fractional']),
+                changes=np.array(data['glacier_change_observed']),
+                errors=np.array(data['glacier_change_uncertainty']),
+                glacier_area_reference=np.array(data['glacier_area_reference']),
+                glacier_area_observed=np.array(data['glacier_area_observed']),
+                hydrological_correction_value=(
+                    np.array(data['hydrological_correction_value'])
+                    if 'hydrological_correction_value' in data.columns else None),
+                remarks=np.array(data['remarks']))
+
+        return DataCatalogue(SUBMISSION_SYSTEM_BASEPATH_PLACEHOLDER, datasets)
 
     @staticmethod
     def from_json_file(metadata_file_path: str) -> DataCatalogue:
@@ -38,7 +91,8 @@ class DataCatalogue():
         Returns
         -------
         DataCatalogue
-            data catalogue containing the metadata of datasets, the actual timeseries data will lazy loaded
+            Data Catalogue for GlaMBIE.
+            The data will be lazily loaded into the catalogue as required, gradually turning it into a full database.
         """
         with open(metadata_file_path) as json_file:
             return DataCatalogue.from_dict(json.load(json_file))
@@ -56,7 +110,8 @@ class DataCatalogue():
         Returns
         -------
         DataCatalogue
-            data catalogue containing the metadata of datasets, the actual timeseries data will lazy loaded
+            Data Catalogue for GlaMBIE.
+            The data will be lazily loaded into the catalogue as required, gradually turning it into a full database.
         """
         base_path = os.path.join(*meta_data_dict['base_path'])
         datasets_dict = meta_data_dict['datasets']
@@ -88,7 +143,8 @@ class DataCatalogue():
         Returns
         -------
         DataCatalogue
-            data catalogue containing the metadata of datasets
+            Data Catalogue for GlaMBIE.
+            The data will be lazily loaded into the catalogue as required, gradually turning it into a full database.
         """
         return DataCatalogue(base_path, datasets_list)
 
@@ -223,7 +279,8 @@ class DataCatalogue():
                 df["changes"] = df["changes"] - df_sub["changes"].mean()
                 data_catalogue_out.datasets[idx].data.changes = np.array(df["changes"])
                 means_over_period.append(df_sub["changes"].mean())
-
+        # join all catalogues by start and end dates
+        # the resulting dataframe has a set of columns with repeating prefixes
         df = reduce(lambda left, right: left.merge(right, how="outer", on=["start_dates", "end_dates"]), catalogue_dfs)
         df = df.sort_values(by="start_dates")
         start_dates, end_dates = np.array(df["start_dates"]), np.array(df["end_dates"])
@@ -231,14 +288,22 @@ class DataCatalogue():
             df.filter(regex=("changes*")).columns.to_list())].mean(axis=1))
 
         # UNCERTAINTIES -- more information is in GlaMBIE Assessment Algorithm document
-        # propagate observational uncertainties
+        # 1 ) propagate observational uncertainties
         sigma_obs_uncertainty = ((df.filter(regex=("errors*"))**2).sum(axis=1))**0.5
         # divide by 1/n
         sigma_obs_uncertainty = (1 / df.filter(regex=("errors*")).count(axis=1)) * sigma_obs_uncertainty
 
-        # variability of change between sources, times 1.96 as we calculate sigma-2 uncertainties (95%)
-        sigma_variability_uncertainty = 1.96 * np.array(df[df.columns.intersection(
-            df.filter(regex=("changes*")).columns.to_list())].sem(axis=1, ddof=0))
+        # 2) variability of change between sources
+        column_names = df.columns.intersection(df.filter(regex=("changes*")).columns.to_list())
+        # calculate standard deviation of all differences from annual mean: TODO: what to do if rate is removed?
+        df_diff_from_mean = df[column_names].subtract(mean_changes, axis=0)
+        arr_diff_from_mean = df_diff_from_mean[df_diff_from_mean != 0].values.flatten()
+        arr_diff_from_mean = arr_diff_from_mean[~pd.isnull(arr_diff_from_mean)]  # remove nans
+        stdev_differences = np.std(arr_diff_from_mean) if len(arr_diff_from_mean) > 0 else 0
+        # divide stdev_differences by N = number of different observations
+        # df_diff_from_mean.count(axis=1) this will give us the number of values that are not NaN per row
+        # times 1.96 as we calculate sigma-2 uncertainties (95%)
+        sigma_variability_uncertainty = 1.96 * np.array(stdev_differences / df_diff_from_mean.count(axis=1))
 
         # Combine two uncertainty sources assuming they are independent
         uncertainties = (sigma_obs_uncertainty**2 + sigma_variability_uncertainty**2)**0.5
@@ -256,7 +321,9 @@ class DataCatalogue():
                                  changes=np.array(df_mean_annual["changes"]),
                                  errors=np.array(df_mean_annual["errors"]),
                                  glacier_area_reference=None,
-                                 glacier_area_observed=None)
+                                 glacier_area_observed=None,
+                                 hydrological_correction_value=None,
+                                 remarks=None)
         reference_dataset_for_metadata = self.datasets[0]  # use this as a reference for filling metadata
 
         return Timeseries(region=reference_dataset_for_metadata.region, data_group=out_data_group,

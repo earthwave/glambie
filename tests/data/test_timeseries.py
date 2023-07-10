@@ -19,7 +19,8 @@ def example_timeseries():
     ts = Timeseries(rgi_version=6,
                     unit='m',
                     data_group=GLAMBIE_DATA_GROUPS['demdiff'],
-                    data_filepath=os.path.join("tests", "test_data", "datastore", "central_asia_demdiff_sharks.csv"))
+                    data_filepath=os.path.join("tests", "test_data", "datastore", "central_asia_demdiff_sharks.csv"),
+                    additional_metadata={'toves': 'slithy', 'mome raths': 'outgrabe'})
     return ts
 
 
@@ -30,13 +31,24 @@ def example_timeseries_ingested():
                           changes=np.array([2., 5.]),
                           errors=np.array([1., 1.2]),
                           glacier_area_reference=np.array([10000, 10000]),
-                          glacier_area_observed=np.array([10000, 10000]))
+                          glacier_area_observed=np.array([10000, 10000]),
+                          hydrological_correction_value=None,
+                          remarks=np.array(['thunder', 'lightning']))
     ts = Timeseries(rgi_version=6,
                     unit='m',
                     data_group=GLAMBIE_DATA_GROUPS['demdiff'],
                     data=data,
                     region=REGIONS["iceland"])
     return ts
+
+
+def test_save_as_csv(tmp_path, example_timeseries_ingested):
+    out_csv_path = os.path.join(tmp_path, "out_csv_test.csv")
+    example_timeseries_ingested.save_data_as_csv(out_csv_path)
+    assert os.path.exists(out_csv_path)
+    df = pd.read_csv(out_csv_path)
+    # check data read from CSV is same as TimeseriesData
+    pd.testing.assert_frame_equal(df, example_timeseries_ingested.data.as_dataframe(), check_dtype=False)
 
 
 def test_data_ingestion(example_timeseries_ingested):
@@ -82,7 +94,7 @@ def test_max_temporal_resolution(example_timeseries_ingested):
 
 def test_data_as_dataframe(example_timeseries_ingested):
     df = example_timeseries_ingested.data.as_dataframe()
-    assert df.shape == (2, 6)
+    assert df.shape == (2, 8)
 
 
 def test_metadata_as_dataframe(example_timeseries):
@@ -215,10 +227,7 @@ def test_convert_timeseries_to_annual_trends_down_sampling(example_timeseries_in
     example_timeseries_converted = example_timeseries_ingested.convert_timeseries_to_annual_trends()
     assert example_timeseries_converted.timeseries_is_annual_grid()
     assert len(example_timeseries_converted.data.changes) == 1
-    assert len(example_timeseries_converted.data.errors) == 1
     assert example_timeseries_converted.data.changes[0] == example_timeseries_ingested.data.changes.sum()
-    # current implementation of errors is stdev, test will need to be adapted once this is changed
-    assert example_timeseries_converted.data.errors[0] == example_timeseries_ingested.data.errors.std()
 
     # add one more month and check it's still the same
     np.append(example_timeseries_ingested.data.start_dates, 2011)
@@ -240,6 +249,19 @@ def test_convert_timeseries_to_annual_trends_down_sampling(example_timeseries_in
     assert example_timeseries_converted2.timeseries_is_annual_grid()
     assert len(example_timeseries_converted2.data.changes) == 0
     assert len(example_timeseries_converted2.data.errors) == 0
+
+
+def test_convert_timeseries_to_annual_trends_down_sampling_errors(example_timeseries_ingested):
+    # we are resampling since it is monthly resolution
+    example_timeseries_ingested.data.start_dates = np.linspace(2010, 2011, 13)[:-1]
+    example_timeseries_ingested.data.end_dates = np.linspace(2010, 2011, 13)[1:]
+    example_timeseries_ingested.data.changes = np.linspace(1, 11, 12)
+    example_timeseries_ingested.data.errors = np.linspace(1, 2, 12)
+    example_timeseries_converted = example_timeseries_ingested.convert_timeseries_to_annual_trends()
+    assert len(example_timeseries_converted.data.errors) == 1
+    assert example_timeseries_converted.data.errors[0] == np.sqrt(np.nansum(example_timeseries_ingested.
+                                                                            data.errors**2)) / len(
+                                                                                example_timeseries_ingested.data.errors)
 
 
 def test_convert_timeseries_to_annual_trends_down_sampling_glaciological_year(example_timeseries_ingested):
@@ -266,6 +288,7 @@ def test_convert_timeseries_to_annual_trends_up_sampling(example_timeseries_inge
     example_timeseries_ingested.data.errors = np.array([1.0])
     example_timeseries_ingested.data.glacier_area_reference = None
     example_timeseries_ingested.data.glacier_area_observed = None
+    example_timeseries_ingested.data.remarks = np.array(['wibble'])
 
     example_timeseries_converted = example_timeseries_ingested.convert_timeseries_to_annual_trends()
     assert example_timeseries_converted.timeseries_is_annual_grid()
@@ -328,19 +351,27 @@ def test_convert_timeseries_to_longterm_trend(example_timeseries_ingested):
     assert len(example_timeseries_converted.data.changes) == 1
     assert np.array_equal(example_timeseries_converted.data.changes,
                           np.array([example_timeseries_ingested.data.changes.sum()]))
-    # will need to be changed in future when error calculation adapted
-    assert np.array_equal(example_timeseries_converted.data.errors,
-                          np.array([example_timeseries_ingested.data.errors.std()]))
     assert np.array_equal(example_timeseries_converted.data.start_dates,
                           np.array([example_timeseries_ingested.data.start_dates[0]]))
     assert np.array_equal(example_timeseries_converted.data.end_dates,
                           np.array([example_timeseries_ingested.data.end_dates[1]]))
 
 
+def test_convert_timeseries_to_longterm_trend_errors(example_timeseries_ingested):
+    example_timeseries_converted = example_timeseries_ingested.convert_timeseries_to_longterm_trend()
+    assert len(example_timeseries_converted.data.changes) == 1
+    assert np.array_equal(example_timeseries_converted.data.changes,
+                          np.array([example_timeseries_ingested.data.changes.sum()]))
+    assert np.array_equal(example_timeseries_converted.data.errors,
+                          np.array([np.sqrt(np.nansum(example_timeseries_ingested.data.errors**2)) / len(
+                              example_timeseries_ingested.data.errors)]))
+
+
 def test_apply_area_change(example_timeseries_ingested):
     timeseries_area_change = example_timeseries_ingested.apply_area_change(rgi_area_version=6, apply_change=True)
     assert not np.array_equal(example_timeseries_ingested.data.changes, np.array(timeseries_area_change.data.changes))
     assert timeseries_area_change.data.changes[-1] > 5.0
+    assert timeseries_area_change.area_change_applied
 
 
 def test_apply_area_change_convert_to_gt_equals_same(example_timeseries_ingested):
@@ -366,9 +397,29 @@ def test_apply_area_change_and_remove(example_timeseries_ingested):
     timeseries_area_change_removed = timeseries_area_change.apply_area_change(rgi_area_version=6, apply_change=False)
     assert np.array_equal(example_timeseries_ingested.data.changes,
                           np.array(timeseries_area_change_removed.data.changes))
+    assert timeseries_area_change.area_change_applied
+    assert not timeseries_area_change_removed.area_change_applied
 
 
 def test_apply_area_change_and_wrong_unit(example_timeseries_ingested):
     example_timeseries_ingested.unit = "gt"
     with pytest.raises(AssertionError):
         example_timeseries_ingested.apply_area_change(rgi_area_version=6, apply_change=True)
+
+
+def test_apply_area_change_when_already_applied(example_timeseries_ingested):
+    timeseries_area_change = example_timeseries_ingested.apply_area_change(rgi_area_version=6, apply_change=True)
+    with pytest.raises(AssertionError):
+        timeseries_area_change.apply_area_change(rgi_area_version=6, apply_change=True)
+
+
+def test_remove_area_change_when_already_removed(example_timeseries_ingested):
+    assert not example_timeseries_ingested.area_change_applied
+    with pytest.raises(AssertionError):
+        example_timeseries_ingested.apply_area_change(rgi_area_version=6, apply_change=False)
+
+
+def test_raises_assertion_error_when_converting_to_gt_with_area_change_applied(example_timeseries_ingested):
+    timeseries_area_change = example_timeseries_ingested.apply_area_change(rgi_area_version=6, apply_change=True)
+    with pytest.raises(AssertionError):
+        timeseries_area_change.convert_timeseries_to_unit_gt()

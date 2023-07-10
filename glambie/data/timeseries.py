@@ -9,6 +9,7 @@ import warnings
 
 from glambie.const.data_groups import GlambieDataGroup
 from glambie.const.regions import RGIRegion
+from glambie.data.submission_system_interface import fetch_timeseries_dataframe, SUBMISSION_SYSTEM_BASEPATH_PLACEHOLDER
 from glambie.util.mass_height_conversions import \
     meters_to_meters_water_equivalent
 from glambie.util.mass_height_conversions import \
@@ -40,14 +41,16 @@ class TimeseriesData():
     For more information check the GlaMBIE Assessment Framework,
     or the data submission instructions on the GlaMBIE website.
     """
-    start_dates: np.ndarray  # start date of change observed
-    end_dates: np.ndarray  # end date of change observed
-    changes: np.ndarray  # change observed between start and end date
-    errors: np.ndarray  # errors of observed change
+    start_dates: np.ndarray  # start date of change observed.
+    end_dates: np.ndarray  # end date of change observed.
+    changes: np.ndarray  # change observed between start and end date.
+    errors: np.ndarray  # errors of observed change.
     # Area of region taken from a reference glacier mask: e.g. Randolph Glacier Inventory v6.0 or v7.0.
     glacier_area_reference: np.ndarray
     # Area of region supplied alongside the timeseries data, a measurement made by the data provider.
     glacier_area_observed: np.ndarray
+    hydrological_correction_value: np.ndarray  # A correction value used specifically for gravimetry.
+    remarks: np.ndarray  # An extra column for per-timeseries string comments.
 
     @property
     def min_start_date(self) -> float:
@@ -91,13 +94,22 @@ class TimeseriesData():
         return len(self.dates)
 
     def as_dataframe(self):
-        return pd.DataFrame({'start_dates': self.start_dates,
-                            'end_dates': self.end_dates,
-                             'changes': self.changes,
-                             'errors': self.errors,
-                             'glacier_area_reference': self.glacier_area_reference,
-                             'glacier_area_observed': self.glacier_area_observed
-                             })
+        return pd.DataFrame({
+            'start_dates': self.start_dates,
+            'end_dates': self.end_dates,
+            'changes': self.changes,
+            'errors': self.errors,
+            'glacier_area_reference': self.glacier_area_reference,
+            'glacier_area_observed': self.glacier_area_observed,
+            'hydrological_correction_value': (
+                self.hydrological_correction_value
+                if self.hydrological_correction_value is not None
+                else np.full(len(self.changes), None)),
+            'remarks': (
+                self.remarks
+                if self.remarks is not None
+                else np.full(len(self.changes), None)),
+        })
 
     def as_cumulative_timeseries(self) -> pd.DataFrame:
         """
@@ -142,7 +154,8 @@ class Timeseries():
 
     def __init__(self, region: RGIRegion = None, data_group: GlambieDataGroup = None, data_filepath: str = None,
                  data: TimeseriesData = None, user: str = None, user_group: str = None,
-                 rgi_version: int = None, unit: str = None):
+                 rgi_version: int = None, unit: str = None, additional_metadata: dict = None,
+                 area_change_applied: bool = False):
         """
         Class containing meta data and data from of an individual timeseries.
 
@@ -169,6 +182,12 @@ class Timeseries():
             which version of rgi has been used, e.g. 6 or 7, by default None
         unit : str, optional
             unit the timeseries is in, e.g. m, mwe or gt, by default None
+        additional_metadata : dict, optional
+            additional metadata fields collected by the submission system, but not directly used within the study.
+        area_change_applied: bool, optional
+            A parameter storing if a timeseries rate has been converted using varying glacier area, which assumes
+            that the glacier area is not static over time.
+            If set to False, area change has not been applied yet, if set to True it has been applied, by default True
         """
         self.user = user
         self.user_group = user_group
@@ -178,44 +197,57 @@ class Timeseries():
         self.unit = unit
         self.data_filepath = data_filepath
         self.data = data
+        self.additional_metadata = additional_metadata
         if self.data is not None:
             self.is_data_loaded = True
+        self.area_change_applied = area_change_applied
 
     def load_data(self) -> TimeseriesData:
         """Reads data into class from specified filepath
         """
         if self.data_filepath is None:
             raise ValueError("Can not load data: file path not set")
+        elif self.data_filepath == SUBMISSION_SYSTEM_BASEPATH_PLACEHOLDER:
+            data = fetch_timeseries_dataframe(self.user_group, self.region, self.data_group)
+        else:
+            data = pd.read_csv(self.data_filepath)
 
-        data = pd.read_csv(self.data_filepath)
-
-        self.data = TimeseriesData(start_dates=np.array(data['start_date_fractional']),
-                                   end_dates=np.array(data['end_date_fractional']),
-                                   changes=np.array(data['glacier_change_observed']),
-                                   errors=np.array(data['glacier_change_uncertainty']),
-                                   glacier_area_reference=np.array(data['glacier_area_reference']),
-                                   glacier_area_observed=np.array(data['glacier_area_observed']))
+        self.data = TimeseriesData(
+            start_dates=np.array(data['start_date_fractional']),
+            end_dates=np.array(data['end_date_fractional']),
+            changes=np.array(data['glacier_change_observed']),
+            errors=np.array(data['glacier_change_uncertainty']),
+            glacier_area_reference=np.array(data['glacier_area_reference']),
+            glacier_area_observed=np.array(data['glacier_area_observed']),
+            hydrological_correction_value=(
+                np.array(data['hydrological_correction_value'])
+                if 'hydrological_correction_value' in data.columns else None),
+            remarks=(
+                np.array(data['remarks'])
+                if 'remarks' in data.columns else None))
         self.is_data_loaded = True
         return self.data
 
     def metadata_as_dataframe(self) -> pd.DataFrame:
         """
-        Returns meta data for a timeseries dataset as a dataframe
+        Returns meta data for a timeseries dataset as a dataframe.
 
         Returns
         -------
         pd.DataFrame
             Dataframe containing dataset meta data
         """
-        region = self.region.name if self.region is not None else None
-        data_group = self.data_group.name if self.data_group is not None else None
-        return pd.DataFrame({'data_group': data_group,
-                             'region': region,
-                             'user': self.user,
-                             'user_group': self.user_group,
-                             'rgi_version': self.rgi_version,
-                             'unit': self.unit
-                             }, index=[0])
+        metadata_dict = {
+            'data_group': getattr(self.data_group, 'name', None),
+            'region': getattr(self.region, 'name', None),
+            'user': self.user,
+            'user_group': self.user_group,
+            'rgi_version': self.rgi_version,
+            'unit': self.unit
+        }
+        if self.additional_metadata is not None:
+            metadata_dict.update(self.additional_metadata)
+        return pd.DataFrame(metadata_dict, index=[0])
 
     def timeseries_is_monthly_grid(self):
         """
@@ -265,6 +297,18 @@ class Timeseries():
             a copy of itself
         """
         return copy.deepcopy(self)
+
+    def save_data_as_csv(self, csv_outpath: str):
+        """
+        Saves out the timeseries data as CSV.
+
+        Parameters
+        ----------
+        csv_outpath : str
+            absolute file path where CSV should be saved
+        """
+        df_data = self.data.as_dataframe()
+        df_data.to_csv(csv_outpath, index=False)
 
     def convert_timeseries_to_unit_mwe(self, density_of_water: float = constants.DENSITY_OF_WATER_KG_PER_M3,
                                        density_of_ice: float = constants.DENSITY_OF_ICE_KG_PER_M3) -> Timeseries:
@@ -323,13 +367,6 @@ class Timeseries():
 
         Parameters
         ----------
-        include_area_change : bool, optional
-            Flag to determine if glacier area changes are taking into account
-            Set to True, the area change and area change reference year are retrieved for the region of the timeseries
-            From the constants and used to calculate Gt for a changing area
-            Note that this will not work that well if the time resolution is low (e.g. multiple years),
-            as it just uses the average between start and end date to determine the area change since
-            the reference year, by default True
         density_of_water: float, optional
             The density of water in Gt per m3, by default constants.DENSITY_OF_WATER_KG_PER_M3
         rgi_area_version: int, optional
@@ -345,7 +382,15 @@ class Timeseries():
         ------
         NotImplementedError
             For units to be converted that are not implemented yet
+        AssertionError
+            When area_change_applied is True.
+            Varying glacier area should only be applied to specific changes (meters or meters water equivalent)
+            and should be removed before converting to Gigatonnes as we are using a constant area when converting
+            to Gigatonnes. For more information refer to the GlaMBIE algorithm description document section 4.3.
         """
+        if self.area_change_applied:
+            raise AssertionError("Cannot convert dataset to Gt. Area change needs to be removed first.")
+
         # get area
         if rgi_area_version == 6:
             glacier_area = self.region.rgi6_area
@@ -371,7 +416,7 @@ class Timeseries():
             # First, convert elevation change uncertaintiesr in mwe to Gt
             object_copy.data.errors = np.array(meters_water_equivalent_to_gigatonnes(
                 self.data.errors, area_km2=glacier_area, density_of_water=density_of_water))
-            # Second, include density uncertainty in uncertainty
+            # Second, include area uncertainty in uncertainty
             df = object_copy.data.as_dataframe()
             # also see formula in Glambie Assessment Algorithm document, section 5.2 Homogenization of data
             uncertainties_gt = df.changes.abs() * ((df.errors / df.changes)**2 + (area_unc / area)**2)**0.5
@@ -400,9 +445,22 @@ class Timeseries():
         Timeseries
             A copy of the Timeseries object containing the converted timeseries data.
 
+        Raises
+        ------
+        AssertionError
+            When units are not either 'm' or 'mwe'
+        AssertionError
+            When trying to apply area change on a dataset where it's already applied
+        AssertionError
+            When trying to remove area change on a dataset where it's not already applied
         """
         if self.unit not in ["mwe", "m"]:
-            raise AssertionError("Area change should only applied to 'm' or 'mwe'.")
+            raise AssertionError("Area change should only be applied/removed to 'm' or 'mwe'.")
+        if self.area_change_applied and apply_change:
+            raise AssertionError("Area change is already applied to current dataset. Cannot be applied again.")
+        if not self.area_change_applied and not apply_change:
+            raise AssertionError("Area change is not applied to current dataset. Cannot be removed.")
+
         # get area
         if rgi_area_version == 6:
             glacier_area = self.region.rgi6_area
@@ -411,7 +469,7 @@ class Timeseries():
 
         object_copy = self.copy()
         # conversion with area change
-        area_chnage_reference_year = self.region.area_change_reference_year
+        area_change_reference_year = self.region.area_change_reference_year
         area_change = self.region.area_change
         adjusted_changes = []
         adjusted_areas = []
@@ -419,17 +477,14 @@ class Timeseries():
         df = self.data.as_dataframe()
         for start_date, end_date, change in zip(df["start_dates"], df["end_dates"], df["changes"]):
             t_i = (start_date + end_date) / 2
-            adjusted_area = glacier_area + (t_i - area_chnage_reference_year) * (area_change / 100) * glacier_area
+            adjusted_area = glacier_area + (t_i - area_change_reference_year) * (area_change / 100) * glacier_area
             if apply_change:
                 adjusted_changes.append(glacier_area / adjusted_area * change)
             else:  # remove change
                 adjusted_changes.append(change / (glacier_area / adjusted_area))
             adjusted_areas.append(adjusted_area)
-        # @TODO: add uncertainty ?
-        # area = np.array(adjusted_areas)
-        # area_unc is calculated as a % of the total area. % can be defined individually per region.
-        # area_unc = area * self.region.area_uncertainty_percentage  # use individual glacier area unc
         object_copy.data.changes = np.array(adjusted_changes)
+        object_copy.area_change_applied = apply_change  # store if has been applied or not
         return object_copy
 
     def convert_timeseries_to_monthly_grid(self) -> Timeseries:
@@ -467,8 +522,11 @@ class Timeseries():
                 object_copy.data = TimeseriesData(start_dates=np.array(start_dates),
                                                   end_dates=np.array(end_dates),
                                                   changes=np.array(changes),
-                                                  errors=np.array(errors), glacier_area_observed=None,
-                                                  glacier_area_reference=None)
+                                                  errors=np.array(errors),
+                                                  glacier_area_observed=None,
+                                                  glacier_area_reference=None,
+                                                  hydrological_correction_value=None,
+                                                  remarks=None)
 
         return object_copy  # return copy of itself
 
@@ -576,7 +634,9 @@ class Timeseries():
                                           end_dates=np.array(trend["end_dates"]),
                                           changes=np.array(trend["changes"]),
                                           errors=np.array([trend_errors]), glacier_area_observed=None,
-                                          glacier_area_reference=None)
+                                          glacier_area_reference=None,
+                                          hydrological_correction_value=None,
+                                          remarks=None)
 
         return object_copy  # return copy of itself
 
@@ -625,6 +685,9 @@ class Timeseries():
                                  "before performing this operation.")
         if self.data.max_temporal_resolution < 1:
             raise AssertionError("Resolution of timeseries is below a year. No seasonal homogenization possible.")
+        if not self.unit == seasonal_calibration_dataset.unit:
+            raise AssertionError("Seasonal calibration dataset and dataset unit should be the same, however "
+                                 f"they are units {seasonal_calibration_dataset.unit} and {self.unit}.")
 
         if year_type == constants.YearType.CALENDAR:
             year_start = 0
@@ -632,12 +695,13 @@ class Timeseries():
             year_start = self.region.glaciological_year_start
 
         object_copy = self.copy()
-        if not self.timeseries_is_annual_grid():  # if already annual then no need to homogenize
+        if not self.timeseries_is_annual_grid(year_type=year_type):  # if already annual then no need to homogenize
             # 1) calibrate calibration series with trends from timeseries
             calibrated_s, dist_mat = calibrate_timeseries_with_trends(self.data.as_dataframe(),
                                                                       seasonal_calibration_dataset.data.as_dataframe())
             # 2) calculate mean calibration timeseries from all the different curves
-            mean_calibrated_ts = combine_calibrated_timeseries(calibrated_s, dist_mat, p_value=p_value)
+            mean_calibrated_ts = combine_calibrated_timeseries(calibrated_s, dist_mat, p_value=p_value,
+                                                               calculate_outside_calibrated_series_period=True)
             df_mean_calibrated = pd.DataFrame({"start_dates": seasonal_calibration_dataset.data
                                                .as_dataframe().start_dates,
                                                "end_dates": seasonal_calibration_dataset.data

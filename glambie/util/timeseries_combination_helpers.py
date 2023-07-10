@@ -74,7 +74,10 @@ def calibrate_timeseries_with_trends(trends: pd.DataFrame, calibration_timeserie
     return np.array(calibrated_timeseries_list), np.array(distance_matrix_list)
 
 
-def combine_calibrated_timeseries(calibrated_series: np.array, distance_matrix: np.array, p_value: int = 2):
+def combine_calibrated_timeseries(calibrated_series: np.array,
+                                  distance_matrix: np.array,
+                                  p_value: int = 2,
+                                  calculate_outside_calibrated_series_period: bool = True):
     """
     Combines a set of calibrated time series with inverse distance weights
 
@@ -90,6 +93,11 @@ def combine_calibrated_timeseries(calibrated_series: np.array, distance_matrix: 
         if p value is 0, we only use the exact time periods and no weight left and right of each time period is applied,
         In this case, the values which are not covered by the calibration matrix will be returned as nan values.
         by default 2
+    calculate_outside_calibrated_series_period : bool, optional
+        Only applies when p_value = 0, if p_value > 0, this will be ignored
+        This will extend the mean calibrated series to extend further than the calibration series.
+        This is useful for example when doing seasonal homogenization.
+        by default True
 
     Returns
     -------
@@ -110,6 +118,12 @@ def combine_calibrated_timeseries(calibrated_series: np.array, distance_matrix: 
             # with any of the calibrated series datasets), This is exactly the behaviour we want in this case.
             warnings.simplefilter("ignore", category=RuntimeWarning)
             distance_weight_perc = np.array(distance_matrix) / [sum(x) for x in zip(*distance_matrix)]
+
+            if calculate_outside_calibrated_series_period:
+                # now replace NaNs (at start and end of the series) with closest values, so that we include these values
+                mask = np.isnan(distance_weight_perc)
+                distance_weight_perc[mask] = np.interp(np.flatnonzero(
+                    mask), np.flatnonzero(~mask), distance_weight_perc[~mask])
 
     # apply distance weight
     weighted_calibrated_series = np.array(calibrated_series) * np.array(distance_weight_perc)

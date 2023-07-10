@@ -100,6 +100,20 @@ def test_combine_calibrated_timeseries_p_value_0(example_calibrated_series, exam
     assert np.array_equal(calibrated_series2, calibrated_series)
 
 
+def test_combine_calibrated_timeseries_calculate_outside_calibrated_series_period(example_calibrated_series,
+                                                                                  example_distance_matrix):
+    example_distance_matrix[0][0] = 2  # edit example so that first value will be outside the calibration period
+    p_value = 0
+    calibrated_series = combine_calibrated_timeseries(
+        example_calibrated_series, example_distance_matrix, p_value=p_value,
+        calculate_outside_calibrated_series_period=True)  # set to True
+    calibrated_series_nan_at_start = combine_calibrated_timeseries(
+        example_calibrated_series, example_distance_matrix, p_value=p_value,
+        calculate_outside_calibrated_series_period=False)  # set to False
+    assert np.isnan(calibrated_series_nan_at_start[0])  # First value is outside calibration period
+    assert not np.isnan(calibrated_series[0])
+
+
 def test_combine_calibrated_timeseries_high_p_value(example_calibrated_series, example_distance_matrix):
     # when setting a high p-value the weighting matrix will be 0 everywhere outside the covered time period
     p_value = 200000

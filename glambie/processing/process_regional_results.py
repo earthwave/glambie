@@ -10,6 +10,8 @@ from glambie.processing.processing_helpers import convert_datasets_to_annual_tre
 from glambie.processing.processing_helpers import filter_catalogue_with_config_settings
 from glambie.processing.processing_helpers import prepare_seasonal_calibration_dataset
 from glambie.processing.processing_helpers import extend_annual_timeseries_if_outside_trends_period
+from glambie.processing.processing_helpers import check_and_handle_gaps_in_timeseries
+from glambie.processing.processing_helpers import set_unneeded_columns_to_nan
 from glambie.processing.output_helpers import save_all_csvs_for_region_data_group_processing
 from glambie.data.data_catalogue_helpers import calibrate_timeseries_with_trends_catalogue
 from glambie.plot.processing_plots import plot_all_plots_for_region_data_group_processing
@@ -66,6 +68,8 @@ def run_one_region(glambie_run_config: GlambieRunConfig,
         data_catalogue_trends.load_all_data()
         data_catalogue_annual = convert_datasets_to_monthly_grid(data_catalogue_annual)
         data_catalogue_trends = convert_datasets_to_monthly_grid(data_catalogue_trends)
+        data_catalogue_annual = set_unneeded_columns_to_nan(data_catalogue_annual)
+        data_catalogue_trends = set_unneeded_columns_to_nan(data_catalogue_trends)
 
         # run annual and trends calibration timeseries for region
         trend_combined = _run_region_timeseries_one_source(data_catalogue_annual=data_catalogue_annual,
@@ -156,6 +160,9 @@ def _run_region_timeseries_one_source(data_catalogue_annual: DataCatalogue,
     Timeseries
         timeseries of combined dataset
     """
+    # handle gaps in timeseries
+    data_catalogue_annual = check_and_handle_gaps_in_timeseries(data_catalogue_annual)
+    data_catalogue_trends = check_and_handle_gaps_in_timeseries(data_catalogue_trends)
 
     data_catalogue_annual_raw = data_catalogue_annual
     data_catalogue_trends_raw = data_catalogue_trends

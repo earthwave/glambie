@@ -286,14 +286,14 @@ def check_and_handle_gaps_in_timeseries(data_catalogue: DataCatalogue) -> DataCa
             df_data = timeseries.data.as_dataframe()
             split_dataframes = slice_timeseries_at_gaps(df_data)
             # 2 add split timeseries to new_datasets
-            for split_timeseries in split_dataframes:
+            for idx, split_timeseries in enumerate(split_dataframes):
                 timeseries_copy = timeseries.copy()
+                # rename user group name to be unique
+                timeseries_copy.user_group = + f"{timeseries_copy.user_group }_{idx}"
                 timeseries_copy.data.changes = np.array(split_timeseries["changes"])
                 timeseries_copy.data.errors = np.array(split_timeseries["errors"])
                 timeseries_copy.data.start_dates = np.array(split_timeseries["start_dates"])
                 timeseries_copy.data.end_dates = np.array(split_timeseries["end_dates"])
-                timeseries_copy.data.glacier_area_observed = None
-                timeseries_copy.data.glacier_area_reference = None
                 new_datasets.append(timeseries_copy)
         else:  # or else append original
             new_datasets.append(timeseries)
@@ -330,3 +330,27 @@ def slice_timeseries_at_gaps(df_timeseries: pd.DataFrame) -> list[pd.DataFrame]:
     # plus append last / full split in the end
     split_timeseries_dataframes.append(df_timeseries.iloc[previous_index:].reset_index(drop=True))
     return split_timeseries_dataframes
+
+
+def set_unneeded_columns_to_nan(data_catalogue: DataCatalogue) -> DataCatalogue:
+    """
+    Sets data columns of TimeseriesData not needed in algorithm to NaN within a DataCatalogue
+    to simplify object manipulating
+
+    Parameters
+    ----------
+    data_catalogue : DataCatalogue
+        input data catalogue with Timeseries datasets to be manipulated
+
+    Returns
+    -------
+    DataCatalogue
+        manipulated data catalogue
+    """
+    result_catalogue = data_catalogue.copy()
+    for timeseries in result_catalogue.datasets:
+        timeseries.data.glacier_area_observed = None
+        timeseries.data.glacier_area_reference = None
+        timeseries.data.hydrological_correction_value = None
+        timeseries.data.remarks = None
+    return result_catalogue

@@ -4,6 +4,7 @@ import pandas as pd
 from datetime import datetime
 from google.cloud.storage import Client
 from glambie.util.timeseries_helpers import interpolate_change_per_day_to_fill_gaps
+from glambie.util.date_helpers import datetime_dates_to_fractional_years
 
 DATA_TRANSFER_BUCKET_NAME = "glambie-submissions"
 PROJECT_NAME = "glambie"
@@ -42,15 +43,40 @@ def download_csvs_from_bucket(local_data_directory_path: str, region_prefix: str
     return downloaded_files
 
 
-def upload_edited_files_to_bucket(file_dataframe: pd.DataFrame):
+def upload_edited_files_to_bucket(file_dataframe: pd.DataFrame, local_path: str):
+    """
+    After editing local copies of the submitted csv files, replace the original versions in the bucket with the
+    edited local versions. Also upload an archvie folder containing original copies of all edited files
+
+    Parameters
+    ----------
+    file_dataframe : pd.DataFrame
+        Dataframe containing results of checks for inconsistencies within the csv files compared to the expected glambie
+        standard.
+    local_path : str
+        Path to local copies of bucket data.
+
+    Raises
+    ------
+    AssertionError
+        If archive folder has not yet been created
+    """
 
     for _, file in file_dataframe.iterrows():
         file_to_upload = file.local_filepath
 
         bucket = _storage_client.get_bucket(DATA_TRANSFER_BUCKET_NAME)
-        blob = bucket.blob(file_to_upload)
+        blob = bucket.blob(file.file_name)
         blob.upload_from_filename(file_to_upload)
         print('Edited version of {} uploaded to bucket'.format(file.file_name))
+
+    # Finally upload archive of unedited files
+    archive_name = os.path.join(local_path, 'original_files_pre_edits.tar.gz')
+    blob = bucket.blob('original_files_pre_edits.tar.gz')
+    if os.path.exists(archive_name):
+        blob.upload_from_filename(archive_name)
+    else:
+        raise AssertionError('The archive of original data has not been made')
 
 
 def generate_results_dataframe(downloaded_files: list[str], local_path: str) -> pd.DataFrame:
@@ -152,7 +178,7 @@ def check_glambie_submission_for_errors(csv_file_path: str, file_check_dataframe
     return file_check_dataframe
 
 
-def edit_local_copies_of_glambie_csvs(file_check_dataframe: pd.DataFrame) -> pd.DataFrame:
+def edit_local_copies_of_glambie_csvs(file_check_dataframe: pd.DataFrame, local_path: str) -> pd.DataFrame:
     """
     Function to edit the local copies of glambie csvs that didn't pass the checks run by
     check_glambie_submission_for_errors. Save out updated copies to the same local filepath.
@@ -163,6 +189,9 @@ def edit_local_copies_of_glambie_csvs(file_check_dataframe: pd.DataFrame) -> pd.
         Dataframe containing results of checks for inconsistencies within the csv files compared to the expected glambie
         standard.
     """
+    archive_path = os.path.join(local_path, 'original_files_pre_edits')
+    os.makedirs(archive_path, exist_ok=True)
+
     file_check_dataframe['reason_for_edit'] = ['-' for i in range(len(file_check_dataframe))]
 
     for _, file in file_check_dataframe.iterrows():
@@ -176,6 +205,11 @@ def edit_local_copies_of_glambie_csvs(file_check_dataframe: pd.DataFrame) -> pd.
             # 1) Are all gaps 1 or 2 days? We are  aware of some submissions where leap years haven't been taken into
             # account, resulting in mostly 1 day gaps and a small number of 2 day gaps.
             if all(i <= 2 for i in date_gaps_in_days):
+
+                # Always save unedited copy to the archive folder first before any edits
+                print('writing original to {}'.format(os.path.join(archive_path, file.file_name)))
+                submission_data_frame.to_csv(os.path.join(archive_path, file.file_name))
+
                 updated_end_dates = []
                 for i in range(len(submission_data_frame.end_date) - 1):
                     updated_end_dates.append(submission_data_frame.start_date[i + 1])
@@ -197,10 +231,57 @@ def edit_local_copies_of_glambie_csvs(file_check_dataframe: pd.DataFrame) -> pd.
 
                 # 3) Remaining possibility is that it is a gravimetry file with non-GRACE gaps that need interpolating
                 elif ('gravimetry' in file.local_filepath):
-                    submission_data_frame = interpolate_change_per_day_to_fill_gaps(submission_data_frame)
+                    # Always save unedited copy to the archive folder first before any edits
+                    print('writing original to {}'.format(os.path.join(archive_path, file.file_name)))
+                    submission_data_frame.to_csv(os.path.join(archive_path, file.file_name))
+
+                    interpolated_data_frame = interpolate_change_per_day_to_fill_gaps(submission_data_frame)
                     file_check_dataframe.loc[
                         file_check_dataframe.local_filepath.__eq__(file.local_filepath),
                         'reason_for_edit'] = 'interpolated valid gaps in grav file'
+
+                    # Need to add back in the missing columns here
+                    end_date_fractional = datetime_dates_to_fractional_years([datetime.strptime(
+                        a, '%d/%m/%Y') for a in interpolated_data_frame.end_date])
+                    start_date_fractional = datetime_dates_to_fractional_years([datetime.strptime(
+                        a, '%d/%m/%Y') for a in interpolated_data_frame.start_date])
+                    interpolated_data_frame['unit'] = [submission_data_frame['unit'][0]
+                                                       for i in range(len(interpolated_data_frame))]
+
+                    if all(i == submission_data_frame['glacier_area_reference'][0] for i in submission_data_frame[
+                            'glacier_area_reference']):
+                        interpolated_data_frame[
+                            'glacier_area_reference'] = [submission_data_frame[
+                                'glacier_area_reference'][0] for i in range(len(interpolated_data_frame))]
+                    else:
+                        print('Some different reference areas')
+
+                    if all(i == submission_data_frame['glacier_area_observed'][0] for i in submission_data_frame[
+                            'glacier_area_observed']):
+                        interpolated_data_frame[
+                            'glacier_area_observed'] = [submission_data_frame[
+                                'glacier_area_observed'][0] for i in range(len(interpolated_data_frame))]
+                    else:
+                        print('Some different observed areas')
+
+                    if all(i == submission_data_frame.remarks[0] for i in submission_data_frame.remarks) or \
+                            all(np.isnan(submission_data_frame.remarks)):
+                        interpolated_data_frame['remarks'] = [submission_data_frame.remarks[0]
+                                                              for i in range(len(interpolated_data_frame))]
+                    else:
+                        print('Some different remarks')
+
+                    interpolated_data_frame['user_group'] = [submission_data_frame['user_group'][0]
+                                                             for i in range(len(interpolated_data_frame))]
+                    interpolated_data_frame['start_date_fractional'] = start_date_fractional
+                    interpolated_data_frame['end_date_fractional'] = end_date_fractional
+                    interpolated_data_frame['date'] = interpolated_data_frame['start_date']
+                    interpolated_data_frame['date_fractional'] = start_date_fractional
+                    interpolated_data_frame['region_id'] = [submission_data_frame['region_id'][0]
+                                                            for i in range(len(interpolated_data_frame))]
+
+                    submission_data_frame = interpolated_data_frame.copy()
+
                 else:
                     # If it is not a gravimetry file, then the data it contains is invalid.
                     file_check_dataframe.loc[
@@ -230,18 +311,22 @@ def edit_local_copies_of_glambie_csvs(file_check_dataframe: pd.DataFrame) -> pd.
     return file_check_dataframe
 
 
-def main():
+def main(upload: bool = False):
 
     local_path = '/path/to/local/folder'
     # If you want to download files for a specific region, set the region_prefix and supply here
     downloaded_files = download_csvs_from_bucket(local_path, region_prefix=None)
     file_check_results_dataframe = generate_results_dataframe(downloaded_files, local_path)
-    record_of_edits_dataframe = edit_local_copies_of_glambie_csvs(file_check_results_dataframe)
+    record_of_edits_dataframe = edit_local_copies_of_glambie_csvs(file_check_results_dataframe, local_path)
+
+    record_of_edits_dataframe.to_csv(os.path.join(local_path, 'record_of_edited_files.csv'))
 
     # Final step that needs to be implemented here is to upload the edited files into the bucket, after copying the
     # original version of the file into an archive folder
-    upload_edited_files_to_bucket(record_of_edits_dataframe)
+    if upload:
+        upload_edited_files_to_bucket(record_of_edits_dataframe)
 
 
 if __name__ == "__main__":
-    main()
+    upload_after_editing = False
+    main(upload_after_editing)

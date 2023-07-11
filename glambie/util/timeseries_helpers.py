@@ -605,7 +605,7 @@ def interpolate_change_per_day_to_fill_gaps(input_dataframe):
 
     start_dates = [datetime.datetime.strptime(a, '%d/%m/%Y') for a in input_dataframe.start_date]
     end_dates = [datetime.datetime.strptime(a, '%d/%m/%Y') for a in input_dataframe.end_date]
-    new_start_dates, new_end_dates, new_changes, new_errors = [], [], [], []
+    new_start_dates, new_end_dates, new_changes, new_errors, new_hydro, new_sea_level = [], [], [], [], [], []
 
     for i in range(len(input_dataframe.start_date) - 1):
         current_start_date = start_dates[i]
@@ -614,6 +614,8 @@ def interpolate_change_per_day_to_fill_gaps(input_dataframe):
         new_end_dates.append(current_end_date)
         new_changes.append(input_dataframe.glacier_change_observed[i])
         new_errors.append(input_dataframe.glacier_change_uncertainty[i])
+        new_hydro.append(input_dataframe.hydrological_correction_value[i])
+        new_sea_level.append(input_dataframe.sea_level_correction_value[i])
 
         if date_gaps_in_days[i] > 1:
             gap_start_date = current_end_date + relativedelta(days=1)
@@ -622,12 +624,24 @@ def interpolate_change_per_day_to_fill_gaps(input_dataframe):
             new_end_dates.append(gap_end_date)
             new_changes.append(np.nan)
             new_errors.append(np.nan)
+            new_hydro.append(np.nan)
+            new_sea_level.append(np.nan)
+
+    # Add last row in
+    new_start_dates.append(start_dates[-1])
+    new_end_dates.append(end_dates[-1])
+    new_changes.append(input_dataframe.glacier_change_observed.tolist()[-1])
+    new_errors.append(input_dataframe.glacier_change_uncertainty.tolist()[-1])
+    new_hydro.append(input_dataframe.hydrological_correction_value.tolist()[-1])
+    new_sea_level.append(input_dataframe.sea_level_correction_value.tolist()[-1])
 
     interpolated_dataframe = pd.DataFrame()
     interpolated_dataframe['start_date'] = [datetime.datetime.strftime(a, '%d/%m/%Y') for a in new_start_dates]
     interpolated_dataframe['end_date'] = [datetime.datetime.strftime(a, '%d/%m/%Y') for a in new_end_dates]
     interpolated_dataframe['glacier_change_observed'] = new_changes
     interpolated_dataframe['glacier_change_uncertainty'] = new_errors
+    interpolated_dataframe['hydrological_correction_value'] = new_hydro
+    interpolated_dataframe['sea_level_correction_value'] = new_sea_level
 
     # calculate days covered by each row
     date_gaps = [
@@ -648,11 +662,15 @@ def interpolate_change_per_day_to_fill_gaps(input_dataframe):
     # Linear interpolation of glacier_change_per_day to fill gaps
     df = pd.DataFrame({'time': interpolated_dataframe['date_fractional'],
                        'mass': interpolated_dataframe['glacier_change_per_day'],
-                       'error': interpolated_dataframe['glacier_change_uncertainty_per_day']})
+                       'error': interpolated_dataframe['glacier_change_uncertainty_per_day'],
+                       'hydro': interpolated_dataframe['hydrological_correction_value'],
+                       'sea_level': interpolated_dataframe['sea_level_correction_value']})
     df_int = df.interpolate(method='linear')
 
     interpolated_dataframe['glacier_change_per_day'] = df_int['mass'].values.tolist()
     interpolated_dataframe['glacier_change_uncertainty_per_day'] = df_int['error'].values.tolist()
+    interpolated_dataframe['hydrological_correction_value'] = df_int['hydro']
+    interpolated_dataframe['sea_level_correction_value'] = df_int['sea_level']
 
     # Convert back to glacier_change_observed
     interpolated_dataframe['glacier_change_observed'] = [
@@ -672,5 +690,10 @@ def interpolate_change_per_day_to_fill_gaps(input_dataframe):
     # (check for start date == 1/7/2017, not super robust)
     interpolated_dataframe.drop(
         interpolated_dataframe.loc[interpolated_dataframe.start_date.__eq__('01/07/2017')].index, inplace=True)
+
+    # Remove columns from interpolation that glambie algorithm doesn't allow
+    interpolated_dataframe.drop(columns=['days_covered', 'glacier_change_per_day',
+                                         'glacier_change_uncertainty_per_day', 'date_fractional'],
+                                inplace=True)
 
     return interpolated_dataframe

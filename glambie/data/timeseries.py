@@ -343,7 +343,7 @@ class Timeseries():
         else:
             object_copy = self.copy()
             object_copy.unit = "mwe"
-            if self.unit == "m":
+            if str.lower(self.unit) == "m":
                 object_copy.data.changes = np.array(meters_to_meters_water_equivalent(object_copy.data.changes,
                                                                                       density_of_water=density_of_water,
                                                                                       density_of_ice=density_of_ice))
@@ -359,7 +359,7 @@ class Timeseries():
                 errors_mwe = df.changes.abs() * ((df.errors / df.changes)**2 + (density_unc / density_of_ice)**2)**0.5
                 object_copy.data.errors = np.array(errors_mwe)
                 return object_copy
-            elif self.unit == "gt":
+            elif str.lower(self.unit) == "gt":
                 # get area
                 if rgi_area_version == 6:
                     glacier_area = self.region.rgi6_area
@@ -428,11 +428,11 @@ class Timeseries():
             raise NotImplementedError("Version '{}' of RGI is not implemented yet.".format(rgi_area_version))
 
         object_copy = self.copy()
-        object_copy.unit = "gt"
+        object_copy.unit = "Gt"
 
-        if self.unit == "gt":  # no conversion needed as already in gt
+        if str.lower(self.unit) == "gt":  # no conversion needed as already in gt
             return self.copy()
-        elif self.unit == "mwe":
+        elif str.lower(self.unit) == "mwe":
             object_copy.data.changes = np.array(meters_water_equivalent_to_gigatonnes(
                 self.data.changes, area_km2=glacier_area, density_of_water=density_of_water))
             # variables for uncertainty calculation

@@ -53,7 +53,6 @@ def run_one_region(glambie_run_config: GlambieRunConfig,
     # get seasonal calibration dataset and convert to monthly grid
     season_calibration_dataset = prepare_seasonal_calibration_dataset(region_config, data_catalogue)
 
-    # TODO: also filter all data to 2000? (i.e.remove any data ending pre 2000)
     # TODO: convert to RGIv6 if not already done
     result_datasets = []
     for data_group in glambie_run_config.datagroups_to_calculate:
@@ -62,30 +61,30 @@ def run_one_region(glambie_run_config: GlambieRunConfig,
             data_group=data_group,
             region_config=region_config,
             data_catalogue=data_catalogue)
+        if not len(data_catalogue_annual.datasets) == len(data_catalogue_trends.datasets) == 0:
+            # read data in catalogue
+            data_catalogue_annual.load_all_data()
+            data_catalogue_trends.load_all_data()
+            data_catalogue_annual = convert_datasets_to_monthly_grid(data_catalogue_annual)
+            data_catalogue_trends = convert_datasets_to_monthly_grid(data_catalogue_trends)
+            data_catalogue_annual = set_unneeded_columns_to_nan(data_catalogue_annual)
+            data_catalogue_trends = set_unneeded_columns_to_nan(data_catalogue_trends)
 
-        # read data in catalogue
-        data_catalogue_annual.load_all_data()
-        data_catalogue_trends.load_all_data()
-        data_catalogue_annual = convert_datasets_to_monthly_grid(data_catalogue_annual)
-        data_catalogue_trends = convert_datasets_to_monthly_grid(data_catalogue_trends)
-        data_catalogue_annual = set_unneeded_columns_to_nan(data_catalogue_annual)
-        data_catalogue_trends = set_unneeded_columns_to_nan(data_catalogue_trends)
-
-        # run annual and trends calibration timeseries for region
-        trend_combined = _run_region_timeseries_one_source(data_catalogue_annual=data_catalogue_annual,
-                                                           data_catalogue_trends=data_catalogue_trends,
-                                                           seasonal_calibration_dataset=season_calibration_dataset,
-                                                           year_type=region_config.year_type,
-                                                           region=REGIONS[region_config.region_name],
-                                                           data_group=data_group,
-                                                           output_path_handler=output_path_handler)
-        # apply area change
-        trend_combined = trend_combined.apply_area_change(rgi_area_version=6, apply_change=True)
-        # save out with area change applied
-        trend_combined.save_data_as_csv(output_path_handler.get_csv_output_file_path(
-            region=trend_combined.region, data_group=data_group,
-            csv_file_name=f"{data_group.name}_final_with_area_change.csv"))
-        result_datasets.append(trend_combined)
+            # run annual and trends calibration timeseries for region
+            trend_combined = _run_region_timeseries_one_source(data_catalogue_annual=data_catalogue_annual,
+                                                               data_catalogue_trends=data_catalogue_trends,
+                                                               seasonal_calibration_dataset=season_calibration_dataset,
+                                                               year_type=region_config.year_type,
+                                                               region=REGIONS[region_config.region_name],
+                                                               data_group=data_group,
+                                                               output_path_handler=output_path_handler)
+            # apply area change
+            trend_combined = trend_combined.apply_area_change(rgi_area_version=6, apply_change=True)
+            # save out with area change applied
+            trend_combined.save_data_as_csv(output_path_handler.get_csv_output_file_path(
+                region=trend_combined.region, data_group=data_group,
+                csv_file_name=f"{data_group.name}_final_with_area_change.csv"))
+            result_datasets.append(trend_combined)
 
     result_catalogue = DataCatalogue.from_list(result_datasets, base_path=data_catalogue.base_path)
     return result_catalogue

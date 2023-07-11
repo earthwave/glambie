@@ -289,7 +289,7 @@ def check_and_handle_gaps_in_timeseries(data_catalogue: DataCatalogue) -> DataCa
             for idx, split_timeseries in enumerate(split_dataframes):
                 timeseries_copy = timeseries.copy()
                 # rename user group name to be unique
-                timeseries_copy.user_group = + f"{timeseries_copy.user_group }_{idx}"
+                timeseries_copy.user_group = f"{timeseries_copy.user_group }_{str(idx+1)}"
                 timeseries_copy.data.changes = np.array(split_timeseries["changes"])
                 timeseries_copy.data.errors = np.array(split_timeseries["errors"])
                 timeseries_copy.data.start_dates = np.array(split_timeseries["start_dates"])

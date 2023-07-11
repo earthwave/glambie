@@ -78,6 +78,7 @@ def example_catalogue_filled():
                            remarks=None)
     ts1 = Timeseries(rgi_version=6,
                      unit='mwe',
+                     user_group="a",
                      data_group=GLAMBIE_DATA_GROUPS['consensus'],
                      data=data1,
                      region=REGIONS["iceland"])
@@ -91,6 +92,7 @@ def example_catalogue_filled():
                            remarks=None)
     ts2 = Timeseries(rgi_version=6,
                      unit='mwe',
+                     user_group="b",
                      data_group=GLAMBIE_DATA_GROUPS['consensus'],
                      data=data2,
                      region=REGIONS["svalbard"])

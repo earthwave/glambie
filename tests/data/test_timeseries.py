@@ -142,7 +142,7 @@ def test_as_cumulative_timeseries_raises_warning(example_timeseries_ingested):
         assert "invalid" in str(w[-1].message)
 
 
-def test_convert_timeseries_to_unit_mwe(example_timeseries_ingested):
+def test_convert_timeseries_to_unit_mwe_from_m(example_timeseries_ingested):
     density_of_water = 997
     density_of_ice = 850
     converted_timeseries = example_timeseries_ingested.convert_timeseries_to_unit_mwe(
@@ -152,6 +152,32 @@ def test_convert_timeseries_to_unit_mwe(example_timeseries_ingested):
     assert not np.array_equal(converted_timeseries.data.changes, example_timeseries_ingested.data.changes)
     expected_converted_changes = example_timeseries_ingested.data.changes / density_of_water * density_of_ice
     assert np.array_equal(converted_timeseries.data.changes, expected_converted_changes)
+
+
+def test_convert_timeseries_to_unit_mwe_from_gt(example_timeseries_ingested):
+    density_of_water = 997
+    example_timeseries_ingested.unit = "gt"
+    converted_timeseries = example_timeseries_ingested.convert_timeseries_to_unit_mwe(
+        density_of_water=density_of_water, rgi_area_version=6)
+    assert example_timeseries_ingested.unit == "gt"
+    assert not np.array_equal(converted_timeseries.data.changes, example_timeseries_ingested.data.changes)
+    assert not np.array_equal(converted_timeseries.data.errors, example_timeseries_ingested.data.errors)
+    expected_converted_changes = (1e6 * example_timeseries_ingested.data.changes) / (
+        example_timeseries_ingested.region.rgi6_area * density_of_water)
+    assert np.array_equal(converted_timeseries.data.changes, expected_converted_changes)
+
+
+def test_convert_timeseries_to_unit_mwe_from_gt_and_back(example_timeseries_ingested):
+    density_of_water = 997
+    example_timeseries_ingested.unit = "gt"
+    converted_timeseries_mwe = example_timeseries_ingested.convert_timeseries_to_unit_mwe(
+        density_of_water=density_of_water, rgi_area_version=6)
+    converted_timeseries_gt = converted_timeseries_mwe.convert_timeseries_to_unit_gt(
+        density_of_water=density_of_water, rgi_area_version=6)
+    assert not np.array_equal(converted_timeseries_mwe.data.changes, example_timeseries_ingested.data.changes)
+    # allclose due to floating points
+    assert np.allclose(converted_timeseries_gt.data.changes, example_timeseries_ingested.data.changes)
+    assert np.allclose(converted_timeseries_gt.data.errors, example_timeseries_ingested.data.errors)
 
 
 def test_convert_timeseries_to_unit_mwe_no_conversion_when_already_in_mwe(example_timeseries_ingested):

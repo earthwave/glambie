@@ -10,10 +10,9 @@ import warnings
 from glambie.const.data_groups import GlambieDataGroup
 from glambie.const.regions import RGIRegion
 from glambie.data.submission_system_interface import fetch_timeseries_dataframe, SUBMISSION_SYSTEM_BASEPATH_PLACEHOLDER
-from glambie.util.mass_height_conversions import \
-    meters_to_meters_water_equivalent
-from glambie.util.mass_height_conversions import \
-    meters_water_equivalent_to_gigatonnes
+from glambie.util.mass_height_conversions import meters_to_meters_water_equivalent
+from glambie.util.mass_height_conversions import meters_water_equivalent_to_gigatonnes
+from glambie.util.mass_height_conversions import gigatonnes_to_meters_water_equivalent
 from glambie.util.timeseries_helpers import derivative_to_cumulative, get_total_trend
 from glambie.util.timeseries_helpers import \
     resample_derivative_timeseries_to_monthly_grid
@@ -311,7 +310,8 @@ class Timeseries():
         df_data.to_csv(csv_outpath, index=False)
 
     def convert_timeseries_to_unit_mwe(self, density_of_water: float = constants.DENSITY_OF_WATER_KG_PER_M3,
-                                       density_of_ice: float = constants.DENSITY_OF_ICE_KG_PER_M3) -> Timeseries:
+                                       density_of_ice: float = constants.DENSITY_OF_ICE_KG_PER_M3,
+                                       rgi_area_version: int = 6) -> Timeseries:
         """
         Converts a Timeseries object to the unit of meters water equivalent.
         Errors are calculated using different density uncertainties depending on time resolution of timeseries.
@@ -323,6 +323,10 @@ class Timeseries():
             The density of water in Gt per m3, by default constants.DENSITY_OF_WATER_KG_PER_M3
         density_of_ice : float, optional
             The density of ice in Gt per m3, by default constants.DENSITY_OF_ICE_KG_PER_M3
+        rgi_area_version: int, optional
+            The version of RGI glacier masks to be used to determine the glacier area within the region,
+            Only used when converting from gigatonnes to mwe
+            Current options are 6 or 7, by default 6
 
         Returns
         -------
@@ -354,6 +358,30 @@ class Timeseries():
                 # also see formula in Glambie Assessment Algorithm document, section 5.2 Homogenization of data
                 errors_mwe = df.changes.abs() * ((df.errors / df.changes)**2 + (density_unc / density_of_ice)**2)**0.5
                 object_copy.data.errors = np.array(errors_mwe)
+                return object_copy
+            elif self.unit == "gt":
+                # get area
+                if rgi_area_version == 6:
+                    glacier_area = self.region.rgi6_area
+                elif rgi_area_version == 7:
+                    glacier_area = self.region.rgi7_area
+                else:
+                    raise NotImplementedError("Version '{}' of RGI is not implemented yet.".format(rgi_area_version))
+                # convert uncertainties
+                # First remove area uncertainty
+                # area_unc is calculated as a % of the total area. % can be defined individually per region.
+                area_unc = glacier_area * self.region.area_uncertainty_percentage
+                errors_area_unc_removed = (  # inverting the formula from glambie ATBD
+                    object_copy.data.changes * (
+                        object_copy.data.errors**2 * glacier_area**2
+                        - np.abs(object_copy.data.changes)**2 * area_unc**2)**0.5) / (
+                            np.abs(object_copy.data.changes) * glacier_area)
+                # Second, convert errors to mwe
+                object_copy.data.errors = np.array(gigatonnes_to_meters_water_equivalent(
+                    errors_area_unc_removed, glacier_area, density_of_water=density_of_water))
+                # convert changes
+                object_copy.data.changes = np.array(gigatonnes_to_meters_water_equivalent(
+                    object_copy.data.changes, glacier_area, density_of_water=density_of_water))
                 return object_copy
             else:
                 raise NotImplementedError(
@@ -422,7 +450,6 @@ class Timeseries():
             uncertainties_gt = df.changes.abs() * ((df.errors / df.changes)**2 + (area_unc / area)**2)**0.5
             object_copy.data.errors = np.array(uncertainties_gt)
             return object_copy
-
         else:
             raise NotImplementedError(
                 "Conversion to Gt not implemented yet for Timeseries with unit '{}'".format(self.unit))

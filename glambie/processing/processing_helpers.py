@@ -8,6 +8,7 @@ from glambie.data.timeseries import Timeseries
 from glambie.const.constants import YearType
 import numpy as np
 import pandas as pd
+import warnings
 
 log = logging.getLogger(__name__)
 
@@ -220,7 +221,8 @@ def prepare_seasonal_calibration_dataset(region_config: RegionRunConfig,
 
 def extend_annual_timeseries_if_outside_trends_period(annual_timeseries: Timeseries,
                                                       data_catalogue_trends: DataCatalogue,
-                                                      timeseries_for_extension: Timeseries) -> Timeseries:
+                                                      timeseries_for_extension: Timeseries,
+                                                      remove_trend: bool = True) -> Timeseries:
     """
     Extends an annual timeseries with another annual timeseries in case the given trends span longer
     than the annual dataset.
@@ -246,9 +248,20 @@ def extend_annual_timeseries_if_outside_trends_period(annual_timeseries: Timeser
         if (min(ds.data.start_dates) < min(annual_timeseries_copy.data.start_dates)) \
                 or (max(ds.data.end_dates) > max(annual_timeseries_copy.data.end_dates)):
             log.info("Extension of annual is performed, as the trends are longer than the annual timeseries")
+
+            # Remove trend of timeseries for extension over the common time period
+            catalogue_dfs = [annual_timeseries_copy.data.as_dataframe(), timeseries_for_extension.data.as_dataframe()]
+            if remove_trend:
+                start_ref_period = np.max([df.start_dates.min() for df in catalogue_dfs])
+                end_ref_period = np.min([df.end_dates.max() for df in catalogue_dfs])
+                if not start_ref_period < end_ref_period:
+                    warnings.warn("Warning when removing trends. No common period detected.")
+                for df in catalogue_dfs:
+                    df_sub = df[(df["start_dates"] >= start_ref_period) & (df["end_dates"] <= end_ref_period)]
+                    df["changes"] = df["changes"] - df_sub["changes"].mean()  # edit the dataframe
+
             # Combine with other timeseries to cover the missing timespan
-            df_merged = pd.merge(annual_timeseries_copy.data.as_dataframe(),
-                                 timeseries_for_extension.data.as_dataframe(),
+            df_merged = pd.merge(catalogue_dfs[0], catalogue_dfs[1],
                                  on=["start_dates", "end_dates"], how="outer")
             # Fill Nans in 'annual_timeseries' with values from 'timeseries_for_extension'
             df_merged.changes_x.fillna(df_merged.changes_y, inplace=True)

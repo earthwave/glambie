@@ -52,6 +52,8 @@ def run_one_region(glambie_run_config: GlambieRunConfig,
 
     # get seasonal calibration dataset and convert to monthly grid
     season_calibration_dataset = prepare_seasonal_calibration_dataset(region_config, data_catalogue)
+    # TODO: add annual backup dataset to config?
+    annual_backup_dataset = season_calibration_dataset.copy()
 
     # TODO: convert to RGIv6 if not already done
     result_datasets = []
@@ -74,6 +76,7 @@ def run_one_region(glambie_run_config: GlambieRunConfig,
             trend_combined = _run_region_timeseries_one_source(data_catalogue_annual=data_catalogue_annual,
                                                                data_catalogue_trends=data_catalogue_trends,
                                                                seasonal_calibration_dataset=season_calibration_dataset,
+                                                               annual_backup_dataset=annual_backup_dataset,
                                                                year_type=region_config.year_type,
                                                                region=REGIONS[region_config.region_name],
                                                                data_group=data_group,
@@ -130,6 +133,7 @@ def combine_within_one_region(catalogue_data_group_results: DataCatalogue,
 def _run_region_timeseries_one_source(data_catalogue_annual: DataCatalogue,
                                       data_catalogue_trends: DataCatalogue,
                                       seasonal_calibration_dataset: Timeseries,
+                                      annual_backup_dataset: Timeseries,
                                       year_type: YearType,
                                       region: RGIRegion,
                                       data_group: GlambieDataGroup,
@@ -145,6 +149,9 @@ def _run_region_timeseries_one_source(data_catalogue_annual: DataCatalogue,
         Data Catalogue with trend datasets to be used within algorithm
     seasonal_calibration_dataset : Timeseries
         Seasonal calibration dataset at ~ monthly resolution to be used to homogenize data
+    annual_backup_data_set : Timeseries
+        Dataset to be used as a backup when data_catalogue_annual is empty
+        or to extend combined annual series when they don't cover the whole period
     year_type : YearType
         type of year to be used, e.g calendar or glaciological
     region : RGIRegion
@@ -167,9 +174,19 @@ def _run_region_timeseries_one_source(data_catalogue_annual: DataCatalogue,
     data_catalogue_trends_raw = data_catalogue_trends
 
     # 1) ANNUAL TRENDS
-    log.info("Calculating combined annual trends within data group and region...")
-    # convert to annual trends
+    log.info("Calculating combined annual trends within data group %s "
+             "and region %s", data_group.long_name, region.long_name)
 
+    # add annual dataset if none in catalogue
+    if len(data_catalogue_annual.datasets) == 0:
+        log.info('No annual dataset found for %s in region %s, using backup dataset %s',
+                 data_group.long_name, region.long_name, annual_backup_dataset.user_group)
+        data_catalogue_annual = DataCatalogue.from_list([annual_backup_dataset])
+
+    log.info("Using the following annual datasets for %s, %s : %s",
+             data_group.long_name, region.long_name, str([d.user_group for d in data_catalogue_annual.datasets]))
+
+    # convert to annual trends
     data_catalogue_annual = convert_datasets_to_annual_trends(data_catalogue_annual, year_type=year_type,
                                                               season_calibration_dataset=seasonal_calibration_dataset)
     # convert to mwe
@@ -180,6 +197,8 @@ def _run_region_timeseries_one_source(data_catalogue_annual: DataCatalogue,
         remove_trend=True, out_data_group=data_group)
 
     # 2) LONGTERM TRENDS
+    log.info("Using the following trend datasets for %s, %s : %s",
+             data_group.long_name, region.long_name, str([d.user_group for d in data_catalogue_trends.datasets]))
     log.info("Recalibrating with longterm trends within data group and region...")
     # get catalogue with longerm datasets for altimetry
     data_catalogue_trends = convert_datasets_to_longterm_trends(data_catalogue_trends, year_type=year_type,
@@ -191,7 +210,7 @@ def _run_region_timeseries_one_source(data_catalogue_annual: DataCatalogue,
     annual_combined_full_ext = extend_annual_timeseries_if_outside_trends_period(
         annual_timeseries=annual_combined,
         data_catalogue_trends=data_catalogue_trends,
-        timeseries_for_extension=seasonal_calibration_dataset.convert_timeseries_to_annual_trends(year_type=year_type))
+        timeseries_for_extension=annual_backup_dataset.convert_timeseries_to_annual_trends(year_type=year_type))
 
     # recalibrate
     catalogue_calibrated_series = calibrate_timeseries_with_trends_catalogue(

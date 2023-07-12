@@ -125,7 +125,7 @@ def plot_raw_input_data_of_data_group(catalogue_raw: DataCatalogue,
             label="Dataset: " + ds.user_group)
 
     add_labels_axlines_and_title(
-        axes=axes, unit=catalogue_raw.datasets[0].unit, legend_fontsize=7,
+        axes=axes, unit=trend_combined.unit, legend_fontsize=7,
         title="{} - {} - {}: raw input data".format(region.long_name, data_group.long_name, category))
     finalise_save_to_file_and_close_plot(output_filepath)
 
@@ -139,7 +139,7 @@ def plot_raw_and_homogenized_input_data_of_data_group(catalogue_raw: DataCatalog
                                                       output_filepath: str,
                                                       plot_errors: bool = True):
     _, axes = plt.subplots(2, 1, figsize=(7, 6))
-    colours = get_colours(len(catalogue_raw.datasets))
+    colours = get_colours(len(catalogue_homogenized.datasets))
 
     # plot non-cumulative timeseries
     for count, ds in enumerate(catalogue_raw.datasets):
@@ -153,18 +153,19 @@ def plot_raw_and_homogenized_input_data_of_data_group(catalogue_raw: DataCatalog
             plot_errors=plot_errors, label="Dataset (homog.): " + ds.user_group)
 
     # plot cumulative timeseries
-    for count, (ds_raw, ds_homog) in enumerate(zip(catalogue_raw.datasets, catalogue_homogenized.datasets)):
+    for count, ds_raw in enumerate(catalogue_raw.datasets):
         plot_cumulative_timeseries_on_axis(
             timeseries=ds_raw, ax=axes[1], colour=colours[count], plot_errors=plot_errors, linestyle="-",
             timeseries_for_vertical_adjustment=trend_combined,
             label="Dataset (raw): " + ds_raw.user_group)
+    for count, ds_homog in enumerate(catalogue_homogenized.datasets):
         plot_cumulative_timeseries_on_axis(
             timeseries=ds_homog, ax=axes[1], colour=colours[count], plot_errors=plot_errors, linestyle="--",
             timeseries_for_vertical_adjustment=trend_combined,
             label="Dataset (homog.): " + ds_homog.user_group)
 
     add_labels_axlines_and_title(
-        axes=axes, unit=catalogue_raw.datasets[0].unit, legend_fontsize=7,
+        axes=axes, unit=trend_combined.unit, legend_fontsize=7,
         title="{} - {} - {}: raw input data".format(region.long_name, data_group.long_name, category))
     finalise_save_to_file_and_close_plot(output_filepath)
 

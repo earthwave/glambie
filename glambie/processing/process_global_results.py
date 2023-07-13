@@ -42,8 +42,17 @@ def run_global_results(glambie_run_config: GlambieRunConfig,
     regional_results_catalogue_homogenized = _homogenize_regional_results_to_calendar_year(glambie_run_config,
                                                                                            regional_results_catalogue,
                                                                                            original_data_catalogue)
-    global_timeseries = _combine_regional_results_into_global(regional_results_catalogue_homogenized)
+    # remove any dates outside config timeperiod:
+    for dataset in regional_results_catalogue_homogenized.datasets:
+        df = dataset.data.as_dataframe()
+        df = df[((df.end_dates <= glambie_run_config.end_year) & (
+            df.start_dates >= glambie_run_config.start_year))].reset_index(drop=True)
+        dataset.data.start_dates = np.array(df["start_dates"])
+        dataset.data.end_dates = np.array(df["end_dates"])
+        dataset.data.changes = np.array(df["changes"])
+        dataset.data.errors = np.array(df["errors"])
 
+    global_timeseries = _combine_regional_results_into_global(regional_results_catalogue_homogenized)
     # plot
     if output_path_handler is not None:
         plot_output_file = output_path_handler.get_plot_output_file_path(region=REGIONS["global"],

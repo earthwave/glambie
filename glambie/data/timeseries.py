@@ -805,7 +805,5 @@ class Timeseries():
             object_copy.data.end_dates = np.array(df_nan_removed["end_dates"])
             object_copy.data.changes = np.array(df_nan_removed["changes"])
             object_copy.data.errors = np.array(df_nan_removed["errors"])
-            object_copy.data.glacier_area_observed = np.array(df_nan_removed["glacier_area_observed"])
-            object_copy.data.glacier_area_reference = np.array(df_nan_removed["glacier_area_reference"])
 
         return object_copy

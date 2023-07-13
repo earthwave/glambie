@@ -36,7 +36,7 @@ class OutputPathHandler():
         str
             output folder path
         """
-        folder_path = os.path.join(self.base_path, region.name)
+        folder_path = os.path.join(self.base_path, f"{str(region.rgi_id)}_{region.name}")
         os.makedirs(folder_path, exist_ok=True)
         return folder_path
 
@@ -71,7 +71,7 @@ class OutputPathHandler():
         str
             output folder path
         """
-        folder_path = os.path.join(self.base_path, region.name, data_group.name)
+        folder_path = os.path.join(self.get_region_output_folder_path(region), data_group.name)
         os.makedirs(folder_path, exist_ok=True)
         return folder_path
 
@@ -94,7 +94,7 @@ class OutputPathHandler():
         str
             output file path of plot
         """
-        folder_path = os.path.join(self.base_path, region.name, data_group.name, "plots")
+        folder_path = os.path.join(self.get_region_output_folder_path(region), data_group.name, "plots")
         os.makedirs(folder_path, exist_ok=True)
         return os.path.join(folder_path, plot_file_name)
 
@@ -122,7 +122,7 @@ class OutputPathHandler():
         str
             output file path of csv
         """
-        folder_path = os.path.join(self.base_path, region.name, data_group.name, "csvs", subfolder)
+        folder_path = os.path.join(self.get_region_output_folder_path(region), data_group.name, "csvs", subfolder)
         os.makedirs(folder_path, exist_ok=True)
         return os.path.join(folder_path, csv_file_name)
 

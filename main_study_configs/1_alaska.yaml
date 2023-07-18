@@ -1,6 +1,6 @@
-# config yaml file for iceland
+# config yaml file for alaska
 ---
-region_name: antarctic_and_subantarctic
+region_name: alaska
 year_type: glaciological # glaciological or calendar
 
 seasonal_correction_dataset:
@@ -17,9 +17,9 @@ region_run_settings:
     - XX
   gravimetry:
     exclude_annual_datasets :
-    - XX
+    - Wouters
     exclude_trend_datasets :
-    - XX
+    - Wouters
   demdiff_and_glaciological :
     exclude_annual_datasets : # glaciological datasets
     - UZH_GlaciolSineWave

@@ -1,16 +1,16 @@
-# config yaml file for tests
+# config yaml file for all regions
 ---
 result_base_path: glambie/output_plots/processing
-region_config_base_path: tests/test_data/configs/main_study
+region_config_base_path: main_study_configs
 catalogue_path: glambie_submission_system
 
 start_year: 2000
-end_year: 2022
+end_year: 2023
 
 datagroups_to_calculate:
   - altimetry
   - demdiff_and_glaciological
-  #- gravimetry
+  - gravimetry
 
 regions: 
   - region_name: alaska
@@ -18,7 +18,7 @@ regions:
     config_file_path: 1_alaska.yaml
 
   - region_name: western_canada_us
-    enable_this_region: false
+    enable_this_region: true
     config_file_path: 2_western_canada_us.yaml
 
   - region_name: arctic_canada_north
@@ -42,7 +42,7 @@ regions:
     config_file_path: 7_svalbard.yaml
 
   - region_name: scandinavia
-    enable_this_region: false
+    enable_this_region: true
     config_file_path: 8_scandinavia.yaml
 
   - region_name: russian_arctic
@@ -50,15 +50,15 @@ regions:
     config_file_path: 9_russian_arctic.yaml
 
   - region_name: north_asia
-    enable_this_region: false
+    enable_this_region: true
     config_file_path: 10_north_asia.yaml
 
   - region_name: central_europe
-    enable_this_region: false
+    enable_this_region: true
     config_file_path: 11_central_europe.yaml
 
   - region_name: caucasus_middle_east
-    enable_this_region: false
+    enable_this_region: true
     config_file_path: 12_caucasus_middle_east.yaml
 
   - region_name: central_asia
@@ -74,7 +74,7 @@ regions:
     config_file_path: 15_south_asia_east.yaml
 
   - region_name: low_latitudes
-    enable_this_region: false
+    enable_this_region: true
     config_file_path: 16_low_latitudes.yaml
 
   - region_name: southern_andes
@@ -82,7 +82,7 @@ regions:
     config_file_path: 17_southern_andes.yaml
 
   - region_name: new_zealand
-    enable_this_region: false
+    enable_this_region: true
     config_file_path: 18_new_zealand.yaml
 
   - region_name: antarctic_and_subantarctic

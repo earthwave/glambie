@@ -421,7 +421,7 @@ def derivative_to_cumulative(start_dates: list[float],
     """
     dates = np.array([start_dates[0], *end_dates])
     if calculate_as_errors:
-        changes = np.array([0, *np.sqrt(pd.Series(np.square(changes)).cumsum())])
+        changes = np.array([0, *np.array(pd.Series(np.square(changes)).cumsum())**0.5])
     else:
         changes = np.array([0, *np.array(pd.Series(changes).cumsum())])
     if return_type == "arrays":

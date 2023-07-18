@@ -31,7 +31,7 @@ def plot_all_plots_for_region_data_group_processing(output_path_handler: OutputP
                                       region=region,
                                       category="annual",
                                       output_filepath=plot_fp,
-                                      plot_errors=False)
+                                      plot_errors=True)
     # Convert to same unit as annual datasets now
     data_catalogue_annual_raw = convert_datasets_to_monthly_grid(data_catalogue_annual_raw)
     data_catalogue_annual_raw = convert_datasets_to_unit_mwe(data_catalogue_annual_raw)
@@ -188,7 +188,7 @@ def plot_homogenized_input_data_of_data_group(catalogue_annual: DataCatalogue,
     # plot non-cumulative timeseries
     for count, ds in enumerate(catalogue_annual.datasets):
         plot_non_cumulative_timeseries_on_axis(
-            result_dataframe=ds.data.as_dataframe(), ax=axes[0], colour=colours[count], plot_errors=False,
+            result_dataframe=ds.data.as_dataframe(), ax=axes[0], colour=colours[count], plot_errors=plot_errors,
             label="Dataset: " + ds.user_group)
 
     # plot cumulative timeseries

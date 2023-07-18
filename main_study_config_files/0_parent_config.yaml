@@ -1,7 +1,7 @@
 # config yaml file for all regions
 ---
 result_base_path: glambie/output_plots/processing
-region_config_base_path: tests/test_data/configs/main_study
+region_config_base_path: main_study_config_files
 catalogue_path: glambie_submission_system
 
 start_year: 2000

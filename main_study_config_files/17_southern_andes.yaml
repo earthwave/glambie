@@ -1,6 +1,6 @@
-# config yaml file for iceland
+# config yaml file for southern_andes
 ---
-region_name: central_asia
+region_name: southern_andes
 year_type: glaciological # glaciological or calendar
 
 seasonal_correction_dataset:
@@ -12,8 +12,7 @@ seasonal_correction_dataset:
 region_run_settings:
   altimetry:
     exclude_annual_datasets :
-    - Ke
-    - Treichler_ICESat
+    - 
     exclude_trend_datasets :
     - 
   gravimetry:

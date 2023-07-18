@@ -1,4 +1,4 @@
-# config yaml file for tests
+# config yaml file for all regions
 ---
 result_base_path: glambie/output_plots/processing
 region_config_base_path: tests/test_data/configs/main_study

@@ -1,6 +1,6 @@
-# config yaml file for iceland
+# config yaml file for scandinavia
 ---
-region_name: new_zealand
+region_name: scandinavia
 year_type: glaciological # glaciological or calendar
 
 seasonal_correction_dataset:

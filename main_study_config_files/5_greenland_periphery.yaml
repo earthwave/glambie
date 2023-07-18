@@ -1,4 +1,4 @@
-# config yaml file for iceland
+# config yaml file for greenland_periphery
 ---
 region_name: greenland_periphery
 year_type: glaciological # glaciological or calendar

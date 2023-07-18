@@ -1,6 +1,6 @@
-# config yaml file for iceland
+# config yaml file for arctic_canada_north
 ---
-region_name: south_asia_west
+region_name: arctic_canada_north
 year_type: glaciological # glaciological or calendar
 
 seasonal_correction_dataset:
@@ -12,8 +12,7 @@ seasonal_correction_dataset:
 region_run_settings:
   altimetry:
     exclude_annual_datasets :
-    - Ke
-    - Treichler_ICESat
+    - Tepes
     exclude_trend_datasets :
     - 
   gravimetry:

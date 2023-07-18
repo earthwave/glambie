@@ -1,6 +1,6 @@
-# config yaml file for iceland
+# config yaml file for low_latitudes
 ---
-region_name: western_canada_us
+region_name: low_latitudes
 year_type: glaciological # glaciological or calendar
 
 seasonal_correction_dataset:
@@ -12,10 +12,9 @@ seasonal_correction_dataset:
 region_run_settings:
   altimetry:
     exclude_annual_datasets :
-    - Menounos_WNA_alt1
-    - Menounos_WNA_is2gedi
+    - 
     exclude_trend_datasets :
-    - Menounos_WNA_is2gedi
+    - 
   gravimetry:
     exclude_annual_datasets :
     - Wouters

@@ -1,6 +1,6 @@
-# config yaml file for iceland
+# config yaml file for central_europe
 ---
-region_name: caucasus_middle_east
+region_name: central_europe
 year_type: glaciological # glaciological or calendar
 
 seasonal_correction_dataset:

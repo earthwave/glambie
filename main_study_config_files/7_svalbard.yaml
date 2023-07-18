@@ -1,6 +1,6 @@
-# config yaml file for iceland
+# config yaml file for svalbard
 ---
-region_name: central_europe
+region_name: svalbard
 year_type: glaciological # glaciological or calendar
 
 seasonal_correction_dataset:
@@ -12,7 +12,7 @@ seasonal_correction_dataset:
 region_run_settings:
   altimetry:
     exclude_annual_datasets :
-    - 
+    - Tepes
     exclude_trend_datasets :
     - 
   gravimetry:

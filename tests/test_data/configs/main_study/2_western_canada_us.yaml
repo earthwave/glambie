@@ -15,14 +15,14 @@ region_run_settings:
     - Menounos_WNA_alt1
     - Menounos_WNA_is2gedi
     exclude_trend_datasets :
-    - XX
+    - Menounos_WNA_is2gedi
   gravimetry:
     exclude_annual_datasets :
-    - XX
+    - Wouters
     exclude_trend_datasets :
-    - XX
+    - Wouters
   demdiff_and_glaciological :
     exclude_annual_datasets : # glaciological datasets
     - UZH_GlaciolSineWave
     exclude_trend_datasets : # demdiff datasets
-    - XXX
+    - 

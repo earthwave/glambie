@@ -17,9 +17,9 @@ region_run_settings:
     - XX
   gravimetry:
     exclude_annual_datasets :
-    - XX
+    - Wouters
     exclude_trend_datasets :
-    - XX
+    - Wouters
   demdiff_and_glaciological :
     exclude_annual_datasets : # glaciological datasets
     - UZH_GlaciolSineWave

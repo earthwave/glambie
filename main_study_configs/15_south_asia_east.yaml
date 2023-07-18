@@ -1,0 +1,28 @@
+# config yaml file for south_asia_east
+---
+region_name: south_asia_east
+year_type: glaciological # glaciological or calendar
+
+seasonal_correction_dataset:
+  user_group: Huss_monthly
+  data_group: combined
+  # user_group: UZH_GlaciolSineWave
+  # data_group: glaciological
+
+region_run_settings:
+  altimetry:
+    exclude_annual_datasets :
+    - Ke
+    - Treichler_ICESat
+    exclude_trend_datasets :
+    - 
+  gravimetry:
+    exclude_annual_datasets :
+    - 
+    exclude_trend_datasets :
+    - 
+  demdiff_and_glaciological :
+    exclude_annual_datasets : # glaciological datasets
+    - UZH_GlaciolSineWave
+    exclude_trend_datasets : # demdiff datasets
+    - 

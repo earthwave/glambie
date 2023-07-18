@@ -208,7 +208,7 @@ def test_convert_timeseries_to_unit_gt_no_area_change_rate(example_timeseries_in
     example_timeseries_ingested.unit = "mwe"
     example_timeseries_ingested.region = REGIONS["iceland"]
     converted_timeseries = example_timeseries_ingested.convert_timeseries_to_unit_gt()
-    assert converted_timeseries.unit == "gt"
+    assert str.lower(converted_timeseries.unit) == "gt"
     assert example_timeseries_ingested.unit == "mwe"
     assert not np.array_equal(converted_timeseries.data.changes, example_timeseries_ingested.data.changes)
     area = example_timeseries_ingested.region.rgi6_area

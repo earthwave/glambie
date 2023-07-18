@@ -52,7 +52,8 @@ def filter_catalogue_with_config_settings(data_group: GlambieDataGroup,
     exclude_annual_datasets = region_config.region_run_settings[data_group.name].get("exclude_annual_datasets", [])
     log.info('Excluding the following datasets from ANNUAL calculations: datasets=%s', exclude_annual_datasets)
     for ds in exclude_annual_datasets:
-        datasets_annual = [d for d in datasets_annual if d.user_group.lower() != ds.lower()]
+        if ds is not None:
+            datasets_annual = [d for d in datasets_annual if d.user_group.lower() != ds.lower()]
     if data_group == GLAMBIE_DATA_GROUPS["demdiff_and_glaciological"]:
         datasets_annual = [d for d in datasets_annual if d.data_group != GLAMBIE_DATA_GROUPS["demdiff"]]
 
@@ -61,7 +62,8 @@ def filter_catalogue_with_config_settings(data_group: GlambieDataGroup,
     exclude_trend_datasets = region_config.region_run_settings[data_group.name].get("exclude_trend_datasets", [])
     log.info('Excluding the following datasets from TREND calculations: datasets=%s', exclude_trend_datasets)
     for ds in exclude_trend_datasets:
-        datasets_trend = [d for d in datasets_trend if d.user_group.lower() != ds.lower()]
+        if ds is not None:
+            datasets_trend = [d for d in datasets_trend if d.user_group.lower() != ds.lower()]
     if data_group == GLAMBIE_DATA_GROUPS["demdiff_and_glaciological"]:
         datasets_trend = [d for d in datasets_trend if d.data_group != GLAMBIE_DATA_GROUPS["glaciological"]]
 

@@ -88,6 +88,9 @@ def run_one_region(glambie_run_config: GlambieRunConfig,
                 region=trend_combined.region, data_group=data_group,
                 csv_file_name=f"{data_group.name}_final_with_area_change.csv"))
             result_datasets.append(trend_combined)
+        else:
+            log.info('Skipping to process region=%s datagroup=%s as no data found.',
+                     region_config.region_name, data_group.name)
 
     result_catalogue = DataCatalogue.from_list(result_datasets, base_path=data_catalogue.base_path)
     return result_catalogue

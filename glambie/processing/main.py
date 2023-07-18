@@ -72,8 +72,9 @@ def _run_regional_results(glambie_run_config: GlambieRunConfig,
         data_group_results_per_region.extend(results_one_region.datasets)
 
         # get combined regional results combining the individual data group results
-        combined_results = combine_within_one_region(results_one_region, output_path_handler)
-        combined_regional_results.append(combined_results)
+        if len(data_group_results_per_region) > 0:
+            combined_results = combine_within_one_region(results_one_region, output_path_handler)
+            combined_regional_results.append(combined_results)
 
     catalogue_data_group_results_per_region = DataCatalogue.from_list(
         data_group_results_per_region)

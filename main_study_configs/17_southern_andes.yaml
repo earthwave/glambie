@@ -1,4 +1,4 @@
-# config yaml file for iceland
+# config yaml file for southern_andes
 ---
 region_name: southern_andes
 year_type: glaciological # glaciological or calendar
@@ -12,16 +12,16 @@ seasonal_correction_dataset:
 region_run_settings:
   altimetry:
     exclude_annual_datasets :
-    - XX
+    - 
     exclude_trend_datasets :
-    - XX
+    - 
   gravimetry:
     exclude_annual_datasets :
-    - XX
+    - Wouters
     exclude_trend_datasets :
-    - XX
+    - Wouters
   demdiff_and_glaciological :
     exclude_annual_datasets : # glaciological datasets
     - UZH_GlaciolSineWave
     exclude_trend_datasets : # demdiff datasets
-    - XXX
+    - 

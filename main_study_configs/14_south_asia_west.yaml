@@ -1,6 +1,6 @@
-# config yaml file for iceland
+# config yaml file for south_asia_west
 ---
-region_name: scandinavia
+region_name: south_asia_west
 year_type: glaciological # glaciological or calendar
 
 seasonal_correction_dataset:
@@ -12,16 +12,17 @@ seasonal_correction_dataset:
 region_run_settings:
   altimetry:
     exclude_annual_datasets :
-    - XX
+    - Ke
+    - Treichler_ICESat
     exclude_trend_datasets :
-    - XX
+    - 
   gravimetry:
     exclude_annual_datasets :
-    - XX
+    - 
     exclude_trend_datasets :
-    - XX
+    - 
   demdiff_and_glaciological :
     exclude_annual_datasets : # glaciological datasets
     - UZH_GlaciolSineWave
     exclude_trend_datasets : # demdiff datasets
-    - XXX
+    - 

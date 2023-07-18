@@ -173,6 +173,20 @@ def test_derivative_to_cumulative():
     pd.testing.assert_series_equal(df["changes"], pd.Series([0., 3., 4., 5.], name="changes"))
 
 
+def test_derivative_to_cumulative_errors():
+    start_dates = [2010, 2011, 2012]
+    end_dates = [2011, 2012, 2013]
+    derivative_errors = [3., 1., 2.]
+    dates, changes = derivative_to_cumulative(start_dates, end_dates, derivative_errors, return_type="arrays",
+                                              calculate_as_errors=True)
+    assert np.array_equal(dates, np.array([2010, 2011, 2012, 2013]))
+    assert np.array_equal(changes, np.array([0., 3., 10**0.5, 14**0.5]))
+    # also check returntype dataframe works
+    df = derivative_to_cumulative(start_dates, end_dates, derivative_errors, return_type="dataframe",
+                                  calculate_as_errors=True)
+    pd.testing.assert_series_equal(df["errors"], pd.Series([0., 3., 10**0.5, 14**0.5], name="errors"))
+
+
 def test_derivative_to_cumulative_and_back_gives_initial_input_again():
     start_dates = [2010, 2011, 2012]
     end_dates = [2011, 2012, 2013]

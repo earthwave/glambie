@@ -32,6 +32,7 @@ def plot_all_plots_for_region_data_group_processing(output_path_handler: OutputP
                                       category="annual",
                                       output_filepath=plot_fp,
                                       plot_errors=False)
+    # Convert to same unit as annual datasets now
     data_catalogue_annual_raw = convert_datasets_to_monthly_grid(data_catalogue_annual_raw)
     data_catalogue_annual_raw = convert_datasets_to_unit_mwe(data_catalogue_annual_raw)
     plot_fp = output_path_handler.get_plot_output_file_path(region=region, data_group=data_group,
@@ -108,7 +109,7 @@ def plot_raw_input_data_of_data_group(catalogue_raw: DataCatalogue,
                                       category: str,
                                       output_filepath: str,
                                       plot_errors: bool = True):
-    _, axes = plt.subplots(2, 1, figsize=(7, 6))
+    _, axes = plt.subplots(2, 1, figsize=(11, 6))
     colours = get_colours(len(catalogue_raw.datasets))
 
     # plot non-cumulative timeseries
@@ -124,8 +125,13 @@ def plot_raw_input_data_of_data_group(catalogue_raw: DataCatalogue,
             timeseries_for_vertical_adjustment=trend_combined,
             label="Dataset: " + ds.user_group)
 
+    if len(catalogue_raw.datasets) > 0:
+        unit = catalogue_raw.datasets[0].unit
+    else:
+        unit = "unknown"
+
     add_labels_axlines_and_title(
-        axes=axes, unit=trend_combined.unit, legend_fontsize=7,
+        axes=axes, unit=unit, legend_fontsize=7,
         title="{} - {} - {}: raw input data".format(region.long_name, data_group.long_name, category))
     finalise_save_to_file_and_close_plot(output_filepath)
 
@@ -138,31 +144,31 @@ def plot_raw_and_homogenized_input_data_of_data_group(catalogue_raw: DataCatalog
                                                       category: str,
                                                       output_filepath: str,
                                                       plot_errors: bool = True):
-    _, axes = plt.subplots(2, 1, figsize=(7, 6))
+    _, axes = plt.subplots(2, 1, figsize=(10, 6))
     colours = get_colours(len(catalogue_homogenized.datasets))
 
     # plot non-cumulative timeseries
     for count, ds in enumerate(catalogue_raw.datasets):
         plot_non_cumulative_timeseries_on_axis(
             result_dataframe=ds.data.as_dataframe(), ax=axes[0], colour=colours[count], plot_errors=plot_errors,
-            label="Dataset (raw): " + ds.user_group)
+            label="Raw: " + ds.user_group, linestyle=(0, (1, 1)))
 
     for count, ds in enumerate(catalogue_homogenized.datasets):
         plot_non_cumulative_timeseries_on_axis(
-            result_dataframe=ds.data.as_dataframe(), ax=axes[0], colour=colours[count], linestyle="--",
-            plot_errors=plot_errors, label="Dataset (homog.): " + ds.user_group)
+            result_dataframe=ds.data.as_dataframe(), ax=axes[0], colour=colours[count], linestyle="-",
+            plot_errors=plot_errors, label="Homog.: " + ds.user_group)
 
     # plot cumulative timeseries
     for count, ds_raw in enumerate(catalogue_raw.datasets):
         plot_cumulative_timeseries_on_axis(
-            timeseries=ds_raw, ax=axes[1], colour=colours[count], plot_errors=plot_errors, linestyle="-",
+            timeseries=ds_raw, ax=axes[1], colour=colours[count], plot_errors=plot_errors, linestyle=(0, (1, 1)),
             timeseries_for_vertical_adjustment=trend_combined,
-            label="Dataset (raw): " + ds_raw.user_group)
+            label="Raw: " + ds_raw.user_group)
     for count, ds_homog in enumerate(catalogue_homogenized.datasets):
         plot_cumulative_timeseries_on_axis(
-            timeseries=ds_homog, ax=axes[1], colour=colours[count], plot_errors=plot_errors, linestyle="--",
+            timeseries=ds_homog, ax=axes[1], colour=colours[count], plot_errors=plot_errors, linestyle="-",
             timeseries_for_vertical_adjustment=trend_combined,
-            label="Dataset (homog.): " + ds_homog.user_group)
+            label="Homog.: " + ds_homog.user_group)
 
     add_labels_axlines_and_title(
         axes=axes, unit=trend_combined.unit, legend_fontsize=7,
@@ -176,7 +182,7 @@ def plot_homogenized_input_data_of_data_group(catalogue_annual: DataCatalogue,
                                               region: RGIRegion,
                                               output_filepath: str,
                                               plot_errors: bool = True):
-    _, axes = plt.subplots(2, 1, figsize=(7, 6))
+    _, axes = plt.subplots(2, 1, figsize=(10, 6))
     colours = get_colours(len(catalogue_annual.datasets))
 
     # plot non-cumulative timeseries
@@ -204,7 +210,7 @@ def plot_annual_variability_of_data_group(catalogue_annual_anomalies: DataCatalo
                                           region: RGIRegion,
                                           output_filepath: str,
                                           plot_errors: bool = True):
-    _, axes = plt.subplots(2, 1, figsize=(7, 6))
+    _, axes = plt.subplots(2, 1, figsize=(10, 6))
     colours = get_colours(len(catalogue_annual_anomalies.datasets))
 
     # plot non-cumulative timeseries
@@ -231,7 +237,7 @@ def plot_annual_variability_of_data_group(catalogue_annual_anomalies: DataCatalo
 
     add_labels_axlines_and_title(
         axes=axes, unit=catalogue_annual_anomalies.datasets[0].unit, legend_fontsize=7,
-        title="{} - {}: annual variability".format(region.long_name, data_group.long_name))
+        title="{} - {}: annual anomalies".format(region.long_name, data_group.long_name))
     finalise_save_to_file_and_close_plot(output_filepath)
 
 
@@ -242,7 +248,7 @@ def plot_recalibration_of_annual_variability_with_trends(catalogue_trends: DataC
                                                          region: RGIRegion,
                                                          output_filepath: str,
                                                          plot_errors: bool = True):
-    _, axes = plt.subplots(2, 1, figsize=(7, 6))
+    _, axes = plt.subplots(2, 1, figsize=(10, 6))
     colours = get_colours(len(catalogue_trends.datasets))
 
     # plot non-cumulative timeseries
@@ -282,7 +288,7 @@ def plot_recalibrated_result_of_data_group(catalogue_trends: DataCatalogue,
                                            region: RGIRegion,
                                            output_filepath: str,
                                            plot_errors: bool = True):
-    _, axes = plt.subplots(2, 1, figsize=(7, 6))
+    _, axes = plt.subplots(2, 1, figsize=(10, 6))
     colours = get_colours(len(catalogue_trends.datasets))
 
     # plot non-cumulative
@@ -318,7 +324,7 @@ def plot_combination_of_sources_within_region(catalogue_results: DataCatalogue,
                                               output_filepath: str,
                                               plot_errors: bool = True):
 
-    _, axes = plt.subplots(2, 1, figsize=(7, 6))
+    _, axes = plt.subplots(2, 1, figsize=(10, 6))
     colours = get_colours(len(catalogue_results.datasets))
 
     # plot non-cumulative
@@ -355,7 +361,7 @@ def plot_combination_of_regions_to_global(catalogue_region_results: DataCatalogu
                                           output_filepath: str,
                                           plot_errors: bool = True):
 
-    _, axes = plt.subplots(2, 1, figsize=(7, 6))
+    _, axes = plt.subplots(2, 1, figsize=(10, 6))
     colours = get_colours(len(catalogue_region_results.datasets))
 
     for count, timeseries in enumerate(catalogue_region_results.datasets):

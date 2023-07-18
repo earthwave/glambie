@@ -235,6 +235,12 @@ def edit_local_copies_of_glambie_csvs(file_check_dataframe: pd.DataFrame, local_
                     print('writing original to {}'.format(os.path.join(archive_path, file.file_name)))
                     submission_data_frame.to_csv(os.path.join(archive_path, file.file_name))
 
+                    # If it is a Wouters submission, need to convert to non-cumulative first!
+                    if 'wouters' in file.filename:
+                        diff_list_change = submission_data_frame['glacier_change_observed'].diff()
+                        diff_list_change[0] = 0.0
+                        submission_data_frame['glacier_change_observed'] = diff_list_change
+
                     interpolated_data_frame = interpolate_change_per_day_to_fill_gaps(submission_data_frame)
                     file_check_dataframe.loc[
                         file_check_dataframe.local_filepath.__eq__(file.local_filepath),

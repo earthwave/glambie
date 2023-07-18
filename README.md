@@ -92,7 +92,7 @@ will be automatically deleted.
 Note that for security reasons related to Earthwave's servers, only approved contributors may push to this repository.
 If you wish to make a contribution but find that you are unable to push, please email livia@earthwave.co.uk in order to request access.
 
-## Running GLaMBIE
+## Running GlaMBIE
 
 After completing the Installation instructions above, you can use this package as follows:
 ```

@@ -12,16 +12,16 @@ seasonal_correction_dataset:
 region_run_settings:
   altimetry:
     exclude_annual_datasets :
-    - XX
+    - 
     exclude_trend_datasets :
-    - XX
+    - 
   gravimetry:
     exclude_annual_datasets :
-    - Wouters
+    - 
     exclude_trend_datasets :
-    - Wouters
+    - 
   demdiff_and_glaciological :
     exclude_annual_datasets : # glaciological datasets
     - UZH_GlaciolSineWave
     exclude_trend_datasets : # demdiff datasets
-    - XXX
+    - 

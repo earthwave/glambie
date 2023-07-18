@@ -1,0 +1,27 @@
+# config yaml file for iceland
+---
+region_name: iceland
+year_type: glaciological # glaciological or calendar
+
+seasonal_correction_dataset:
+  user_group: wgms_sine
+  data_group: glaciological
+
+region_run_settings:
+  altimetry:
+    exclude_annual_datasets :
+      - xxxxxxxxxxxxxxxxxxxx
+    exclude_trend_datasets :
+      - xxxxxxxxxxxxxxxxxxxx
+  gravimetry:
+    exclude_annual_datasets :
+    - ciraci
+    exclude_trend_datasets :
+    - ciraci
+  demdiff_and_glaciological:
+    exclude_annual_datasets : # glaciological datasets
+    - wgms_sine
+    - wgms_seasonal
+    - wgms_anomalies
+    exclude_trend_datasets : # demdiff datasets
+    - hugonnet

@@ -1,0 +1,26 @@
+# config yaml file for tests
+---
+result_base_path: glambie/output_plots/processing
+region_config_base_path: tests/test_data/configs
+catalogue_path: /data/ox1/working/glambie/pilot_study_datastore/meta.json
+
+start_year: 2000
+end_year: 2022
+
+datagroups_to_calculate:
+  - altimetry
+  - demdiff_and_glaciological
+  - gravimetry
+
+regions: 
+  - region_name: iceland
+    enable_this_region: true
+    config_file_path: pilot_study_config_iceland.yaml
+
+  - region_name: svalbard
+    enable_this_region: true
+    config_file_path: pilot_study_config_svalbard.yaml
+
+  - region_name: central_asia
+    enable_this_region: true
+    config_file_path: pilot_study_config_central_asia.yaml

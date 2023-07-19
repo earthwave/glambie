@@ -31,7 +31,7 @@ def plot_all_plots_for_region_data_group_processing(output_path_handler: OutputP
                                       region=region,
                                       category="annual",
                                       output_filepath=plot_fp,
-                                      plot_errors=True)
+                                      plot_errors=False)
     # Convert to same unit as annual datasets now
     data_catalogue_annual_raw = convert_datasets_to_monthly_grid(data_catalogue_annual_raw)
     data_catalogue_annual_raw = convert_datasets_to_unit_mwe(data_catalogue_annual_raw)

@@ -223,8 +223,7 @@ def prepare_seasonal_calibration_dataset(region_config: RegionRunConfig,
 
 def extend_annual_timeseries_if_outside_trends_period(annual_timeseries: Timeseries,
                                                       data_catalogue_trends: DataCatalogue,
-                                                      timeseries_for_extension: Timeseries,
-                                                      remove_trend: bool = True) -> Timeseries:
+                                                      timeseries_for_extension: Timeseries) -> Timeseries:
     """
     Extends an annual timeseries with another annual timeseries in case the given trends span longer
     than the annual dataset.
@@ -253,14 +252,13 @@ def extend_annual_timeseries_if_outside_trends_period(annual_timeseries: Timeser
 
             # Remove trend of timeseries for extension over the common time period
             catalogue_dfs = [annual_timeseries_copy.data.as_dataframe(), timeseries_for_extension.data.as_dataframe()]
-            if remove_trend:
-                start_ref_period = np.max([df.start_dates.min() for df in catalogue_dfs])
-                end_ref_period = np.min([df.end_dates.max() for df in catalogue_dfs])
-                if not start_ref_period < end_ref_period:
-                    warnings.warn("Warning when removing trends. No common period detected.")
-                for df in catalogue_dfs:
-                    df_sub = df[(df["start_dates"] >= start_ref_period) & (df["end_dates"] <= end_ref_period)]
-                    df["changes"] = df["changes"] - df_sub["changes"].mean()  # edit the dataframe
+            start_ref_period = np.max([df.start_dates.min() for df in catalogue_dfs])
+            end_ref_period = np.min([df.end_dates.max() for df in catalogue_dfs])
+            if not start_ref_period < end_ref_period:
+                warnings.warn("Warning when removing trends. No common period detected.")
+            for df in catalogue_dfs:
+                df_sub = df[(df["start_dates"] >= start_ref_period) & (df["end_dates"] <= end_ref_period)]
+                df["changes"] = df["changes"] - df_sub["changes"].mean()  # edit the dataframe
 
             # Combine with other timeseries to cover the missing timespan
             df_merged = pd.merge(catalogue_dfs[0], catalogue_dfs[1],
@@ -349,8 +347,8 @@ def slice_timeseries_at_gaps(df_timeseries: pd.DataFrame) -> list[pd.DataFrame]:
 
 def set_unneeded_columns_to_nan(data_catalogue: DataCatalogue) -> DataCatalogue:
     """
-    Sets data columns of TimeseriesData not needed in algorithm to NaN within a DataCatalogue
-    to simplify object manipulating
+    Sets data columns of TimeseriesData not needed in GlaMBIE processing algorithm to NaN within a DataCatalogue
+    to simplify object manipulation
 
     Parameters
     ----------
@@ -369,3 +367,29 @@ def set_unneeded_columns_to_nan(data_catalogue: DataCatalogue) -> DataCatalogue:
         timeseries.data.hydrological_correction_value = None
         timeseries.data.remarks = None
     return result_catalogue
+
+
+def get_reduced_catalogue_to_date_window(data_catalogue: DataCatalogue,
+                                         start_date: float,
+                                         end_date: float) -> DataCatalogue:
+    """
+    Reduces all datasets within a data catalogue to desired minimum and maximum dates
+
+    Parameters
+    ----------
+    data_catalogue : DataCatalogue
+        input data catalogue with datasets
+    start_date : float
+        desired start date of output datasets
+    end_date : float
+        desired end date of output datasets
+
+    Returns
+    -------
+    DataCatalogue
+        Data catalogue with reduced datasets
+    """
+    reduced_datasets = []
+    for dataset in data_catalogue.datasets:
+        reduced_datasets.append(dataset.reduce_to_date_window(start_date=start_date, end_date=end_date))
+    return DataCatalogue.from_list(reduced_datasets, base_path=data_catalogue.base_path)

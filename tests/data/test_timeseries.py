@@ -449,3 +449,14 @@ def test_raises_assertion_error_when_converting_to_gt_with_area_change_applied(e
     timeseries_area_change = example_timeseries_ingested.apply_area_change(rgi_area_version=6, apply_change=True)
     with pytest.raises(AssertionError):
         timeseries_area_change.convert_timeseries_to_unit_gt()
+
+
+def test_reduce_to_date_window(example_timeseries_ingested):
+    reduced_timeseries = example_timeseries_ingested.reduce_to_date_window(start_date=2010.0, end_date=2010.2)
+    assert np.array_equal(reduced_timeseries.data.changes, example_timeseries_ingested.data.changes[:-1])
+    assert np.array_equal(reduced_timeseries.data.errors, example_timeseries_ingested.data.errors[:-1])
+    assert np.array_equal(reduced_timeseries.data.start_dates, example_timeseries_ingested.data.start_dates[:-1])
+    reduced_timeseries = example_timeseries_ingested.reduce_to_date_window(start_date=2010.2, end_date=2010.5)
+    assert np.array_equal(reduced_timeseries.data.changes, example_timeseries_ingested.data.changes[1:])
+    assert np.array_equal(reduced_timeseries.data.errors, example_timeseries_ingested.data.errors[1:])
+    assert np.array_equal(reduced_timeseries.data.end_dates, example_timeseries_ingested.data.end_dates[1:])

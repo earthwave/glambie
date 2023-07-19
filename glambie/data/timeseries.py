@@ -515,6 +515,36 @@ class Timeseries():
         object_copy.area_change_applied = apply_change  # store if has been applied or not
         return object_copy
 
+    def reduce_to_date_window(self, start_date: float, end_date: float) -> Timeseries:
+        """
+        Filter timeseries by start and end date
+
+        Parameters
+        ----------
+        start_date : float
+            decimal year of start date
+        end_date : float
+            decimal year of end date
+
+        Returns
+        -------
+        Timeseries
+            copy of timeseries object with reduced data to desired time window
+        """
+        object_copy = self.copy()
+        df = object_copy.data.as_dataframe()
+        df = df[((df.end_dates <= end_date) & (df.start_dates >= start_date))].reset_index(drop=True)
+        object_copy.data = TimeseriesData(start_dates=np.array(df["start_dates"]),
+                                          end_dates=np.array(df["end_dates"]),
+                                          changes=np.array(df["changes"]),
+                                          errors=np.array(df["errors"]),
+                                          glacier_area_observed=None,
+                                          glacier_area_reference=None,
+                                          hydrological_correction_value=None,
+                                          remarks=None)
+
+        return object_copy
+
     def convert_timeseries_to_monthly_grid(self) -> Timeseries:
         """
         Converts a Timeseries object to follow the monthly grid. Two different approaches are used depending on

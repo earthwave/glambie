@@ -16,7 +16,7 @@ def test_get_region_output_folder_path(path_helper: OutputPathHandler, tmp_path:
     region_path = path_helper.get_region_output_folder_path(region=region)
     assert path_helper.base_path == tmp_path
     assert os.path.exists(region_path)
-    assert os.path.join(tmp_path, region.name) == region_path
+    assert os.path.join(tmp_path, f"{region.rgi_id}_{region.name}") == region_path
 
 
 def test_get_region_and_data_group_output_folder_path(path_helper: OutputPathHandler):

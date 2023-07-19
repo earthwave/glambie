@@ -394,7 +394,8 @@ def combine_timeseries_imbie(t_array: list[np.ndarray],
 def derivative_to_cumulative(start_dates: list[float],
                              end_dates: list[float],
                              changes: list[float],
-                             return_type="arrays"):
+                             return_type: str = "arrays",
+                             calculate_as_errors: bool = False):
     """
     Calculates a cumulative timeseries from a list of non cumulative changes between start and end date
 
@@ -408,6 +409,9 @@ def derivative_to_cumulative(start_dates: list[float],
         changes between start and end date
     return_type : str, optional
         type in which the result is returned. Current options are: 'arrays' and 'dataframe', by default 'arrays'
+    calculate_as_errors : bool, optional
+        if True it will calculate cumulative errors rather than changes
+        assuming errors of each timestep are independent
 
     Returns
     -------
@@ -416,14 +420,21 @@ def derivative_to_cumulative(start_dates: list[float],
         'dataframe': pd.DataFrame({'dates': dates, 'changes': changes})
     """
     dates = np.array([start_dates[0], *end_dates])
-    changes = np.array([0, *np.array(pd.Series(changes).cumsum())])
+    if calculate_as_errors:
+        changes = np.array([0, *np.array(pd.Series(np.square(changes)).cumsum())**0.5])
+    else:
+        changes = np.array([0, *np.array(pd.Series(changes).cumsum())])
     if return_type == "arrays":
         return dates, changes
     elif return_type == "dataframe":
-        df_cumulative = pd.DataFrame({'dates': dates,
-                                      'changes': changes,
-                                      })
-        return df_cumulative
+        if calculate_as_errors:
+            return pd.DataFrame({'dates': dates,
+                                 'errors': changes,
+                                 })
+        else:
+            return pd.DataFrame({'dates': dates,
+                                 'changes': changes,
+                                 })
 
 
 def cumulative_to_derivative(fractional_year_array, cumulative_changes, return_type="arrays"):

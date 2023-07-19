@@ -10,10 +10,9 @@ import warnings
 from glambie.const.data_groups import GlambieDataGroup
 from glambie.const.regions import RGIRegion
 from glambie.data.submission_system_interface import fetch_timeseries_dataframe, SUBMISSION_SYSTEM_BASEPATH_PLACEHOLDER
-from glambie.util.mass_height_conversions import \
-    meters_to_meters_water_equivalent
-from glambie.util.mass_height_conversions import \
-    meters_water_equivalent_to_gigatonnes
+from glambie.util.mass_height_conversions import meters_to_meters_water_equivalent
+from glambie.util.mass_height_conversions import meters_water_equivalent_to_gigatonnes
+from glambie.util.mass_height_conversions import gigatonnes_to_meters_water_equivalent
 from glambie.util.timeseries_helpers import derivative_to_cumulative, get_total_trend
 from glambie.util.timeseries_helpers import \
     resample_derivative_timeseries_to_monthly_grid
@@ -125,7 +124,8 @@ class TimeseriesData():
             warnings.warn("Cumulative timeseries may be invalid. This may be due to the timeseries containing "
                           "gaps or overlapping periods.")
         dates, changes = derivative_to_cumulative(self.start_dates, self.end_dates, self.changes)
-        errors = np.array([0, *self.errors])  # need to handle errors in the future too
+        _, errors = derivative_to_cumulative(self.start_dates, self.end_dates, self.errors, calculate_as_errors=True)
+
         df_cumulative = pd.DataFrame({'dates': dates,
                                       'changes': changes,
                                       'errors': errors
@@ -311,7 +311,8 @@ class Timeseries():
         df_data.to_csv(csv_outpath, index=False)
 
     def convert_timeseries_to_unit_mwe(self, density_of_water: float = constants.DENSITY_OF_WATER_KG_PER_M3,
-                                       density_of_ice: float = constants.DENSITY_OF_ICE_KG_PER_M3) -> Timeseries:
+                                       density_of_ice: float = constants.DENSITY_OF_ICE_KG_PER_M3,
+                                       rgi_area_version: int = 6) -> Timeseries:
         """
         Converts a Timeseries object to the unit of meters water equivalent.
         Errors are calculated using different density uncertainties depending on time resolution of timeseries.
@@ -323,6 +324,10 @@ class Timeseries():
             The density of water in Gt per m3, by default constants.DENSITY_OF_WATER_KG_PER_M3
         density_of_ice : float, optional
             The density of ice in Gt per m3, by default constants.DENSITY_OF_ICE_KG_PER_M3
+        rgi_area_version: int, optional
+            The version of RGI glacier masks to be used to determine the glacier area within the region,
+            Only used when converting from gigatonnes to mwe
+            Current options are 6 or 7, by default 6
 
         Returns
         -------
@@ -339,7 +344,7 @@ class Timeseries():
         else:
             object_copy = self.copy()
             object_copy.unit = "mwe"
-            if self.unit == "m":
+            if str.lower(self.unit) == "m":
                 object_copy.data.changes = np.array(meters_to_meters_water_equivalent(object_copy.data.changes,
                                                                                       density_of_water=density_of_water,
                                                                                       density_of_ice=density_of_ice))
@@ -354,6 +359,30 @@ class Timeseries():
                 # also see formula in Glambie Assessment Algorithm document, section 5.2 Homogenization of data
                 errors_mwe = df.changes.abs() * ((df.errors / df.changes)**2 + (density_unc / density_of_ice)**2)**0.5
                 object_copy.data.errors = np.array(errors_mwe)
+                return object_copy
+            elif str.lower(self.unit) == "gt":
+                # get area
+                if rgi_area_version == 6:
+                    glacier_area = self.region.rgi6_area
+                elif rgi_area_version == 7:
+                    glacier_area = self.region.rgi7_area
+                else:
+                    raise NotImplementedError("Version '{}' of RGI is not implemented yet.".format(rgi_area_version))
+                # convert uncertainties
+                # First remove area uncertainty
+                # area_unc is calculated as a % of the total area. % can be defined individually per region.
+                area_unc = glacier_area * self.region.area_uncertainty_percentage
+                errors_area_unc_removed = (  # inverting the formula from glambie ATBD
+                    object_copy.data.changes * np.abs(
+                        object_copy.data.errors**2 * glacier_area**2
+                        - np.abs(object_copy.data.changes)**2 * area_unc**2)**0.5) / (
+                            np.abs(object_copy.data.changes) * glacier_area)
+                # Second, convert errors to mwe
+                object_copy.data.errors = np.array(gigatonnes_to_meters_water_equivalent(
+                    errors_area_unc_removed, glacier_area, density_of_water=density_of_water))
+                # convert changes
+                object_copy.data.changes = np.array(gigatonnes_to_meters_water_equivalent(
+                    object_copy.data.changes, glacier_area, density_of_water=density_of_water))
                 return object_copy
             else:
                 raise NotImplementedError(
@@ -400,11 +429,11 @@ class Timeseries():
             raise NotImplementedError("Version '{}' of RGI is not implemented yet.".format(rgi_area_version))
 
         object_copy = self.copy()
-        object_copy.unit = "gt"
+        object_copy.unit = "Gt"
 
-        if self.unit == "gt":  # no conversion needed as already in gt
+        if str.lower(self.unit) == "gt":  # no conversion needed as already in gt
             return self.copy()
-        elif self.unit == "mwe":
+        elif str.lower(self.unit) == "mwe":
             object_copy.data.changes = np.array(meters_water_equivalent_to_gigatonnes(
                 self.data.changes, area_km2=glacier_area, density_of_water=density_of_water))
             # variables for uncertainty calculation
@@ -422,7 +451,6 @@ class Timeseries():
             uncertainties_gt = df.changes.abs() * ((df.errors / df.changes)**2 + (area_unc / area)**2)**0.5
             object_copy.data.errors = np.array(uncertainties_gt)
             return object_copy
-
         else:
             raise NotImplementedError(
                 "Conversion to Gt not implemented yet for Timeseries with unit '{}'".format(self.unit))
@@ -485,6 +513,36 @@ class Timeseries():
             adjusted_areas.append(adjusted_area)
         object_copy.data.changes = np.array(adjusted_changes)
         object_copy.area_change_applied = apply_change  # store if has been applied or not
+        return object_copy
+
+    def reduce_to_date_window(self, start_date: float, end_date: float) -> Timeseries:
+        """
+        Filter timeseries by start and end date
+
+        Parameters
+        ----------
+        start_date : float
+            decimal year of start date
+        end_date : float
+            decimal year of end date
+
+        Returns
+        -------
+        Timeseries
+            copy of timeseries object with reduced data to desired time window
+        """
+        object_copy = self.copy()
+        df = object_copy.data.as_dataframe()
+        df = df[((df.end_dates <= end_date) & (df.start_dates >= start_date))].reset_index(drop=True)
+        object_copy.data = TimeseriesData(start_dates=np.array(df["start_dates"]),
+                                          end_dates=np.array(df["end_dates"]),
+                                          changes=np.array(df["changes"]),
+                                          errors=np.array(df["errors"]),
+                                          glacier_area_observed=None,
+                                          glacier_area_reference=None,
+                                          hydrological_correction_value=None,
+                                          remarks=None)
+
         return object_copy
 
     def convert_timeseries_to_monthly_grid(self) -> Timeseries:
@@ -778,7 +836,5 @@ class Timeseries():
             object_copy.data.end_dates = np.array(df_nan_removed["end_dates"])
             object_copy.data.changes = np.array(df_nan_removed["changes"])
             object_copy.data.errors = np.array(df_nan_removed["errors"])
-            object_copy.data.glacier_area_observed = np.array(df_nan_removed["glacier_area_observed"])
-            object_copy.data.glacier_area_reference = np.array(df_nan_removed["glacier_area_reference"])
 
         return object_copy

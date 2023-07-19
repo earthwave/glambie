@@ -6,6 +6,7 @@ from glambie.data.timeseries import Timeseries, TimeseriesData
 from glambie.const.constants import YearType
 from glambie.processing.path_handling import OutputPathHandler
 from glambie.processing.processing_helpers import prepare_seasonal_calibration_dataset
+from glambie.processing.processing_helpers import get_reduced_catalogue_to_date_window
 from glambie.const.data_groups import GLAMBIE_DATA_GROUPS
 from glambie.plot.processing_plots import plot_combination_of_regions_to_global
 import numpy as np
@@ -42,8 +43,13 @@ def run_global_results(glambie_run_config: GlambieRunConfig,
     regional_results_catalogue_homogenized = _homogenize_regional_results_to_calendar_year(glambie_run_config,
                                                                                            regional_results_catalogue,
                                                                                            original_data_catalogue)
-    global_timeseries = _combine_regional_results_into_global(regional_results_catalogue_homogenized)
+    # remove any dates outside config time period:
+    regional_results_catalogue_homogenized = get_reduced_catalogue_to_date_window(
+        data_catalogue=regional_results_catalogue_homogenized,
+        start_date=glambie_run_config.start_year,
+        end_date=glambie_run_config.end_year)
 
+    global_timeseries = _combine_regional_results_into_global(regional_results_catalogue_homogenized)
     # plot
     if output_path_handler is not None:
         plot_output_file = output_path_handler.get_plot_output_file_path(region=REGIONS["global"],

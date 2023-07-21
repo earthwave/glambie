@@ -8,6 +8,7 @@ from glambie.data.timeseries import Timeseries
 from glambie.const.constants import YearType
 import numpy as np
 import pandas as pd
+import warnings
 
 log = logging.getLogger(__name__)
 
@@ -51,7 +52,8 @@ def filter_catalogue_with_config_settings(data_group: GlambieDataGroup,
     exclude_annual_datasets = region_config.region_run_settings[data_group.name].get("exclude_annual_datasets", [])
     log.info('Excluding the following datasets from ANNUAL calculations: datasets=%s', exclude_annual_datasets)
     for ds in exclude_annual_datasets:
-        datasets_annual = [d for d in datasets_annual if d.user_group.lower() != ds.lower()]
+        if ds is not None:
+            datasets_annual = [d for d in datasets_annual if d.user_group.lower() != ds.lower()]
     if data_group == GLAMBIE_DATA_GROUPS["demdiff_and_glaciological"]:
         datasets_annual = [d for d in datasets_annual if d.data_group != GLAMBIE_DATA_GROUPS["demdiff"]]
 
@@ -60,7 +62,8 @@ def filter_catalogue_with_config_settings(data_group: GlambieDataGroup,
     exclude_trend_datasets = region_config.region_run_settings[data_group.name].get("exclude_trend_datasets", [])
     log.info('Excluding the following datasets from TREND calculations: datasets=%s', exclude_trend_datasets)
     for ds in exclude_trend_datasets:
-        datasets_trend = [d for d in datasets_trend if d.user_group.lower() != ds.lower()]
+        if ds is not None:
+            datasets_trend = [d for d in datasets_trend if d.user_group.lower() != ds.lower()]
     if data_group == GLAMBIE_DATA_GROUPS["demdiff_and_glaciological"]:
         datasets_trend = [d for d in datasets_trend if d.data_group != GLAMBIE_DATA_GROUPS["glaciological"]]
 
@@ -246,9 +249,19 @@ def extend_annual_timeseries_if_outside_trends_period(annual_timeseries: Timeser
         if (min(ds.data.start_dates) < min(annual_timeseries_copy.data.start_dates)) \
                 or (max(ds.data.end_dates) > max(annual_timeseries_copy.data.end_dates)):
             log.info("Extension of annual is performed, as the trends are longer than the annual timeseries")
+
+            # Remove trend of timeseries for extension over the common time period
+            catalogue_dfs = [annual_timeseries_copy.data.as_dataframe(), timeseries_for_extension.data.as_dataframe()]
+            start_ref_period = np.max([df.start_dates.min() for df in catalogue_dfs])
+            end_ref_period = np.min([df.end_dates.max() for df in catalogue_dfs])
+            if not start_ref_period < end_ref_period:
+                warnings.warn("Warning when removing trends. No common period detected.")
+            for df in catalogue_dfs:
+                df_sub = df[(df["start_dates"] >= start_ref_period) & (df["end_dates"] <= end_ref_period)]
+                df["changes"] = df["changes"] - df_sub["changes"].mean()  # edit the dataframe
+
             # Combine with other timeseries to cover the missing timespan
-            df_merged = pd.merge(annual_timeseries_copy.data.as_dataframe(),
-                                 timeseries_for_extension.data.as_dataframe(),
+            df_merged = pd.merge(catalogue_dfs[0], catalogue_dfs[1],
                                  on=["start_dates", "end_dates"], how="outer")
             # Fill Nans in 'annual_timeseries' with values from 'timeseries_for_extension'
             df_merged.changes_x.fillna(df_merged.changes_y, inplace=True)
@@ -261,3 +274,122 @@ def extend_annual_timeseries_if_outside_trends_period(annual_timeseries: Timeser
             annual_timeseries_copy.data.end_dates = np.array(df_merged["end_dates"])
             return annual_timeseries_copy
     return annual_timeseries_copy
+
+
+def check_and_handle_gaps_in_timeseries(data_catalogue: DataCatalogue) -> DataCatalogue:
+    """
+    Checks all datasets in a timeseries if they have a temporal gap, and if so, splits them up into multiple datasets
+    without gaps. If no gaps are found, the datasets stay the same.
+
+    Parameters
+    ----------
+    data_catalogue : DataCatalogue
+        data catalogue with input datasets
+
+    Returns
+    -------
+    DataCatalogue
+        data catalogue with new datasets containing no gaps.
+        will contain more datasets than input data catalogue when gaps were found.
+    """
+    new_datasets = []
+    for timeseries in data_catalogue.datasets:
+        if not timeseries.data.is_cumulative_valid():  # if invalid convert to handle the gaps
+            # 1 split timeseries dataframe
+            df_data = timeseries.data.as_dataframe()
+            split_dataframes = slice_timeseries_at_gaps(df_data)
+            # 2 add split timeseries to new_datasets
+            for idx, split_timeseries in enumerate(split_dataframes):
+                timeseries_copy = timeseries.copy()
+                # rename user group name to be unique
+                timeseries_copy.user_group = f"{timeseries_copy.user_group }_{str(idx+1)}"
+                timeseries_copy.data.changes = np.array(split_timeseries["changes"])
+                timeseries_copy.data.errors = np.array(split_timeseries["errors"])
+                timeseries_copy.data.start_dates = np.array(split_timeseries["start_dates"])
+                timeseries_copy.data.end_dates = np.array(split_timeseries["end_dates"])
+                new_datasets.append(timeseries_copy)
+        else:  # or else append original
+            new_datasets.append(timeseries)
+
+    new_data_catalogue = DataCatalogue.from_list(new_datasets, base_path=data_catalogue.base_path)
+    return new_data_catalogue
+
+
+def slice_timeseries_at_gaps(df_timeseries: pd.DataFrame) -> list[pd.DataFrame]:
+    """
+    Splits a dataframe into separate chunks/slices to remove temporal gaps in the timeseries.
+
+    Parameters
+    ----------
+    df_timeseries : pd.DataFrame
+        pandas dataframe containing a timeseries and the columns 'start_dates' and 'end_dates'.
+        If 'end_date' != 'start_date' for any consecutive rows this is considered as a time gap.
+
+    Returns
+    -------
+    list[pd.DataFrame]
+        a list with slices of the original dataframe. All new dataframes within the list are gapless.
+    """
+    split_indices = []
+    split_timeseries_dataframes = []
+    for idx, end_date in enumerate(df_timeseries["end_dates"].iloc[:-1]):
+        # If end_date != start_date for any of the consecutive rows, append to indices where df is split
+        if end_date != df_timeseries["start_dates"].iloc[idx + 1]:
+            split_indices.append(idx)
+    previous_index = 0
+    for split_index in split_indices:
+        split_timeseries_dataframes.append(df_timeseries.iloc[previous_index:split_index + 1].reset_index(drop=True))
+        previous_index = split_index + 1
+    # plus append last / full split in the end
+    split_timeseries_dataframes.append(df_timeseries.iloc[previous_index:].reset_index(drop=True))
+    return split_timeseries_dataframes
+
+
+def set_unneeded_columns_to_nan(data_catalogue: DataCatalogue) -> DataCatalogue:
+    """
+    Sets data columns of TimeseriesData not needed in GlaMBIE processing algorithm to NaN within a DataCatalogue
+    to simplify object manipulation
+
+    Parameters
+    ----------
+    data_catalogue : DataCatalogue
+        input data catalogue with Timeseries datasets to be manipulated
+
+    Returns
+    -------
+    DataCatalogue
+        manipulated data catalogue
+    """
+    result_catalogue = data_catalogue.copy()
+    for timeseries in result_catalogue.datasets:
+        timeseries.data.glacier_area_observed = None
+        timeseries.data.glacier_area_reference = None
+        timeseries.data.hydrological_correction_value = None
+        timeseries.data.remarks = None
+    return result_catalogue
+
+
+def get_reduced_catalogue_to_date_window(data_catalogue: DataCatalogue,
+                                         start_date: float,
+                                         end_date: float) -> DataCatalogue:
+    """
+    Reduces all datasets within a data catalogue to desired minimum and maximum dates
+
+    Parameters
+    ----------
+    data_catalogue : DataCatalogue
+        input data catalogue with datasets
+    start_date : float
+        desired start date of output datasets
+    end_date : float
+        desired end date of output datasets
+
+    Returns
+    -------
+    DataCatalogue
+        Data catalogue with reduced datasets
+    """
+    reduced_datasets = []
+    for dataset in data_catalogue.datasets:
+        reduced_datasets.append(dataset.reduce_to_date_window(start_date=start_date, end_date=end_date))
+    return DataCatalogue.from_list(reduced_datasets, base_path=data_catalogue.base_path)

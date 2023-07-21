@@ -226,7 +226,8 @@ def finalise_save_to_file_and_close_plot(output_filepath: str):
 def add_labels_axlines_and_title(axes: mpl.pyplot.axes,
                                  unit: str,
                                  title: str,
-                                 legend_fontsize: int = 9):
+                                 legend_fontsize: int = 9,
+                                 legend_outside_plot: bool = True):
     """
     Extend plot with labels, legend etc.:
     - Adds labels to axes with units
@@ -244,12 +245,18 @@ def add_labels_axlines_and_title(axes: mpl.pyplot.axes,
         plot title
     legend_fontsize : int, optional
         legend font size, by default 9
+    legend_outside_plot : bool, optional
+        if True the legend is plotted outside the plot. good for when there are many datasets in on plot
+        by default True
     """
     axes[0].set_title(title)
     axes[0].axhline(0, color="grey", linewidth=0.9, linestyle="--")
     axes[0].set_xlabel("Time")
     axes[0].set_ylabel("Change [{} per year]".format(unit))
     axes[1].axhline(0, color="grey", linewidth=0.9, linestyle="--")
-    axes[1].legend(fontsize=legend_fontsize)
+    if legend_outside_plot:
+        axes[1].legend(bbox_to_anchor=(1.04, 1), borderaxespad=0, fontsize=legend_fontsize)
+    else:
+        axes[1].legend(fontsize=legend_fontsize)
     axes[1].set_xlabel("Time")
     axes[1].set_ylabel("Cumulative change [{}]".format(unit))

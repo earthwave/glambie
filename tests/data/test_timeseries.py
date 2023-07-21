@@ -142,7 +142,7 @@ def test_as_cumulative_timeseries_raises_warning(example_timeseries_ingested):
         assert "invalid" in str(w[-1].message)
 
 
-def test_convert_timeseries_to_unit_mwe(example_timeseries_ingested):
+def test_convert_timeseries_to_unit_mwe_from_m(example_timeseries_ingested):
     density_of_water = 997
     density_of_ice = 850
     converted_timeseries = example_timeseries_ingested.convert_timeseries_to_unit_mwe(
@@ -152,6 +152,32 @@ def test_convert_timeseries_to_unit_mwe(example_timeseries_ingested):
     assert not np.array_equal(converted_timeseries.data.changes, example_timeseries_ingested.data.changes)
     expected_converted_changes = example_timeseries_ingested.data.changes / density_of_water * density_of_ice
     assert np.array_equal(converted_timeseries.data.changes, expected_converted_changes)
+
+
+def test_convert_timeseries_to_unit_mwe_from_gt(example_timeseries_ingested):
+    density_of_water = 997
+    example_timeseries_ingested.unit = "gt"
+    converted_timeseries = example_timeseries_ingested.convert_timeseries_to_unit_mwe(
+        density_of_water=density_of_water, rgi_area_version=6)
+    assert example_timeseries_ingested.unit == "gt"
+    assert not np.array_equal(converted_timeseries.data.changes, example_timeseries_ingested.data.changes)
+    assert not np.array_equal(converted_timeseries.data.errors, example_timeseries_ingested.data.errors)
+    expected_converted_changes = (1e6 * example_timeseries_ingested.data.changes) / (
+        example_timeseries_ingested.region.rgi6_area * density_of_water)
+    assert np.array_equal(converted_timeseries.data.changes, expected_converted_changes)
+
+
+def test_convert_timeseries_to_unit_mwe_from_gt_and_back(example_timeseries_ingested):
+    density_of_water = 997
+    example_timeseries_ingested.unit = "gt"
+    converted_timeseries_mwe = example_timeseries_ingested.convert_timeseries_to_unit_mwe(
+        density_of_water=density_of_water, rgi_area_version=6)
+    converted_timeseries_gt = converted_timeseries_mwe.convert_timeseries_to_unit_gt(
+        density_of_water=density_of_water, rgi_area_version=6)
+    assert not np.array_equal(converted_timeseries_mwe.data.changes, example_timeseries_ingested.data.changes)
+    # allclose due to floating points
+    assert np.allclose(converted_timeseries_gt.data.changes, example_timeseries_ingested.data.changes)
+    assert np.allclose(converted_timeseries_gt.data.errors, example_timeseries_ingested.data.errors)
 
 
 def test_convert_timeseries_to_unit_mwe_no_conversion_when_already_in_mwe(example_timeseries_ingested):
@@ -182,7 +208,7 @@ def test_convert_timeseries_to_unit_gt_no_area_change_rate(example_timeseries_in
     example_timeseries_ingested.unit = "mwe"
     example_timeseries_ingested.region = REGIONS["iceland"]
     converted_timeseries = example_timeseries_ingested.convert_timeseries_to_unit_gt()
-    assert converted_timeseries.unit == "gt"
+    assert str.lower(converted_timeseries.unit) == "gt"
     assert example_timeseries_ingested.unit == "mwe"
     assert not np.array_equal(converted_timeseries.data.changes, example_timeseries_ingested.data.changes)
     area = example_timeseries_ingested.region.rgi6_area
@@ -423,3 +449,14 @@ def test_raises_assertion_error_when_converting_to_gt_with_area_change_applied(e
     timeseries_area_change = example_timeseries_ingested.apply_area_change(rgi_area_version=6, apply_change=True)
     with pytest.raises(AssertionError):
         timeseries_area_change.convert_timeseries_to_unit_gt()
+
+
+def test_reduce_to_date_window(example_timeseries_ingested):
+    reduced_timeseries = example_timeseries_ingested.reduce_to_date_window(start_date=2010.0, end_date=2010.2)
+    assert np.array_equal(reduced_timeseries.data.changes, example_timeseries_ingested.data.changes[:-1])
+    assert np.array_equal(reduced_timeseries.data.errors, example_timeseries_ingested.data.errors[:-1])
+    assert np.array_equal(reduced_timeseries.data.start_dates, example_timeseries_ingested.data.start_dates[:-1])
+    reduced_timeseries = example_timeseries_ingested.reduce_to_date_window(start_date=2010.2, end_date=2010.5)
+    assert np.array_equal(reduced_timeseries.data.changes, example_timeseries_ingested.data.changes[1:])
+    assert np.array_equal(reduced_timeseries.data.errors, example_timeseries_ingested.data.errors[1:])
+    assert np.array_equal(reduced_timeseries.data.end_dates, example_timeseries_ingested.data.end_dates[1:])

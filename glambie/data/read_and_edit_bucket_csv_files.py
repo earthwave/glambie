@@ -210,15 +210,16 @@ def edit_local_copies_of_glambie_csvs(file_check_dataframe: pd.DataFrame, local_
                 print('writing original to {}'.format(os.path.join(archive_path, file.file_name)))
                 submission_data_frame.to_csv(os.path.join(archive_path, file.file_name))
 
-                updated_end_dates = []
+                updated_end_dates, updated_fractional_end_dates = [], []
                 for i in range(len(submission_data_frame.end_date) - 1):
                     updated_end_dates.append(submission_data_frame.start_date[i + 1])
+                    updated_fractional_end_dates.append(submission_data_frame.start_date_fractional[i + 1])
+
                 updated_end_dates.append(submission_data_frame['end_date'].tolist()[-1])
+                updated_fractional_end_dates.append(submission_data_frame['end_date_fractional'].tolist()[-1])
+
                 submission_data_frame['end_date'] = updated_end_dates
-                updated_end_dates_as_datetime = [
-                    datetime.strptime(a, '%d/%m/%Y') for a in submission_data_frame.end_date]
-                submission_data_frame['end_date_fractional'] = datetime_dates_to_fractional_years(
-                    updated_end_dates_as_datetime)
+                submission_data_frame['end_date_fractional'] = updated_fractional_end_dates
 
                 file_check_dataframe.loc[file_check_dataframe.local_filepath.__eq__(file.local_filepath),
                                          'reason_for_edit'] = '1 or 2 day gap between every row'

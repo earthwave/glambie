@@ -215,6 +215,10 @@ def edit_local_copies_of_glambie_csvs(file_check_dataframe: pd.DataFrame, local_
                     updated_end_dates.append(submission_data_frame.start_date[i + 1])
                 updated_end_dates.append(submission_data_frame['end_date'].tolist()[-1])
                 submission_data_frame['end_date'] = updated_end_dates
+                updated_end_dates_as_datetime = [
+                    datetime.strptime(a, '%d/%m/%Y') for a in submission_data_frame.end_date]
+                submission_data_frame['end_date_fractional'] = datetime_dates_to_fractional_years(
+                    updated_end_dates_as_datetime)
 
                 file_check_dataframe.loc[file_check_dataframe.local_filepath.__eq__(file.local_filepath),
                                          'reason_for_edit'] = '1 or 2 day gap between every row'

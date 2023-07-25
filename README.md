@@ -101,7 +101,7 @@ python -m glambie <config_file>
 
 e.g. 
 ```
-python -m glambie main_study_config_files/0_parent_config.yaml
+python -m glambie configuration/0_parent_config.yaml
 ```
 
 ## Versioning and releases

@@ -1,3 +1,18 @@
+"""
+Script that can be used to make local copies of data in the glambie-submissions google bucket, check these files for any
+formatting inconsistencies (with respect to the glambie standard), and then edit the local copies to correct these
+problems. After applying a set of edits, depending on which issues are present in each dataset, you can then upload the
+edited versions of files back to the bucket, as well as a zip archive of the original versions of these files.
+
+Possible reasons for edits:
+    1) Small gaps between end dates and subsequent start dates (1 or 2 days consistently)
+    2) A gravimetry file with non-GRACE gaps that need interpolating
+    3) Data has been submitted as cumulative change
+
+This script should be run after all submissions have been received for a single round of the GlaMBIE project, before the
+algorithm is run.
+"""
+
 import os
 import numpy as np
 import pandas as pd
@@ -8,13 +23,13 @@ from glambie.util.date_helpers import datetime_dates_to_fractional_years
 
 DATA_TRANSFER_BUCKET_NAME = "glambie-submissions"
 PROJECT_NAME = "glambie"
-_storage_client = Client()
 
 
-def download_csvs_from_bucket(local_data_directory_path: str, region_prefix: str = None) -> list[str]:
+def download_csv_files_from_bucket(local_data_directory_path: str, region_prefix: str = None) -> list[str]:
     """
     Function to download glambie .csv files from the google bucket to a local folder, where they can be checked and
-    edited. Specify files for a specific region using the region_prefix parameter
+    edited. Specify files for a specific region using the region_prefix parameter - otherwise all .csv files in the 
+    bucket will be downloaded.
 
     Parameters
     ----------
@@ -29,7 +44,7 @@ def download_csvs_from_bucket(local_data_directory_path: str, region_prefix: str
     list[str]
         List of files that have been downloaded to the local directory.
     """
-
+    _storage_client = Client()
     list_of_blobs_in_bucket = _storage_client.list_blobs(DATA_TRANSFER_BUCKET_NAME, prefix=region_prefix)
     downloaded_files = []
 
@@ -37,22 +52,21 @@ def download_csvs_from_bucket(local_data_directory_path: str, region_prefix: str
         if '.csv' in blob.name:
             downloaded_files.append(blob.name)
             destination_file_path = os.path.join(local_data_directory_path, blob.name)
-            with open(destination_file_path, "wb") as temp_file:
-                blob.download_to_file(temp_file, raw_download=False)
+            with open(destination_file_path, "wb") as output_file:
+                blob.download_to_file(output_file, raw_download=False)
 
     return downloaded_files
 
 
-def upload_edited_files_to_bucket(file_dataframe: pd.DataFrame, local_path: str):
+def upload_edited_csv_files_to_bucket(files_to_upload: list[str], local_path: str):
     """
     After editing local copies of the submitted csv files, replace the original versions in the bucket with the
-    edited local versions. Also upload an archvie folder containing original copies of all edited files
+    edited local versions. Also upload an archive folder containing original copies of all edited files
 
     Parameters
     ----------
-    file_dataframe : pd.DataFrame
-        Dataframe containing results of checks for inconsistencies within the csv files compared to the expected glambie
-        standard.
+    files_to_upload : list[str]
+        List containing the names of files that should be uploaded to the GlaMBIE bucket
     local_path : str
         Path to local copies of bucket data.
 
@@ -61,14 +75,12 @@ def upload_edited_files_to_bucket(file_dataframe: pd.DataFrame, local_path: str)
     AssertionError
         If archive folder has not yet been created
     """
-
-    for _, file in file_dataframe.iterrows():
-        file_to_upload = file.local_filepath
-
+    _storage_client = Client()
+    for file in files_to_upload:
         bucket = _storage_client.get_bucket(DATA_TRANSFER_BUCKET_NAME)
-        blob = bucket.blob(file.file_name)
-        blob.upload_from_filename(file_to_upload)
-        print('Edited version of {} uploaded to bucket'.format(file.file_name))
+        blob = bucket.blob(os.path.basename(file))
+        blob.upload_from_filename(file)
+        print('Edited version of {} uploaded to bucket'.format(os.path.basename(file)))
 
     # Finally upload archive of unedited files
     archive_name = os.path.join(local_path, 'original_files_pre_edits.tar.gz')
@@ -76,14 +88,14 @@ def upload_edited_files_to_bucket(file_dataframe: pd.DataFrame, local_path: str)
     if os.path.exists(archive_name):
         blob.upload_from_filename(archive_name)
     else:
-        raise AssertionError('The archive of original data has not been made')
+        raise AssertionError(f'The archive of original data {archive_name} has not been made locally and has therefore'
+                             'not been uploaded.')
 
 
 def generate_results_dataframe(downloaded_files: list[str], local_path: str) -> pd.DataFrame:
     """
-    Function to generate a dataframe sumamrising which of the files need editing, and what edits need to be made for
-    these. Thought about doing the edits at the same time, but wanted to retain a record separate to the files
-    themselves of what changes have been made.
+    Generate a summary which of the files need editing and what edits need to be made for each. These can be reviewed
+    or actioned later with edit_local_copies_of_glambie_csvs
 
     Parameters
     ----------

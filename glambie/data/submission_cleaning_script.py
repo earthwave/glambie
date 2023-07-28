@@ -27,11 +27,11 @@ from glambie.util.timeseries_helpers import \
     interpolate_change_per_day_to_fill_gaps
 
 DATA_TRANSFER_BUCKET_NAME = "glambie-submissions"
-PROJECT_NAME = "glambie"
 log = logging.getLogger(__name__)
 
 
-def download_csv_files_from_bucket(local_data_directory_path: str, region_prefix: str = None) -> list[str]:
+def download_csv_files_from_bucket(storage_client: Client, local_data_directory_path: str,
+                                   region_prefix: str = None) -> list[str]:
     """
     Function to download glambie .csv files from the google bucket to a local folder, where they can be checked and
     edited. Specify files for a specific region using the region_prefix parameter - otherwise all .csv files in the
@@ -39,6 +39,8 @@ def download_csv_files_from_bucket(local_data_directory_path: str, region_prefix
 
     Parameters
     ----------
+    storage_client : Client
+        Google Cloud storage Client instance that will be used to access bucket (? not sure what this actually does)
     local_data_directory_path : str
         Path to save local copies of bucket data to.
     region_prefix : str, Optional
@@ -50,8 +52,7 @@ def download_csv_files_from_bucket(local_data_directory_path: str, region_prefix
     list[str]
         List of files that have been downloaded to the local directory.
     """
-    _storage_client = Client()
-    list_of_blobs_in_bucket = _storage_client.list_blobs(DATA_TRANSFER_BUCKET_NAME, prefix=region_prefix)
+    list_of_blobs_in_bucket = storage_client.list_blobs(DATA_TRANSFER_BUCKET_NAME, prefix=region_prefix)
     downloaded_files = []
 
     for blob in list_of_blobs_in_bucket:
@@ -64,13 +65,15 @@ def download_csv_files_from_bucket(local_data_directory_path: str, region_prefix
     return downloaded_files
 
 
-def upload_edited_csv_files_to_bucket(files_to_upload: list[str], local_path: str):
+def upload_edited_csv_files_to_bucket(storage_client: Client, files_to_upload: list[str], local_path: str):
     """
     After editing local copies of the submitted csv files, replace the original versions in the bucket with the
     edited local versions. Also upload an archive folder containing original copies of all edited files
 
     Parameters
     ----------
+    storage_client : Client
+        Google Cloud storage Client instance that will be used to access bucket (? not sure what this actually does)
     files_to_upload : list[str]
         List containing the names of files that should be uploaded to the GlaMBIE bucket
     local_path : str
@@ -81,9 +84,8 @@ def upload_edited_csv_files_to_bucket(files_to_upload: list[str], local_path: st
     AssertionError
         If archive folder has not yet been created
     """
-    _storage_client = Client()
     for file in files_to_upload:
-        bucket = _storage_client.get_bucket(DATA_TRANSFER_BUCKET_NAME)
+        bucket = storage_client.get_bucket(DATA_TRANSFER_BUCKET_NAME)
         blob = bucket.blob(os.path.basename(file))
         blob.upload_from_filename(file)
         log.info('Edited version of %s uploaded to bucket', os.path.basename(file))
@@ -359,8 +361,9 @@ def apply_csv_file_corrections(file_check_info: pd.DataFrame, directory_path: st
 def main(upload: bool = False):
 
     local_path = '/path/to/local/folder'
+    storage_client = Client()
     # If you want to download files for a specific region, set the region_prefix and supply here
-    downloaded_files = download_csv_files_from_bucket(local_path, region_prefix=None)
+    downloaded_files = download_csv_files_from_bucket(storage_client, local_path, region_prefix=None)
     file_check_results_dataframe = generate_results_dataframe(downloaded_files, local_path)
     record_of_edits_dataframe = apply_csv_file_corrections(file_check_results_dataframe, local_path)
 
@@ -369,7 +372,7 @@ def main(upload: bool = False):
     # Final step that needs to be implemented here is to upload the edited files into the bucket, after copying the
     # original version of the file into an archive folder
     if upload:
-        upload_edited_csv_files_to_bucket(record_of_edits_dataframe.local_filepath.to_list())
+        upload_edited_csv_files_to_bucket(storage_client, record_of_edits_dataframe.local_filepath.to_list())
 
 
 if __name__ == "__main__":

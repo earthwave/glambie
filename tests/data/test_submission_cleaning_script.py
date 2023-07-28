@@ -2,7 +2,9 @@ import os
 import pytest
 import numpy as np
 import pandas as pd
-from glambie.data.submission_cleaning_script import download_csvs_from_bucket, check_glambie_submission_for_errors
+from google.cloud.storage import Blob, Client
+from unittest.mock import MagicMock, patch
+from glambie.data.submission_cleaning_script import download_csv_files_from_bucket, check_glambie_submission_for_errors
 
 
 @pytest.fixture()
@@ -17,11 +19,47 @@ def example_file_check_dataframe():
                                    'nodata_check_satisfied': np.nan})
 
 
-def test_download_csvs_from_bucket(tmp_path):
+@pytest.fixture()
+def mock_client() -> MagicMock(Client):
+    """
+    Create a mock google.cloud.storage.Client instance, to be used for testing download_csv_files_from_bucket
+    """
+    # Set up mock blobs that we instruct the function to download
+    blob_1 = MagicMock(spec=Blob)
+    blob_1.name = "a/acs.csv"
+    blob_1.public_url = "https://a/acs.csv"
 
-    test_prefix = 'acs_altimetry'
-    local_data_directory_path = str(tmp_path)  # temp folder for test of download
-    downloaded_files = download_csvs_from_bucket(local_data_directory_path, region_prefix=test_prefix)
+    blob_2 = MagicMock(spec=Blob)
+    blob_2.name = "a/wna.csv"
+    blob_2.public_url = "https://a/wna.csv"
+
+    # We need to be able to iterate over the blobs and query them for prefixes
+    mock_blobs = MagicMock()
+    mock_blobs.__iter__.return_value = [blob_1, blob_2]
+    mock_blobs.prefixes = ['acs/', 'wna/']  # ? not sure what this does
+
+    # Give the client the blobs?
+    mock_client = MagicMock(spec=Client)
+    mock_client.list_blobs.return_value = mock_blobs
+
+    return mock_client
+
+
+@pytest.fixture()
+def test_google_bucket() -> MagicMock(Client):
+    return mock_client
+
+
+def test_download_csv_files_from_bucket(tmp_path):
+
+    mock_client = test_google_bucket()
+    with patch.object(download_csv_files_from_bucket, 'storage_client') as mock_client:
+        test_prefix = 'acs'
+        local_data_directory_path = str(tmp_path)  # temp folder for test of download
+        downloaded_files = download_csv_files_from_bucket(mock_client, local_data_directory_path,
+                                                          region_prefix=test_prefix)
+
+    # How will asserts change now?
     assert os.path.exists(tmp_path / 'acs_altimetry_jakob_gourmelen.csv')
     assert len(downloaded_files) == 2
 

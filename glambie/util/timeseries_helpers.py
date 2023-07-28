@@ -1,12 +1,14 @@
+import datetime
+import math
+from typing import Tuple
 import warnings
+
+from dateutil.relativedelta import relativedelta
 from matplotlib import pyplot as plt
 import numpy as np
-import math
-from scipy import interpolate
-from typing import Tuple
 import pandas as pd
-import datetime
-from dateutil.relativedelta import relativedelta
+from scipy import interpolate
+
 from glambie.util.date_helpers import datetime_dates_to_fractional_years
 
 
@@ -598,37 +600,41 @@ def get_average_trends_over_new_time_periods(start_dates, end_dates, changes, ne
                          "changes": annual_changes})
 
 
-def interpolate_change_per_day_to_fill_gaps(input_dataframe):
+def interpolate_change_per_day_to_fill_gaps(elevation_time_series: pd.DataFrame) -> pd.DataFrame:
     """
-    Use this function to fill gaps in an elevation change time series that have a non-uniform temporal resolution.
+    Fill gaps in an elevation change time series that has a non-uniform temporal resolution.
     Linear interpolation is performed on elevation_change_per_day values, to fill gaps in the input timeseries. An
     overall elevation change in the data gap is then added to the original dataframe.
 
     Parameters
     ----------
-    timeseries_dataframe : _type_
-        _description_
+    elevation_time_series : pd.DataFrame
+        Time series data, including elevation change, start date and end date
     """
-    date_gaps = [datetime.datetime.strptime(input_dataframe.start_date[i + 1], '%d/%m/%Y') - datetime.datetime.strptime(
-        input_dataframe.end_date[i], '%d/%m/%Y') for i in range(len(input_dataframe) - 1)]
-    date_gaps_in_days = [a.days for a in date_gaps]
-    input_dataframe['date_gap_days'] = np.append(date_gaps_in_days, [0])
+    # Calculate the gaps between end dates and subsequent start dates in original time series
+    start_dates = [datetime.datetime.strptime(a, '%d/%m/%Y') for a in elevation_time_series.start_date]
+    end_dates = [datetime.datetime.strptime(a, '%d/%m/%Y') for a in elevation_time_series.end_date]
 
-    start_dates = [datetime.datetime.strptime(a, '%d/%m/%Y') for a in input_dataframe.start_date]
-    end_dates = [datetime.datetime.strptime(a, '%d/%m/%Y') for a in input_dataframe.end_date]
+    date_gap_in_days_between_entries = [
+        start_dates[i + 1] - end_dates[i] for i in range(len(elevation_time_series) - 1)]
+    elevation_time_series['date_gap_days'] = np.append(date_gap_in_days_between_entries, [0])
+
     new_start_dates, new_end_dates, new_changes, new_errors, new_hydro, new_sea_level = [], [], [], [], [], []
 
-    for i in range(len(input_dataframe.start_date) - 1):
+    # Loop through rows and add new data when the gap between end_date and subsequent start_date is more than 1 day.
+    # This data will form new rows of the data frame that will then be interpolated to fill in the missing temporal
+    # coverage.
+    for i in range(len(elevation_time_series.start_date) - 1):
         current_start_date = start_dates[i]
         current_end_date = end_dates[i]
         new_start_dates.append(current_start_date)
         new_end_dates.append(current_end_date)
-        new_changes.append(input_dataframe.glacier_change_observed[i])
-        new_errors.append(input_dataframe.glacier_change_uncertainty[i])
-        new_hydro.append(input_dataframe.hydrological_correction_value[i])
-        new_sea_level.append(input_dataframe.sea_level_correction_value[i])
+        new_changes.append(elevation_time_series.glacier_change_observed[i])
+        new_errors.append(elevation_time_series.glacier_change_uncertainty[i])
+        new_hydro.append(elevation_time_series.hydrological_correction_value[i])
+        new_sea_level.append(elevation_time_series.sea_level_correction_value[i])
 
-        if date_gaps_in_days[i] > 1:
+        if date_gap_in_days_between_entries[i] > 1:
             gap_start_date = current_end_date + relativedelta(days=1)
             gap_end_date = start_dates[i + 1] - relativedelta(days=1)
             new_start_dates.append(gap_start_date)
@@ -638,13 +644,13 @@ def interpolate_change_per_day_to_fill_gaps(input_dataframe):
             new_hydro.append(np.nan)
             new_sea_level.append(np.nan)
 
-    # Add last row in
+    # Add last row, where there is no subsequent start_date to compare the final end_date to
     new_start_dates.append(start_dates[-1])
     new_end_dates.append(end_dates[-1])
-    new_changes.append(input_dataframe.glacier_change_observed.tolist()[-1])
-    new_errors.append(input_dataframe.glacier_change_uncertainty.tolist()[-1])
-    new_hydro.append(input_dataframe.hydrological_correction_value.tolist()[-1])
-    new_sea_level.append(input_dataframe.sea_level_correction_value.tolist()[-1])
+    new_changes.append(elevation_time_series.glacier_change_observed.tolist()[-1])
+    new_errors.append(elevation_time_series.glacier_change_uncertainty.tolist()[-1])
+    new_hydro.append(elevation_time_series.hydrological_correction_value.tolist()[-1])
+    new_sea_level.append(elevation_time_series.sea_level_correction_value.tolist()[-1])
 
     interpolated_dataframe = pd.DataFrame()
     interpolated_dataframe['start_date'] = [datetime.datetime.strftime(a, '%d/%m/%Y') for a in new_start_dates]
@@ -655,20 +661,18 @@ def interpolate_change_per_day_to_fill_gaps(input_dataframe):
     interpolated_dataframe['sea_level_correction_value'] = new_sea_level
 
     # calculate days covered by each row
-    date_gaps = [
-        datetime.datetime.strptime(interpolated_dataframe['end_date'][i], '%d/%m/%Y') - datetime.datetime.strptime(
-            interpolated_dataframe['start_date'][i], '%d/%m/%Y') for i in range(len(interpolated_dataframe))]
-    date_gaps_in_days = [a.days for a in date_gaps]
-    interpolated_dataframe['days_covered'] = date_gaps_in_days
+    number_of_days_covered_by_each_row = [
+        (datetime.datetime.strptime(interpolated_dataframe['end_date'][i], '%d/%m/%Y') - datetime.datetime.strptime(
+            interpolated_dataframe['start_date'][i], '%d/%m/%Y')).days for i in range(len(interpolated_dataframe))]
+    interpolated_dataframe['days_covered'] = number_of_days_covered_by_each_row
 
     # calculate change per day in each row
-    interpolated_dataframe['glacier_change_per_day'] = [
-        a / b for a, b in zip(interpolated_dataframe.glacier_change_observed, interpolated_dataframe.days_covered)]
-    interpolated_dataframe['glacier_change_uncertainty_per_day'] = [
-        a / b for a, b in zip(interpolated_dataframe.glacier_change_uncertainty, interpolated_dataframe.days_covered)]
+    interpolated_dataframe['glacier_change_per_day'] \
+        = interpolated_dataframe.glacier_change_observed / interpolated_dataframe.days_covered
+    interpolated_dataframe['glacier_change_uncertainty_per_day'] \
+        = interpolated_dataframe.glacier_change_uncertainty / interpolated_dataframe.days_covered
 
-    dates_list_fractional = datetime_dates_to_fractional_years(new_start_dates)
-    interpolated_dataframe['date_fractional'] = dates_list_fractional
+    interpolated_dataframe['date_fractional'] = datetime_dates_to_fractional_years(new_start_dates)
 
     # Linear interpolation of glacier_change_per_day to fill gaps
     df = pd.DataFrame({'time': interpolated_dataframe['date_fractional'],
@@ -684,11 +688,10 @@ def interpolate_change_per_day_to_fill_gaps(input_dataframe):
     interpolated_dataframe['sea_level_correction_value'] = df_int['sea_level']
 
     # Convert back to glacier_change_observed
-    interpolated_dataframe['glacier_change_observed'] = [
-        a * b for a, b in zip(interpolated_dataframe.glacier_change_per_day, interpolated_dataframe.days_covered)]
-    interpolated_dataframe['glacier_change_uncertainty'] = [
-        a * b for a, b in zip(interpolated_dataframe.glacier_change_uncertainty_per_day,
-                              interpolated_dataframe.days_covered)]
+    interpolated_dataframe['glacier_change_observed'] \
+        = interpolated_dataframe.glacier_change_per_day * interpolated_dataframe.days_covered
+    interpolated_dataframe['glacier_change_uncertainty'] \
+        = interpolated_dataframe.glacier_change_uncertainty_per_day * interpolated_dataframe.days_covered
 
     # removing all remaining small day gaps by setting end_date(i) = start_date(i+1)
     updated_end_dates = []
@@ -697,8 +700,11 @@ def interpolate_change_per_day_to_fill_gaps(input_dataframe):
     updated_end_dates.append(interpolated_dataframe['end_date'].tolist()[-1])
     interpolated_dataframe['end_date'] = updated_end_dates
 
-    # then remove row that has been interpolated for GRACE gap, as this value will be much bigger than the rest
-    # (check for start date == 1/7/2017, not super robust)
+    # then remove row that has been interpolated for GRACE gap (a ~13 month break between GRACE missions from July 2017
+    # - August 2018), as this value will now be much bigger than the rest due to the largee time coverage. This rpw
+    # should have a start date of 1/7/2017 in most datasets, which has been added during the interpolation where there
+    # was previously a large temporal gap. The handling of the gap between GRACE missions by the GlaMBIE algorithm has
+    # not yet been finalised, so the current approach is simply to remove it from all datasets.
     interpolated_dataframe.drop(
         interpolated_dataframe.loc[interpolated_dataframe.start_date.__eq__('01/07/2017')].index, inplace=True)
 

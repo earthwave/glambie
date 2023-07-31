@@ -198,6 +198,177 @@ def check_glambie_submission_for_errors(csv_file_path: str, file_check_dataframe
     return file_check_dataframe
 
 
+def fix_simple_date_gaps(file_check_info_row: str, submission_data_frame: pd.DataFrame,
+                         archive_path: str):
+    """
+    Fix a dataframe of time series data which has gaps of 1 or 2 days between end_date and subsequent start_date in
+    any rows. Larger gaps are dealt with in 'fix_non_grace_gravimetry_gaps', as they need interpolating.
+
+    Parameters
+    ----------
+    file_check_info_row : ?
+        _description_
+    submission_data_frame : pd.DataFrame
+        DataFrame containing submitted time series data.
+    archive_path : str
+        Path to original data archive, where dateframe is saved out before any edits are made to retain an original
+        copy.
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame containing submitted time series data, edited to remove small date gaps.
+    """
+
+    # Always save unedited copy to the archive folder first before any edits
+    log.info('Writing original file to %s', os.path.join(archive_path, file_check_info_row.file_name))
+    submission_data_frame.to_csv(os.path.join(archive_path, file_check_info_row.file_name))
+
+    updated_end_dates, updated_fractional_end_dates = [], []
+    for i in range(len(submission_data_frame.end_date) - 1):
+        updated_end_dates.append(submission_data_frame.start_date[i + 1])
+        updated_fractional_end_dates.append(submission_data_frame.start_date_fractional[i + 1])
+
+    updated_end_dates.append(submission_data_frame['end_date'].tolist()[-1])
+    updated_fractional_end_dates.append(submission_data_frame['end_date_fractional'].tolist()[-1])
+
+    submission_data_frame['end_date'] = updated_end_dates
+    submission_data_frame['end_date_fractional'] = updated_fractional_end_dates
+
+    return submission_data_frame
+
+
+def fix_non_grace_gravimetry_gaps(file_check_info_row: pd.dataframe.itertuples, submission_data_frame: pd.DataFrame,
+                                  archive_path: str):
+    """
+    Fix a dataframe of gravimetry time series data which had large gaps of missing temporal coverage, by interpolating 
+    between these dates.
+
+    Parameters
+    ----------
+    file_check_info_row : ?
+        _description_
+    submission_data_frame : pd.DataFrame
+        DataFrame containing submitted time series data.
+    archive_path : str
+        Path to original data archive, where dateframe is saved out before any edits are made to retain an original
+        copy.
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame containing submitted time series data, edited to interpolate between larger date gaps.
+
+    Raises
+    ------
+    AssertionError
+        Raised if not all observed areas are equal, and a new interpolated column cannot be created.
+    AssertionError
+        Raised if not all reference areas are equal, and a new interpolated column cannot be created.
+    AssertionError
+        Raised if not all remarks equal, and a new interpolated column cannot be created.
+    """
+
+    # Always save unedited copy to the archive folder first before any edits
+    log.info('Writing original file to %s', os.path.join(archive_path, file_check_info_row.file_name))
+    submission_data_frame.to_csv(os.path.join(archive_path, file_check_info_row.file_name))
+
+    # If it is a Wouters submission, need to convert to non-cumulative first!
+    if 'wouters' in file_check_info_row.filename:
+        diff_list_change = submission_data_frame['glacier_change_observed'].diff()
+        diff_list_change[0] = 0.0
+        submission_data_frame['glacier_change_observed'] = diff_list_change
+
+    interpolated_data_frame = interpolate_change_per_day_to_fill_gaps(submission_data_frame)
+
+    # Need to add back in the missing columns here
+    end_date_fractional = datetime_dates_to_fractional_years([datetime.strptime(
+        a, '%d/%m/%Y') for a in interpolated_data_frame.end_date])
+    start_date_fractional = datetime_dates_to_fractional_years([datetime.strptime(
+        a, '%d/%m/%Y') for a in interpolated_data_frame.start_date])
+    interpolated_data_frame['unit'] = [submission_data_frame['unit'][0]
+                                       for i in range(len(interpolated_data_frame))]
+
+    if all(i == submission_data_frame['glacier_area_reference'][0] for i in submission_data_frame[
+            'glacier_area_reference']):
+        interpolated_data_frame[
+            'glacier_area_reference'] = [submission_data_frame[
+                'glacier_area_reference'][0] for i in range(len(interpolated_data_frame))]
+    else:
+        raise AssertionError(f'Not all reference areas are equal in {file_check_info_row.file_name} -'
+                             'interpolated dataframe can not be saved, this file needs further'
+                             'investigation')
+
+    if all(i == submission_data_frame['glacier_area_observed'][0] for i in submission_data_frame[
+            'glacier_area_observed']):
+        interpolated_data_frame[
+            'glacier_area_observed'] = [submission_data_frame[
+                'glacier_area_observed'][0] for i in range(len(interpolated_data_frame))]
+    else:
+        raise AssertionError(f'Not all observed areas are equal in {file_check_info_row.file_name} -'
+                             'interpolated dataframe can not be saved out, this file needs further'
+                             'investigation')
+
+    if all(i == submission_data_frame.remarks[0] for i in submission_data_frame.remarks) or \
+            all(np.isnan(submission_data_frame.remarks)):
+        interpolated_data_frame['remarks'] = [submission_data_frame.remarks[0]
+                                              for i in range(len(interpolated_data_frame))]
+    else:
+        raise AssertionError(f'Not all remarks are the same in {file_check_info_row.file_name} -'
+                             'interpolated dataframe can not be saved out, this file needs further'
+                             'investigation')
+
+    interpolated_data_frame['user_group'] = [submission_data_frame['user_group'][0]
+                                             for i in range(len(interpolated_data_frame))]
+    interpolated_data_frame['start_date_fractional'] = start_date_fractional
+    interpolated_data_frame['end_date_fractional'] = end_date_fractional
+    interpolated_data_frame['date'] = interpolated_data_frame['start_date']
+    interpolated_data_frame['date_fractional'] = start_date_fractional
+    interpolated_data_frame['region_id'] = [submission_data_frame['region_id'][0]
+                                            for i in range(len(interpolated_data_frame))]
+
+    submission_data_frame = interpolated_data_frame.copy()
+
+    return submission_data_frame
+
+
+def fix_no_data_values(file_check_info_row: pd.dataframe.itertuples, submission_data_frame: pd.DataFrame,
+                       archive_path: str):
+    """
+    Fix a dataframe of timeseries data which has invalid no data values, by removing these rows from the data.
+
+    Parameters
+    ----------
+    file_check_info_row : ?
+        _description_
+    submission_data_frame : pd.DataFrame
+        DataFrame containing submitted time series data.
+    archive_path : str
+        Path to original data archive, where dateframe is saved out before any edits are made to retain an original
+        copy.
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame containing submitted time series data, edited to remove small date gaps.
+    """
+
+    # Always save unedited copy to the archive folder first before any edits
+    log.info('Writing original file to %s', os.path.join(archive_path, file_check_info_row.file_name))
+    submission_data_frame.to_csv(os.path.join(archive_path, file_check_info_row.file_name))
+
+    if np.any(submission_data_frame.unit.values[0] == np.array(['m', 'mwe'])):
+        # delete rows with change values > +/-100 - these numbers need some thought
+        submission_data_frame.drop(submission_data_frame[abs(
+            submission_data_frame.glacier_change_observed) > 100].index, inplace=True)
+    elif submission_data_frame.unit.values[0] == 'Gt':
+        # delete rows with change values > +/-10000
+        submission_data_frame.drop(submission_data_frame[abs(
+            submission_data_frame.glacier_change_observed) > 10000].index, inplace=True)
+
+    return submission_data_frame
+
+
 def apply_csv_file_corrections(file_check_info: pd.DataFrame, directory_path: str) -> pd.DataFrame:
     """
     Edit local copies of GlaMBIE submissions that didn't pass the checks run by
@@ -236,26 +407,12 @@ def apply_csv_file_corrections(file_check_info: pd.DataFrame, directory_path: st
             # 1) Are all gaps 1 or 2 days? We are  aware of some submissions where leap years haven't been taken into
             # account, resulting in mostly 1 day gaps and a small number of 2 day gaps.
             if all(i <= 2 for i in date_gaps_in_days):
-                # Always save unedited copy to the archive folder first before any edits
-                log.info('Writing original file to %s', os.path.join(archive_path, file_check_info_row.file_name))
-                submission_data_frame.to_csv(os.path.join(archive_path, file_check_info_row.file_name))
-
-                updated_end_dates, updated_fractional_end_dates = [], []
-                for i in range(len(submission_data_frame.end_date) - 1):
-                    updated_end_dates.append(submission_data_frame.start_date[i + 1])
-                    updated_fractional_end_dates.append(submission_data_frame.start_date_fractional[i + 1])
-
-                updated_end_dates.append(submission_data_frame['end_date'].tolist()[-1])
-                updated_fractional_end_dates.append(submission_data_frame['end_date_fractional'].tolist()[-1])
-
-                submission_data_frame['end_date'] = updated_end_dates
-                submission_data_frame['end_date_fractional'] = updated_fractional_end_dates
-
+                fix_simple_date_gaps(file_check_info_row, submission_data_frame, archive_path)
                 file_check_info.loc[file_check_info.local_filepath.__eq__(file_check_info_row.local_filepath),
                                     'reason_for_edit'] = '1 or 2 day gap between every row'
 
-            # 2) Is it a gravimetry file with a GRACE gap?
             else:
+                # 2) Is it a gravimetry file with a GRACE gap?
                 if any(i > 350 for i in date_gaps_in_days) & ('gravimetry' in file_check_info_row.local_filepath):
                     non_grace_gaps = [i for i in date_gaps_in_days if i < 300]
                     # If the GRACE gap is the only gap, we won't edit.
@@ -266,68 +423,10 @@ def apply_csv_file_corrections(file_check_info: pd.DataFrame, directory_path: st
 
                 # 3) Remaining possibility is that it is a gravimetry file with non-GRACE gaps that need interpolating
                 elif ('gravimetry' in file_check_info_row.local_filepath):
-                    # Always save unedited copy to the archive folder first before any edits
-                    log.info('Writing original file to %s', os.path.join(archive_path, file_check_info_row.file_name))
-                    submission_data_frame.to_csv(os.path.join(archive_path, file_check_info_row.file_name))
-
-                    # If it is a Wouters submission, need to convert to non-cumulative first!
-                    if 'wouters' in file_check_info_row.filename:
-                        diff_list_change = submission_data_frame['glacier_change_observed'].diff()
-                        diff_list_change[0] = 0.0
-                        submission_data_frame['glacier_change_observed'] = diff_list_change
-
-                    interpolated_data_frame = interpolate_change_per_day_to_fill_gaps(submission_data_frame)
+                    fix_non_grace_gravimetry_gaps(file_check_info_row, submission_data_frame)
                     file_check_info.loc[
                         file_check_info.local_filepath.__eq__(file_check_info_row.local_filepath),
                         'reason_for_edit'] = 'interpolated valid gaps in grav file'
-
-                    # Need to add back in the missing columns here
-                    end_date_fractional = datetime_dates_to_fractional_years([datetime.strptime(
-                        a, '%d/%m/%Y') for a in interpolated_data_frame.end_date])
-                    start_date_fractional = datetime_dates_to_fractional_years([datetime.strptime(
-                        a, '%d/%m/%Y') for a in interpolated_data_frame.start_date])
-                    interpolated_data_frame['unit'] = [submission_data_frame['unit'][0]
-                                                       for i in range(len(interpolated_data_frame))]
-
-                    if all(i == submission_data_frame['glacier_area_reference'][0] for i in submission_data_frame[
-                            'glacier_area_reference']):
-                        interpolated_data_frame[
-                            'glacier_area_reference'] = [submission_data_frame[
-                                'glacier_area_reference'][0] for i in range(len(interpolated_data_frame))]
-                    else:
-                        raise AssertionError(f'Not all reference areas are equal in {file_check_info_row.file_name} -'
-                                             'interpolated dataframe can not be saved, this file needs further'
-                                             'investigation')
-
-                    if all(i == submission_data_frame['glacier_area_observed'][0] for i in submission_data_frame[
-                            'glacier_area_observed']):
-                        interpolated_data_frame[
-                            'glacier_area_observed'] = [submission_data_frame[
-                                'glacier_area_observed'][0] for i in range(len(interpolated_data_frame))]
-                    else:
-                        raise AssertionError(f'Not all observed areas are equal in {file_check_info_row.file_name} -'
-                                             'interpolated dataframe can not be saved out, this file needs further'
-                                             'investigation')
-
-                    if all(i == submission_data_frame.remarks[0] for i in submission_data_frame.remarks) or \
-                            all(np.isnan(submission_data_frame.remarks)):
-                        interpolated_data_frame['remarks'] = [submission_data_frame.remarks[0]
-                                                              for i in range(len(interpolated_data_frame))]
-                    else:
-                        raise AssertionError(f'Not all remarks are the same in {file_check_info_row.file_name} -'
-                                             'interpolated dataframe can not be saved out, this file needs further'
-                                             'investigation')
-
-                    interpolated_data_frame['user_group'] = [submission_data_frame['user_group'][0]
-                                                             for i in range(len(interpolated_data_frame))]
-                    interpolated_data_frame['start_date_fractional'] = start_date_fractional
-                    interpolated_data_frame['end_date_fractional'] = end_date_fractional
-                    interpolated_data_frame['date'] = interpolated_data_frame['start_date']
-                    interpolated_data_frame['date_fractional'] = start_date_fractional
-                    interpolated_data_frame['region_id'] = [submission_data_frame['region_id'][0]
-                                                            for i in range(len(interpolated_data_frame))]
-
-                    submission_data_frame = interpolated_data_frame.copy()
 
                 else:
                     # If it is not a gravimetry file, then the data it contains is invalid.
@@ -340,17 +439,9 @@ def apply_csv_file_corrections(file_check_info: pd.DataFrame, directory_path: st
 
         if not file_check_info_row.nodata_check_satisfied:
             submission_data_frame = pd.read_csv(file_check_info_row.local_filepath)
-
-            if np.any(submission_data_frame.unit.values[0] == np.array(['m', 'mwe'])):
-                # delete rows with change values > +/-100 - these numbers need some thought
-                submission_data_frame.drop(submission_data_frame[abs(
-                    submission_data_frame.glacier_change_observed) > 100].index, inplace=True)
-            elif submission_data_frame.unit.values[0] == 'Gt':
-                # delete rows with change values > +/-10000
-                submission_data_frame.drop(submission_data_frame[abs(
-                    submission_data_frame.glacier_change_observed) > 10000].index, inplace=True)
-
+            fix_no_data_values(submission_data_frame)
             submission_data_frame.to_csv(file_check_info_row.local_filepath)
+
             # Record that the file has been edited
             file_check_info.loc[file_check_info.local_filepath.__eq__(file_check_info_row.local_filepath),
                                 'reason_for_edit'] = 'Random no data value was used'

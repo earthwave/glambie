@@ -27,6 +27,8 @@ from glambie.util.timeseries_helpers import \
     interpolate_change_per_day_to_fill_gaps
 
 DATA_TRANSFER_BUCKET_NAME = "glambie-submissions"
+MAX_ALLOWED_ELEVATION_CHANGE_M = 100
+MAX_ALLOWED_ELEVATION_CHANGE_GT = 10000
 log = logging.getLogger(__name__)
 
 
@@ -183,9 +185,9 @@ def check_glambie_submission_for_errors(csv_file_path: str, file_check_dataframe
 
     if np.any(submission_data_frame.unit.values[0] == np.array(['m', 'mwe'])):  # check if units are m or mwe
         # check that all changes in list are < +/-100
-        no_random_nodata_values_used = all(abs(i) < 100 for i in change_values)
+        no_random_nodata_values_used = all(abs(i) < MAX_ALLOWED_ELEVATION_CHANGE_M for i in change_values)
     elif submission_data_frame.unit.values[0] == 'Gt':  # check if units are Gt
-        no_random_nodata_values_used = all(abs(i) < 10000 for i in change_values)
+        no_random_nodata_values_used = all(abs(i) < MAX_ALLOWED_ELEVATION_CHANGE_GT for i in change_values)
 
     # If all rows passed the date check above, we store date_check_satisfied = True for this file: don't need to edit it
     file_check_dataframe.loc[file_check_dataframe.local_filepath.__eq__(csv_file_path),
@@ -241,7 +243,7 @@ def fix_simple_date_gaps(file_check_info_row: str, submission_data_frame: pd.Dat
 def fix_non_grace_gravimetry_gaps(file_check_info_row: pd.dataframe.itertuples, submission_data_frame: pd.DataFrame,
                                   archive_path: str):
     """
-    Fix a dataframe of gravimetry time series data which had large gaps of missing temporal coverage, by interpolating 
+    Fix a dataframe of gravimetry time series data which had large gaps of missing temporal coverage, by interpolating
     between these dates.
 
     Parameters
@@ -360,11 +362,11 @@ def fix_no_data_values(file_check_info_row: pd.dataframe.itertuples, submission_
     if np.any(submission_data_frame.unit.values[0] == np.array(['m', 'mwe'])):
         # delete rows with change values > +/-100 - these numbers need some thought
         submission_data_frame.drop(submission_data_frame[abs(
-            submission_data_frame.glacier_change_observed) > 100].index, inplace=True)
+            submission_data_frame.glacier_change_observed) > MAX_ALLOWED_ELEVATION_CHANGE_M].index, inplace=True)
     elif submission_data_frame.unit.values[0] == 'Gt':
         # delete rows with change values > +/-10000
         submission_data_frame.drop(submission_data_frame[abs(
-            submission_data_frame.glacier_change_observed) > 10000].index, inplace=True)
+            submission_data_frame.glacier_change_observed) > MAX_ALLOWED_ELEVATION_CHANGE_GT].index, inplace=True)
 
     return submission_data_frame
 

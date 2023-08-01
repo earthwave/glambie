@@ -21,6 +21,7 @@ from google.cloud.storage import Client
 import numpy as np
 import pandas as pd
 from pathlib import Path
+from typing import Tuple
 
 from glambie.monitoring.logging import setup_logging
 from glambie.util.date_helpers import datetime_dates_to_fractional_years
@@ -202,7 +203,7 @@ def check_glambie_submission_for_errors(csv_file_path: str, file_check_dataframe
     return file_check_dataframe
 
 
-def fix_simple_date_gaps(file_check_info_row: pd.DataFrame.iterator, submission_data_frame: pd.DataFrame,
+def fix_simple_date_gaps(file_check_info_row: Tuple, submission_data_frame: pd.DataFrame,
                          archive_path: str):
     """
     Fix a dataframe of time series data which has gaps of 1 or 2 days between end_date and subsequent start_date in
@@ -210,8 +211,8 @@ def fix_simple_date_gaps(file_check_info_row: pd.DataFrame.iterator, submission_
 
     Parameters
     ----------
-    file_check_info_row : pd.DataFrame.iterator
-        Iterator object containing column values for a single row of the file_check_info dataframe created by
+    file_check_info_row : Tuple
+        Tuple containing column values for a single row of the file_check_info dataframe created by
         generate_results_dataframe.
     submission_data_frame : pd.DataFrame
         DataFrame containing submitted time series data.
@@ -243,7 +244,7 @@ def fix_simple_date_gaps(file_check_info_row: pd.DataFrame.iterator, submission_
     return submission_data_frame
 
 
-def fix_non_grace_gravimetry_gaps(file_check_info_row: pd.DataFrame.iterator, submission_data_frame: pd.DataFrame,
+def fix_non_grace_gravimetry_gaps(file_check_info_row: Tuple, submission_data_frame: pd.DataFrame,
                                   archive_path: str):
     """
     Fix a dataframe of gravimetry time series data which had large gaps of missing temporal coverage, by interpolating
@@ -251,8 +252,8 @@ def fix_non_grace_gravimetry_gaps(file_check_info_row: pd.DataFrame.iterator, su
 
     Parameters
     ----------
-    file_check_info_row : pd.DataFrame.iterator
-        Iterator object containing column values for a single row of the file_check_info dataframe created by
+    file_check_info_row : Tuple
+        Tuple containing column values for a single row of the file_check_info dataframe created by
         generate_results_dataframe.
     submission_data_frame : pd.DataFrame
         DataFrame containing submitted time series data.
@@ -338,15 +339,15 @@ def fix_non_grace_gravimetry_gaps(file_check_info_row: pd.DataFrame.iterator, su
     return submission_data_frame
 
 
-def fix_no_data_values(file_check_info_row: pd.DataFrame.iterator, submission_data_frame: pd.DataFrame,
+def fix_no_data_values(file_check_info_row: Tuple, submission_data_frame: pd.DataFrame,
                        archive_path: str):
     """
     Fix a dataframe of timeseries data which has invalid no data values, by removing these rows from the data.
 
     Parameters
     ----------
-    file_check_info_row : pd.DataFrame.iterator
-        Iterator object containing column values for a single row of the file_check_info dataframe created by
+    file_check_info_row : Tuple
+        Tuple containing column values for a single row of the file_check_info dataframe created by
         generate_results_dataframe.
     submission_data_frame : pd.DataFrame
         DataFrame containing submitted time series data.

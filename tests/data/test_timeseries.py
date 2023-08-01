@@ -142,6 +142,20 @@ def test_as_cumulative_timeseries_raises_warning(example_timeseries_ingested):
         assert "invalid" in str(w[-1].message)
 
 
+def test_as_cumulative_timeseries_with_gaps(example_timeseries_ingested):
+    example_timeseries_ingested.data.start_dates = [2010, 2011, 2013]
+    example_timeseries_ingested.data.end_dates = [2011, 2012, 2014]
+    example_timeseries_ingested.data.changes = [1, 1, 1]
+    example_timeseries_ingested.data.errors = [0.1, 0.2, 0.05]
+    cumulative_df = example_timeseries_ingested.data.as_cumulative_timeseries()
+
+    expected_dates = [2010, 2011, 2012, 2013, 2014]
+    expected_changes = [0, 1, 2, None, 3]
+    assert len(cumulative_df.errors) == 5  # should be 5 long as we add an additional colum for the gap
+    assert np.array_equal(cumulative_df["dates"], expected_dates)
+    assert np.array_equal(cumulative_df["changes"], expected_changes)
+
+
 def test_convert_timeseries_to_unit_mwe_from_m(example_timeseries_ingested):
     density_of_water = 997
     density_of_ice = 850

@@ -675,17 +675,9 @@ def interpolate_change_per_day_to_fill_gaps(elevation_time_series: pd.DataFrame)
     interpolated_dataframe['date_fractional'] = datetime_dates_to_fractional_years(new_start_dates)
 
     # Linear interpolation of glacier_change_per_day to fill gaps
-    df = pd.DataFrame({'time': interpolated_dataframe['date_fractional'],
-                       'mass': interpolated_dataframe['glacier_change_per_day'],
-                       'error': interpolated_dataframe['glacier_change_uncertainty_per_day'],
-                       'hydro': interpolated_dataframe['hydrological_correction_value'],
-                       'sea_level': interpolated_dataframe['sea_level_correction_value']})
-    df_int = df.interpolate(method='linear')
-
-    interpolated_dataframe['glacier_change_per_day'] = df_int['mass'].values.tolist()
-    interpolated_dataframe['glacier_change_uncertainty_per_day'] = df_int['error'].values.tolist()
-    interpolated_dataframe['hydrological_correction_value'] = df_int['hydro']
-    interpolated_dataframe['sea_level_correction_value'] = df_int['sea_level']
+    for column_name in ['glacier_change_per_day', 'glacier_change_uncertainty_per_day', 'hydrological_correction_value',
+                        'sea_level_correction_value']:
+        interpolated_dataframe[column_name] = interpolated_dataframe[column_name].interpolate(method='linear')
 
     # Convert back to glacier_change_observed
     interpolated_dataframe['glacier_change_observed'] \

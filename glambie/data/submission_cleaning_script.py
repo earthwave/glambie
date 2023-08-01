@@ -20,11 +20,11 @@ import os
 from google.cloud.storage import Client
 import numpy as np
 import pandas as pd
+from pathlib import Path
 
 from glambie.monitoring.logging import setup_logging
 from glambie.util.date_helpers import datetime_dates_to_fractional_years
-from glambie.util.timeseries_helpers import \
-    interpolate_change_per_day_to_fill_gaps
+from glambie.util.timeseries_helpers import interpolate_change_per_day_to_fill_gaps
 
 DATA_TRANSFER_BUCKET_NAME = "glambie-submissions"
 MAX_ALLOWED_ELEVATION_CHANGE_M = 100
@@ -61,6 +61,8 @@ def download_csv_files_from_bucket(storage_client: Client, local_data_directory_
         if '.csv' in blob.name:
             downloaded_files.append(blob.name)
             destination_file_path = os.path.join(local_data_directory_path, blob.name)
+            # check that destination directory exists and create it if it doesn't
+            Path(destination_file_path).parent.mkdir(parents=True, exist_ok=True)
             with open(destination_file_path, "wb") as output_file:
                 blob.download_to_file(output_file, raw_download=False)
 
@@ -200,7 +202,7 @@ def check_glambie_submission_for_errors(csv_file_path: str, file_check_dataframe
     return file_check_dataframe
 
 
-def fix_simple_date_gaps(file_check_info_row: str, submission_data_frame: pd.DataFrame,
+def fix_simple_date_gaps(file_check_info_row: pd.DataFrame.iterator, submission_data_frame: pd.DataFrame,
                          archive_path: str):
     """
     Fix a dataframe of time series data which has gaps of 1 or 2 days between end_date and subsequent start_date in
@@ -208,12 +210,13 @@ def fix_simple_date_gaps(file_check_info_row: str, submission_data_frame: pd.Dat
 
     Parameters
     ----------
-    file_check_info_row : ?
-        _description_
+    file_check_info_row : pd.DataFrame.iterator
+        Iterator object containing column values for a single row of the file_check_info dataframe created by
+        generate_results_dataframe.
     submission_data_frame : pd.DataFrame
         DataFrame containing submitted time series data.
     archive_path : str
-        Path to original data archive, where dateframe is saved out before any edits are made to retain an original
+        Path to original data archive, where dataframe is saved out before any edits are made to retain an original
         copy.
 
     Returns
@@ -240,7 +243,7 @@ def fix_simple_date_gaps(file_check_info_row: str, submission_data_frame: pd.Dat
     return submission_data_frame
 
 
-def fix_non_grace_gravimetry_gaps(file_check_info_row: pd.dataframe.itertuples, submission_data_frame: pd.DataFrame,
+def fix_non_grace_gravimetry_gaps(file_check_info_row: pd.DataFrame.iterator, submission_data_frame: pd.DataFrame,
                                   archive_path: str):
     """
     Fix a dataframe of gravimetry time series data which had large gaps of missing temporal coverage, by interpolating
@@ -248,12 +251,13 @@ def fix_non_grace_gravimetry_gaps(file_check_info_row: pd.dataframe.itertuples, 
 
     Parameters
     ----------
-    file_check_info_row : ?
-        _description_
+    file_check_info_row : pd.DataFrame.iterator
+        Iterator object containing column values for a single row of the file_check_info dataframe created by
+        generate_results_dataframe.
     submission_data_frame : pd.DataFrame
         DataFrame containing submitted time series data.
     archive_path : str
-        Path to original data archive, where dateframe is saved out before any edits are made to retain an original
+        Path to original data archive, where dataframe is saved out before any edits are made to retain an original
         copy.
 
     Returns
@@ -264,11 +268,11 @@ def fix_non_grace_gravimetry_gaps(file_check_info_row: pd.dataframe.itertuples, 
     Raises
     ------
     AssertionError
-        Raised if not all observed areas are equal, and a new interpolated column cannot be created.
+        If not all observed areas are equal and a new interpolated column cannot be created.
     AssertionError
-        Raised if not all reference areas are equal, and a new interpolated column cannot be created.
+        If not all reference areas are equal and a new interpolated column cannot be created.
     AssertionError
-        Raised if not all remarks equal, and a new interpolated column cannot be created.
+        If not all remarks equal and a new interpolated column cannot be created.
     """
 
     # Always save unedited copy to the archive folder first before any edits
@@ -334,19 +338,20 @@ def fix_non_grace_gravimetry_gaps(file_check_info_row: pd.dataframe.itertuples, 
     return submission_data_frame
 
 
-def fix_no_data_values(file_check_info_row: pd.dataframe.itertuples, submission_data_frame: pd.DataFrame,
+def fix_no_data_values(file_check_info_row: pd.DataFrame.iterator, submission_data_frame: pd.DataFrame,
                        archive_path: str):
     """
     Fix a dataframe of timeseries data which has invalid no data values, by removing these rows from the data.
 
     Parameters
     ----------
-    file_check_info_row : ?
-        _description_
+    file_check_info_row : pd.DataFrame.iterator
+        Iterator object containing column values for a single row of the file_check_info dataframe created by
+        generate_results_dataframe.
     submission_data_frame : pd.DataFrame
         DataFrame containing submitted time series data.
     archive_path : str
-        Path to original data archive, where dateframe is saved out before any edits are made to retain an original
+        Path to original data archive, where dataframe is saved out before any edits are made to retain an original
         copy.
 
     Returns

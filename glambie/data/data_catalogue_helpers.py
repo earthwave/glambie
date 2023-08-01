@@ -25,12 +25,12 @@ def calibrate_timeseries_with_trends_catalogue(catalogue_with_trends: DataCatalo
 
     Raises
     ------
-        AssertionError
+        
             If trends are not all the same unit.
     """
 
     if not catalogue_with_trends.datasets_are_same_unit():
-        raise AssertionError("Trends within catalogue all need to be the same unit before performing this operation.")
+        raise ("Trends within catalogue all need to be the same unit before performing this operation.")
 
     # calibrate annual trends with longterm trend
     calibrated_series = []

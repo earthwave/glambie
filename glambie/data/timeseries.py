@@ -123,8 +123,10 @@ class TimeseriesData():
         if not self.is_cumulative_valid():
             warnings.warn("Cumulative timeseries may be invalid. This may be due to the timeseries containing "
                           "gaps or overlapping periods.")
-        dates, changes = derivative_to_cumulative(self.start_dates, self.end_dates, self.changes)
-        _, errors = derivative_to_cumulative(self.start_dates, self.end_dates, self.errors, calculate_as_errors=True)
+        dates, changes = derivative_to_cumulative(self.start_dates, self.end_dates, self.changes,
+                                                  add_gaps_for_plotting=True)
+        _, errors = derivative_to_cumulative(self.start_dates, self.end_dates, self.errors, calculate_as_errors=True,
+                                             add_gaps_for_plotting=True)
 
         df_cumulative = pd.DataFrame({'dates': dates,
                                       'changes': changes,

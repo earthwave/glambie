@@ -149,9 +149,10 @@ def test_as_cumulative_timeseries_with_gaps(example_timeseries_ingested):
     example_timeseries_ingested.data.errors = [0.1, 0.2, 0.05]
     cumulative_df = example_timeseries_ingested.data.as_cumulative_timeseries()
 
-    expected_dates = [2010, 2011, 2012, 2013, 2014]
-    expected_changes = [0, 1, 2, None, 3]
-    assert len(cumulative_df.errors) == 5  # should be 5 long as we add an additional colum for the gap
+    expected_dates = [2010, 2011, 2012, 2013, 2013, 2014]
+    expected_changes = [0, 1, 2, None, 2, 3]
+    # should be plus 2 long as we add an additional two rows for the gap and + 1 as it is cumulative
+    assert len(cumulative_df.errors) == len(example_timeseries_ingested.data.errors) + 3
     assert np.array_equal(cumulative_df["dates"], expected_dates)
     assert np.array_equal(cumulative_df["changes"], expected_changes)
 

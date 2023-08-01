@@ -395,10 +395,10 @@ def derivative_to_cumulative(start_dates: list[float],
                              end_dates: list[float],
                              changes: list[float],
                              return_type: str = "arrays",
-                             calculate_as_errors: bool = False):
+                             calculate_as_errors: bool = False,
+                             add_gaps_for_plotting: bool = True):
     """
     Calculates a cumulative timeseries from a list of non cumulative changes between start and end dates
-    If the timeseries contains gaps they are added to the cumulative timeseries as no data values
 
     Parameters
     ----------
@@ -413,6 +413,10 @@ def derivative_to_cumulative(start_dates: list[float],
     calculate_as_errors : bool, optional
         if True it will calculate cumulative errors rather than changes
         assuming errors of each timestep are independent
+        by default False
+    add_gaps_for_plotting : bool, optional
+        if True and the timeseries contains gaps they are added to the cumulative timeseries as no data values
+        by default True
 
     Returns
     -------
@@ -429,16 +433,21 @@ def derivative_to_cumulative(start_dates: list[float],
     else:
         changes = [0, *np.array(pd.Series(changes).cumsum())]
 
-    if not all(contains_no_gaps):
+    if not all(contains_no_gaps) and add_gaps_for_plotting:
         indices_of_gaps = [i for i, x in enumerate(contains_no_gaps) if not(x)]
-        start_dates = start_dates.copy()  # make sure we are not editing the original list
-        end_dates = end_dates.copy()  # make sure we are not editing the original list
+        start_dates = list(start_dates.copy())  # make sure we are not editing the original list
+        end_dates = list(end_dates.copy())  # make sure we are not editing the original list
         for idx in indices_of_gaps:
             start_date_to_insert = end_dates[idx]
             end_date_to_insert = start_dates[idx + 1]
+            # add no data row
             start_dates.insert(idx + 1, start_date_to_insert)
             end_dates.insert(idx + 1, end_date_to_insert)
             changes.insert(idx + 2, None)  # already in cumulative, hence +2
+            # add last row before gap again after gap
+            start_dates.insert(idx + 2, start_dates[idx + 1])
+            end_dates.insert(idx + 2, end_dates[idx + 1])
+            changes.insert(idx + 3, changes[idx + 1])  # already in cumulative, hence +3
     dates = [start_dates[0], *end_dates]
 
     if return_type == "arrays":

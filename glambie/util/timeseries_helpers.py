@@ -615,6 +615,10 @@ def interpolate_change_per_day_to_fill_gaps(elevation_time_series: pd.DataFrame)
     start_dates = [datetime.datetime.strptime(a, '%d/%m/%Y') for a in elevation_time_series.start_date]
     end_dates = [datetime.datetime.strptime(a, '%d/%m/%Y') for a in elevation_time_series.end_date]
 
+    date_gap_in_days_between_entries = [
+        (start_dates[i + 1] - end_dates[i]).days for i in range(len(elevation_time_series) - 1)]
+    elevation_time_series['date_gap_days'] = np.append(date_gap_in_days_between_entries, [0])
+
     date_gaps_indexes = np.where(elevation_time_series['date_gap_days'] > 1)[0]
     interpolated_dataframe = elevation_time_series.copy()
     columns_to_keep = ['start_date', 'end_date', 'glacier_change_observed', 'glacier_change_uncertainty',

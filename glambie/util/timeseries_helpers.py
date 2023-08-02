@@ -610,7 +610,14 @@ def interpolate_change_per_day_to_fill_gaps(elevation_time_series: pd.DataFrame)
     ----------
     elevation_time_series : pd.DataFrame
         Time series data, including elevation change, start date and end date
+
+    Returns
+    -------
+    pd.DataFrame
+        Copy of input dataframe where large gaps between end dates and subsequent start dates have been filled using
+        linear interpolation.
     """
+
     # Calculate the gaps between end dates and subsequent start dates in original time series
     start_dates = [datetime.datetime.strptime(a, '%d/%m/%Y') for a in elevation_time_series.start_date]
     end_dates = [datetime.datetime.strptime(a, '%d/%m/%Y') for a in elevation_time_series.end_date]

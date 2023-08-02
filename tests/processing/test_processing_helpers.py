@@ -169,9 +169,11 @@ def test_check_and_handle_gaps_in_timeseries(example_catalogue_filled):
     example_catalogue_filled.datasets[
         1].data.start_dates[1] = example_catalogue_filled.datasets[1].data.start_dates[1] + 0.5
     assert not example_catalogue_filled.datasets[1].data.is_cumulative_valid()
-    result_catalogue = check_and_handle_gaps_in_timeseries(example_catalogue_filled)
+    result_catalogue, split_dataset_names = check_and_handle_gaps_in_timeseries(example_catalogue_filled)
     # now we should have one more dataset as it has been split up due to the gap
     assert len(result_catalogue.datasets) == len(example_catalogue_filled.datasets) + 1
     # and no more gaps in the data
     for dataset in result_catalogue.datasets:
         assert dataset.data.is_cumulative_valid()
+    assert np.array_equal(split_dataset_names, [[example_catalogue_filled.datasets[1].user_group + "_1",
+                                                 example_catalogue_filled.datasets[1].user_group + "_2"]])

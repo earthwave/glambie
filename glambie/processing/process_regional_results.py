@@ -6,6 +6,7 @@ from glambie.const.data_groups import GlambieDataGroup, GLAMBIE_DATA_GROUPS
 from glambie.const.regions import REGIONS, RGIRegion
 from glambie.const.constants import YearType
 from glambie.processing.processing_helpers import convert_datasets_to_longterm_trends, convert_datasets_to_monthly_grid
+from glambie.processing.processing_helpers import recombine_split_timeseries_in_catalogue
 from glambie.processing.processing_helpers import convert_datasets_to_annual_trends, convert_datasets_to_unit_mwe
 from glambie.processing.processing_helpers import filter_catalogue_with_config_settings
 from glambie.processing.processing_helpers import prepare_seasonal_calibration_dataset
@@ -67,8 +68,6 @@ def run_one_region(glambie_run_config: GlambieRunConfig,
             # read data in catalogue
             data_catalogue_annual.load_all_data()
             data_catalogue_trends.load_all_data()
-            data_catalogue_annual = convert_datasets_to_monthly_grid(data_catalogue_annual)
-            data_catalogue_trends = convert_datasets_to_monthly_grid(data_catalogue_trends)
             data_catalogue_annual = set_unneeded_columns_to_nan(data_catalogue_annual)
             data_catalogue_trends = set_unneeded_columns_to_nan(data_catalogue_trends)
 
@@ -169,10 +168,13 @@ def _run_region_timeseries_one_source(data_catalogue_annual: DataCatalogue,
     Timeseries
         timeseries of combined dataset
     """
-    # handle gaps in timeseries
-    data_catalogue_annual = check_and_handle_gaps_in_timeseries(data_catalogue_annual)
-    data_catalogue_trends = check_and_handle_gaps_in_timeseries(data_catalogue_trends)
+    # prepare annual and trend datasets
+    data_catalogue_annual, split_dataset_names = check_and_handle_gaps_in_timeseries(data_catalogue_annual)
+    data_catalogue_trends, _ = check_and_handle_gaps_in_timeseries(data_catalogue_trends)
+    data_catalogue_annual = convert_datasets_to_monthly_grid(data_catalogue_annual)
+    data_catalogue_trends = convert_datasets_to_monthly_grid(data_catalogue_trends)
 
+    # keep raw datasets for plotting later
     data_catalogue_annual_raw = data_catalogue_annual
     data_catalogue_trends_raw = data_catalogue_trends
 
@@ -196,6 +198,12 @@ def _run_region_timeseries_one_source(data_catalogue_annual: DataCatalogue,
     data_catalogue_annual = convert_datasets_to_unit_mwe(data_catalogue_annual)
 
     # calculate combined annual timeseries
+    # first need to recombine timeseries in cases where we split them due to gaps
+    # reason for this is that we want to remove trends over a common period
+    if len(split_dataset_names) > 0:
+        data_catalogue_annual = recombine_split_timeseries_in_catalogue(
+            data_catalogue_annual, split_dataset_names)
+    # then average timeseries from annual catalogue, removing the trends
     annual_combined, catalogue_annual_anomalies = data_catalogue_annual.average_timeseries_in_catalogue(
         remove_trend=True, out_data_group=data_group)
 
@@ -226,17 +234,17 @@ def _run_region_timeseries_one_source(data_catalogue_annual: DataCatalogue,
         log.info("Saving plots for region=%s datagroup=%s under path=%s", region.name, data_group.name,
                  output_path_handler.get_plot_output_file_path(region=region, data_group=data_group,
                                                                plot_file_name=""))
-        plot_all_plots_for_region_data_group_processing(output_path_handler=output_path_handler,
-                                                        region=region,
-                                                        data_group=data_group,
-                                                        data_catalogue_annual_raw=data_catalogue_annual_raw,
-                                                        data_catalogue_trends_raw=data_catalogue_trends_raw,
-                                                        data_catalogue_annual_homogenized=data_catalogue_annual,
-                                                        data_catalogue_annual_anomalies=catalogue_annual_anomalies,
-                                                        timeseries_annual_combined=annual_combined,
-                                                        data_catalogue_trends_homogenized=data_catalogue_trends,
-                                                        data_catalogue_calibrated_series=catalogue_calibrated_series,
-                                                        timeseries_trend_combined=trend_combined)
+        # prepare data catalogues for plotting if they have been split due to gaps
+        if len(split_dataset_names) > 0:
+            data_catalogue_trends = recombine_split_timeseries_in_catalogue(data_catalogue_trends, split_dataset_names)
+            catalogue_calibrated_series = recombine_split_timeseries_in_catalogue(
+                catalogue_calibrated_series, split_dataset_names)
+            data_catalogue_annual_raw = recombine_split_timeseries_in_catalogue(
+                data_catalogue_annual_raw, split_dataset_names)
+            data_catalogue_trends_raw = recombine_split_timeseries_in_catalogue(
+                data_catalogue_trends_raw, split_dataset_names)
+
+        # save CSVs
         save_all_csvs_for_region_data_group_processing(output_path_handler=output_path_handler,
                                                        region=region,
                                                        data_group=data_group,
@@ -248,4 +256,16 @@ def _run_region_timeseries_one_source(data_catalogue_annual: DataCatalogue,
                                                        data_catalogue_trends_homogenized=data_catalogue_trends,
                                                        data_catalogue_calibrated_series=catalogue_calibrated_series,
                                                        timeseries_trend_combined=trend_combined)
+        # plot
+        plot_all_plots_for_region_data_group_processing(output_path_handler=output_path_handler,
+                                                        region=region,
+                                                        data_group=data_group,
+                                                        data_catalogue_annual_raw=data_catalogue_annual_raw,
+                                                        data_catalogue_trends_raw=data_catalogue_trends_raw,
+                                                        data_catalogue_annual_homogenized=data_catalogue_annual,
+                                                        data_catalogue_annual_anomalies=catalogue_annual_anomalies,
+                                                        timeseries_annual_combined=annual_combined,
+                                                        data_catalogue_trends_homogenized=data_catalogue_trends,
+                                                        data_catalogue_calibrated_series=catalogue_calibrated_series,
+                                                        timeseries_trend_combined=trend_combined)
     return trend_combined

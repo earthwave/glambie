@@ -1,0 +1,5 @@
+region_id,start_date,end_date,glacier_change_observed,glacier_change_uncertainty,unit,glacier_area_reference,glacier_area_observed,remarks,user_group,start_date_fractional,end_date_fractional,date,date_fractional
+4,01/01/2000,01/01/2005,-3.17,0.75,m,40888.228,40847.339772, ,smith,2000.0,2005.0,01/01/2000,2000.0
+4,01/01/2005,01/01/2010,-3.64,0.46,m,40888.228,40847.339772, ,smith,2005.0,2010.0,01/01/2005,2005.0
+4,01/01/2010,01/01/2015,-999,0.38,m,40888.228,40847.339772, ,smith,2010.0,2015.0,01/01/2010,2010.0
+4,01/01/2015,01/01/2020,-4.355,0.52,m,40888.228,40847.339772, ,smith,2015.0,2020.0,01/01/2015,2015.0

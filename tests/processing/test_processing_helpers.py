@@ -1,4 +1,5 @@
 from glambie.processing.processing_helpers import filter_catalogue_with_config_settings
+from glambie.processing.processing_helpers import recombine_split_timeseries_in_catalogue
 from glambie.processing.processing_helpers import slice_timeseries_at_gaps
 from glambie.processing.processing_helpers import check_and_handle_gaps_in_timeseries
 from glambie.const.data_groups import GLAMBIE_DATA_GROUPS
@@ -177,3 +178,20 @@ def test_check_and_handle_gaps_in_timeseries(example_catalogue_filled):
         assert dataset.data.is_cumulative_valid()
     assert np.array_equal(split_dataset_names, [[example_catalogue_filled.datasets[1].user_group + "_1",
                                                  example_catalogue_filled.datasets[1].user_group + "_2"]])
+
+
+def test_recombine_split_timeseries(example_catalogue_filled):
+    example_catalogue_filled.copy()
+    # introduce a gap
+    example_catalogue_filled.datasets[
+        1].data.start_dates[1] = example_catalogue_filled.datasets[1].data.start_dates[1] + 0.5
+    split_catalogue, split_dataset_names = check_and_handle_gaps_in_timeseries(example_catalogue_filled)
+    recombined_catalogue = recombine_split_timeseries_in_catalogue(
+        data_catalogue=split_catalogue, names_of_split_datasets_in_catalogue=split_dataset_names)
+
+    assert len(recombined_catalogue) == len(example_catalogue_filled)
+    assert recombined_catalogue.datasets[0].user_group == example_catalogue_filled.datasets[1].user_group
+    assert np.array_equal(recombined_catalogue.datasets[0].data.start_dates,
+                          example_catalogue_filled.datasets[1].data.start_dates)
+    assert np.array_equal(recombined_catalogue.datasets[0].data.end_dates,
+                          example_catalogue_filled.datasets[1].data.end_dates)

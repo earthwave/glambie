@@ -43,7 +43,7 @@ def download_csv_files_from_bucket(storage_client: Client, local_data_directory_
     Parameters
     ----------
     storage_client : Client
-        Google Cloud storage Client instance that will be used to access bucket (? not sure what this actually does)
+        Google Cloud storage Client instance that will be used to access bucket.
     local_data_directory_path : str
         Path to save local copies of bucket data to.
     region_prefix : str, Optional
@@ -78,7 +78,7 @@ def upload_edited_csv_files_to_bucket(storage_client: Client, files_to_upload: l
     Parameters
     ----------
     storage_client : Client
-        Google Cloud storage Client instance that will be used to access bucket (? not sure what this actually does)
+        Google Cloud storage Client instance that will be used to access bucket.
     files_to_upload : list[str]
         List containing the names of files that should be uploaded to the GlaMBIE bucket
     local_path : str

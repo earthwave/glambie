@@ -434,7 +434,7 @@ def derivative_to_cumulative(start_dates: list[float],
         changes = [0, *np.array(pd.Series(changes).cumsum())]
 
     if not all(contains_no_gaps) and add_gaps_for_plotting:
-        indices_of_gaps = [i for i, x in enumerate(contains_no_gaps) if not(x)]
+        indices_of_gaps = [i for i, x in enumerate(contains_no_gaps) if not (x)]
         start_dates = list(start_dates.copy())  # make sure we are not editing the original list
         end_dates = list(end_dates.copy())  # make sure we are not editing the original list
         for idx in indices_of_gaps:

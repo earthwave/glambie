@@ -351,7 +351,65 @@ def slice_timeseries_at_gaps(df_timeseries: pd.DataFrame) -> list[pd.DataFrame]:
     # plus append last / full split in the end
     split_timeseries_dataframes.append(df_timeseries.iloc[previous_index:].reset_index(drop=True))
     return split_timeseries_dataframes
-    
+
+
+def recombine_split_timeseries_in_catalogue(data_catalogue: DataCatalogue,
+                                            names_of_split_datasets_in_catalogue: list[list]) -> DataCatalogue:
+    """
+    Combines a list of split timeseries back into full timeseries
+    Can be used after gaps have been removed
+
+    Parameters
+    ----------
+    data_catalogue : DataCatalogue
+        input data catalogue which potentially have been split up due to gaps
+    names_of_split_datasets_in_catalogue : list[list]
+        list with user group names of datasets within the data catalogue that have been split
+        e.g. [["rabbit_1", "rabbit_2"], ["seal_1", "seal_2", "seal_3"]]
+
+    Returns
+    -------
+    DataCatalogue
+        data catalogue with timeseries that are now recombined
+    """
+    new_datasets = []
+    # split datasets
+    for split_ds_list in names_of_split_datasets_in_catalogue:
+        old_datasets = [data_catalogue.get_filtered_catalogue(user_group=s).datasets[0] for s in split_ds_list]
+        start_dates = []
+        end_dates = []
+        changes = []
+        errors = []
+        for ds in old_datasets:
+            start_dates.extend(ds.data.start_dates)
+            end_dates.extend(ds.data.end_dates)
+            changes.extend(ds.data.changes)
+            errors.extend(ds.data.errors)
+        df = pd.DataFrame({"start_dates": start_dates, "end_dates": end_dates,
+                           "changes": changes, "errors": errors})
+        df = df.sort_values(by="start_dates")
+        if len(start_dates) != len(np.unique(start_dates)) or len(end_dates) != len(np.unique(end_dates)):
+            error_msg = f'''Issue with combining split datasets, duplicate dates discovered when combining:
+            {split_ds_list}'''
+            log.error(error_msg)
+            raise ValueError(error_msg)
+        new_dataset = old_datasets[0].copy()
+        new_dataset.data.start_dates = np.array(df["start_dates"])
+        new_dataset.data.end_dates = np.array(df["end_dates"])
+        new_dataset.data.changes = np.array(df["changes"])
+        new_dataset.data.errors = np.array(df["errors"])
+        new_dataset.user_group = new_dataset.user_group[:-2]  # remove the underscore and numbering from the name
+        new_datasets.append(new_dataset)
+
+    # now add all datasets to list that weren't split
+    for dataset in data_catalogue.datasets:
+        # check if in flattened list
+        if dataset.user_group not in [j for sub in names_of_split_datasets_in_catalogue for j in sub]:
+            new_datasets.append(dataset)
+
+    new_data_catalogue = DataCatalogue.from_list(new_datasets, base_path=data_catalogue.base_path)
+    return new_data_catalogue
+
 
 def set_unneeded_columns_to_nan(data_catalogue: DataCatalogue) -> DataCatalogue:
     """

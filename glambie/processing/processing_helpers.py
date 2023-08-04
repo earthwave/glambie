@@ -280,7 +280,7 @@ def check_and_handle_gaps_in_timeseries(data_catalogue: DataCatalogue) -> Tuple[
     """
     Checks all datasets in a timeseries if they have a temporal gap, and if so, splits them up into multiple datasets
     without gaps. If no gaps are found, the datasets stay the same.
-    User group names of the split datasets will contain have an underscore and then the sequence number appended
+    User group names of the split datasets will have an underscore and then the sequence number appended
     to the original name
 
     Parameters
@@ -393,7 +393,11 @@ def recombine_split_timeseries_in_catalogue(data_catalogue: DataCatalogue,
             {split_ds_list}'''
             log.error(error_msg)
             raise ValueError(error_msg)
+
+        # copy the metadata to the new combined dataset. we just take the first dataset of old datasets assuming all
+        # split datasets have the same metadata as they have been split from the same original dataset
         new_dataset = old_datasets[0].copy()
+        # fill dataset with new values
         new_dataset.data.start_dates = np.array(df["start_dates"])
         new_dataset.data.end_dates = np.array(df["end_dates"])
         new_dataset.data.changes = np.array(df["changes"])

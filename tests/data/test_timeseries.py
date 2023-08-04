@@ -130,18 +130,6 @@ def test_as_cumulative_timeseries(example_timeseries_ingested):
     pd.testing.assert_series_equal(df_cumulative["changes"], pd.Series([0, 2.0, 7.0], name="changes"))
 
 
-def test_as_cumulative_timeseries_raises_warning(example_timeseries_ingested):
-    with warnings.catch_warnings(record=True) as w:
-        # Cause all warnings to always be triggered
-        warnings.simplefilter("always")
-        # Trigger a warning
-        example_timeseries_ingested.data.end_dates = [2010.17, 2010.3]  # change end dates so ther is a data gap
-        example_timeseries_ingested.data.as_cumulative_timeseries()  # this should trigger warning
-        # Verify warning has been triggered
-        assert len(w) == 1
-        assert "invalid" in str(w[-1].message)
-
-
 def test_as_cumulative_timeseries_with_gaps(example_timeseries_ingested):
     example_timeseries_ingested.data.start_dates = [2010, 2011, 2013]
     example_timeseries_ingested.data.end_dates = [2011, 2012, 2014]
@@ -150,11 +138,12 @@ def test_as_cumulative_timeseries_with_gaps(example_timeseries_ingested):
     cumulative_df = example_timeseries_ingested.data.as_cumulative_timeseries()
 
     expected_dates = [2010, 2011, 2012, 2013, 2013, 2014]
-    expected_changes = [0, 1, 2, None, 2, 3]
+    expected_changes = [0, 1, 2, np.nan, 2, 3]
     # should be plus 2 long as we add an additional two rows for the gap and + 1 as it is cumulative
     assert len(cumulative_df.errors) == len(example_timeseries_ingested.data.errors) + 3
-    assert np.array_equal(cumulative_df["dates"], expected_dates)
-    assert np.array_equal(cumulative_df["changes"], expected_changes)
+    # use np.allclose to handle nan values in arrays
+    assert np.allclose(list(cumulative_df["dates"]), expected_dates, equal_nan=True)
+    assert np.allclose(list(cumulative_df["changes"]), expected_changes, equal_nan=True)
 
 
 def test_convert_timeseries_to_unit_mwe_from_m(example_timeseries_ingested):

@@ -1,4 +1,5 @@
 import logging
+from typing import Tuple
 
 from glambie.config.config_classes import GlambieRunConfig, RegionRunConfig
 from glambie.data.data_catalogue import DataCatalogue, Timeseries
@@ -8,6 +9,7 @@ from glambie.const.constants import YearType
 from glambie.processing.processing_helpers import convert_datasets_to_longterm_trends, convert_datasets_to_monthly_grid
 from glambie.processing.processing_helpers import recombine_split_timeseries_in_catalogue
 from glambie.processing.processing_helpers import convert_datasets_to_annual_trends, convert_datasets_to_unit_mwe
+from glambie.processing.processing_helpers import convert_datasets_to_unit_gt
 from glambie.processing.processing_helpers import filter_catalogue_with_config_settings
 from glambie.processing.processing_helpers import prepare_seasonal_calibration_dataset
 from glambie.processing.processing_helpers import extend_annual_timeseries_if_outside_trends_period
@@ -120,7 +122,7 @@ def combine_within_one_region(catalogue_data_group_results: DataCatalogue,
     if output_path_handler is not None:
         output_path = output_path_handler.get_plot_output_file_path(region=combined_ts.region,
                                                                     data_group=GLAMBIE_DATA_GROUPS["consensus"],
-                                                                    plot_file_name="1_consensus_sources.png")
+                                                                    plot_file_name="1_consensus_sources_mwe.png")
         # plot
         plot_combination_of_sources_within_region(catalogue_results=catalogue_data_group_results,
                                                   combined_timeseries=combined_ts, region=combined_ts.region,
@@ -128,8 +130,51 @@ def combine_within_one_region(catalogue_data_group_results: DataCatalogue,
         # save csv
         combined_ts.save_data_as_csv(output_path_handler.get_csv_output_file_path(
             region=combined_ts.region, data_group=GLAMBIE_DATA_GROUPS["consensus"],
-            csv_file_name=f"consensus_{combined_ts.region.name}.csv"))
+            csv_file_name=f"consensus_mwe_{combined_ts.region.name}.csv"))
     return combined_ts
+
+
+def convert_and_save_one_region_to_gigatonnes(
+        catalogue_data_group_results: DataCatalogue,
+        combined_region_timeseries: Timeseries,
+        output_path_handler: OutputPathHandler) -> Tuple[DataCatalogue, Timeseries]:
+    """
+    Converts regional results to gigatonnes and saves out plots and csvs (depending on the output path handler settings)
+
+    Parameters
+    ----------
+    catalogue_data_group_results : DataCatalogue
+        input catalogue of results per data group, to be converted to Gigatonnes
+    combined_region_timeseries : Timeseries
+        input time series of regional consensus from different sources, to be converted to Gigatonnes
+    output_path_handler : OutputPathHandler
+        object to handle output path. If set to None, no plots / other data will be saved
+
+    Returns
+    -------
+    Tuple[DataCatalogue, Timeseries]
+        Unit converted data catalogue and region timeseries (in Gigatonnes)
+    """
+    # convert to gigatonnes
+    combined_region_timeseries_gt = combined_region_timeseries.apply_area_change(apply_change=False)
+    combined_region_timeseries_gt = combined_region_timeseries_gt.convert_timeseries_to_unit_gt()
+    catalogue_data_group_results_gt = convert_datasets_to_unit_gt(catalogue_data_group_results)
+
+    if output_path_handler is not None:
+        output_path = output_path_handler.get_plot_output_file_path(region=combined_region_timeseries_gt.region,
+                                                                    data_group=GLAMBIE_DATA_GROUPS["consensus"],
+                                                                    plot_file_name="2_consensus_sources_gt.png")
+        # plot
+        plot_combination_of_sources_within_region(catalogue_results=catalogue_data_group_results_gt,
+                                                  combined_timeseries=combined_region_timeseries_gt,
+                                                  region=combined_region_timeseries_gt.region,
+                                                  output_filepath=output_path)
+        # save csv
+        combined_region_timeseries_gt.save_data_as_csv(output_path_handler.get_csv_output_file_path(
+            region=combined_region_timeseries_gt.region, data_group=GLAMBIE_DATA_GROUPS["consensus"],
+            csv_file_name=f"consensus_gt_{combined_region_timeseries_gt.region.name}.csv"))
+
+    return catalogue_data_group_results_gt, combined_region_timeseries_gt
 
 
 def _run_region_timeseries_one_source(data_catalogue_annual: DataCatalogue,

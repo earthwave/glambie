@@ -400,9 +400,10 @@ def derivative_to_cumulative(start_dates: list[float],
                              end_dates: list[float],
                              changes: list[float],
                              return_type: str = "arrays",
-                             calculate_as_errors: bool = False):
+                             calculate_as_errors: bool = False,
+                             add_gaps_for_plotting: bool = True):
     """
-    Calculates a cumulative timeseries from a list of non cumulative changes between start and end date
+    Calculates a cumulative timeseries from a list of non cumulative changes between start and end dates
 
     Parameters
     ----------
@@ -417,6 +418,10 @@ def derivative_to_cumulative(start_dates: list[float],
     calculate_as_errors : bool, optional
         if True it will calculate cumulative errors rather than changes
         assuming errors of each timestep are independent
+        by default False
+    add_gaps_for_plotting : bool, optional
+        if True and the timeseries contains gaps they are added to the cumulative timeseries as no data values
+        by default True
 
     Returns
     -------
@@ -424,13 +429,34 @@ def derivative_to_cumulative(start_dates: list[float],
         'arrays': (dates, cumulative_changes)
         'dataframe': pd.DataFrame({'dates': dates, 'changes': changes})
     """
-    dates = np.array([start_dates[0], *end_dates])
+    contains_no_gaps = [start_date == end_date for start_date, end_date in zip(start_dates[1:], end_dates[:-1])]
+
+    # add an extra row to dataset for each gap, so that it's represented in the cumulative timeseries as no data
+
     if calculate_as_errors:
-        changes = np.array([0, *np.array(pd.Series(np.square(changes)).cumsum())**0.5])
+        changes = [0, *np.array(pd.Series(np.square(changes)).cumsum())**0.5]
     else:
-        changes = np.array([0, *np.array(pd.Series(changes).cumsum())])
+        changes = [0, *np.array(pd.Series(changes).cumsum())]
+
+    if not all(contains_no_gaps) and add_gaps_for_plotting:
+        indices_of_gaps = [i for i, x in enumerate(contains_no_gaps) if not (x)]
+        start_dates = list(start_dates.copy())  # make sure we are not editing the original list
+        end_dates = list(end_dates.copy())  # make sure we are not editing the original list
+        for idx in indices_of_gaps:
+            start_date_to_insert = end_dates[idx]
+            end_date_to_insert = start_dates[idx + 1]
+            # add no data row
+            start_dates.insert(idx + 1, start_date_to_insert)
+            end_dates.insert(idx + 1, end_date_to_insert)
+            changes.insert(idx + 2, None)  # already in cumulative, hence +2
+            # add last row before gap again after gap
+            start_dates.insert(idx + 2, start_dates[idx + 1])
+            end_dates.insert(idx + 2, end_dates[idx + 1])
+            changes.insert(idx + 3, changes[idx + 1])  # already in cumulative, hence +3
+    dates = [start_dates[0], *end_dates]
+
     if return_type == "arrays":
-        return dates, changes
+        return np.array(dates).astype(float), np.array(changes).astype(float)
     elif return_type == "dataframe":
         if calculate_as_errors:
             return pd.DataFrame({'dates': dates,

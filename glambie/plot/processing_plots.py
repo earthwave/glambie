@@ -145,7 +145,7 @@ def plot_raw_and_homogenized_input_data_of_data_group(catalogue_raw: DataCatalog
                                                       output_filepath: str,
                                                       plot_errors: bool = True):
     _, axes = plt.subplots(2, 1, figsize=(10, 6))
-    colours = get_colours(len(catalogue_homogenized.datasets))
+    colours = get_colours(max([len(catalogue_raw.datasets), len(catalogue_homogenized.datasets)]))
 
     # plot non-cumulative timeseries
     for count, ds in enumerate(catalogue_raw.datasets):

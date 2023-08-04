@@ -5,7 +5,7 @@ import copy
 from dataclasses import dataclass
 from decimal import Decimal
 from decimal import getcontext
-import warnings
+import logging
 
 from glambie.const.data_groups import GlambieDataGroup
 from glambie.const.regions import RGIRegion
@@ -28,6 +28,8 @@ from glambie.const.density_uncertainty import get_density_uncertainty_over_surve
 
 import numpy as np
 import pandas as pd
+
+log = logging.getLogger(__name__)
 
 
 @dataclass
@@ -121,10 +123,12 @@ class TimeseriesData():
             Instead of start_dates and end_dates, the column 'dates' is used
         """
         if not self.is_cumulative_valid():
-            warnings.warn("Cumulative timeseries may be invalid. This may be due to the timeseries containing "
-                          "gaps or overlapping periods.")
-        dates, changes = derivative_to_cumulative(self.start_dates, self.end_dates, self.changes)
-        _, errors = derivative_to_cumulative(self.start_dates, self.end_dates, self.errors, calculate_as_errors=True)
+            log.debug("Cumulative timeseries may be invalid. This may be due to the timeseries containing "
+                      "gaps or overlapping periods.")
+        dates, changes = derivative_to_cumulative(self.start_dates, self.end_dates, self.changes,
+                                                  add_gaps_for_plotting=True)
+        _, errors = derivative_to_cumulative(self.start_dates, self.end_dates, self.errors, calculate_as_errors=True,
+                                             add_gaps_for_plotting=True)
 
         df_cumulative = pd.DataFrame({'dates': dates,
                                       'changes': changes,

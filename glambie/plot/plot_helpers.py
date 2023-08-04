@@ -190,7 +190,7 @@ def plot_cumulative_timeseries_on_axis(timeseries: Timeseries,
     colour : str
         hex colour for plot
     timeseries_for_vertical_adjustment : Timeseries, optional
-        _description_, by default None
+        timeseries to do a vertical adjustment with, by default None
     label : str, optional
         label of dataset, by default ""
     linestyle : str, optional

@@ -456,7 +456,7 @@ def derivative_to_cumulative(start_dates: list[float],
     dates = [start_dates[0], *end_dates]
 
     if return_type == "arrays":
-        return np.array(dates), np.array(changes)
+        return np.array(dates).astype(float), np.array(changes).astype(float)
     elif return_type == "dataframe":
         if calculate_as_errors:
             return pd.DataFrame({'dates': dates,

@@ -388,6 +388,11 @@ def plot_combination_of_regions_to_global(catalogue_region_results: DataCatalogu
             timeseries=global_timeseries, ax=axes[1], colour="black", plot_errors=plot_errors, linestyle="-",
             timeseries_for_vertical_adjustment=None, label="Global estimate")
 
-    add_labels_axlines_and_title(axes=axes, unit=global_timeseries.unit,
+    if global_timeseries is not None:
+        unit = global_timeseries.unit
+    else:
+        unit = catalogue_region_results.datasets[0].unit
+
+    add_labels_axlines_and_title(axes=axes, unit=unit,
                                  title="{}: combined estimate".format(region.long_name), legend_fontsize=7)
     finalise_save_to_file_and_close_plot(output_filepath)

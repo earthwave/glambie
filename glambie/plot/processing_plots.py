@@ -370,9 +370,10 @@ def plot_combination_of_regions_to_global(catalogue_region_results: DataCatalogu
                                                label=timeseries.region.long_name)
 
     # plot combined solution
-    plot_non_cumulative_timeseries_on_axis(
-        result_dataframe=global_timeseries.data.as_dataframe(), ax=axes[0], colour="black", linestyle="--",
-        label="Global estimate")
+    if global_timeseries is not None:
+        plot_non_cumulative_timeseries_on_axis(
+            result_dataframe=global_timeseries.data.as_dataframe(), ax=axes[0], colour="black", linestyle="--",
+            label="Global estimate")
 
     # plot cumulative timeseries
     for count, timeseries in enumerate(catalogue_region_results.datasets):
@@ -382,9 +383,10 @@ def plot_combination_of_regions_to_global(catalogue_region_results: DataCatalogu
             label="{}".format(timeseries.region.long_name))
 
     # plot combined solution
-    plot_cumulative_timeseries_on_axis(
-        timeseries=global_timeseries, ax=axes[1], colour="black", plot_errors=plot_errors, linestyle="-",
-        timeseries_for_vertical_adjustment=None, label="Global estimate")
+    if global_timeseries is not None:
+        plot_cumulative_timeseries_on_axis(
+            timeseries=global_timeseries, ax=axes[1], colour="black", plot_errors=plot_errors, linestyle="-",
+            timeseries_for_vertical_adjustment=None, label="Global estimate")
 
     add_labels_axlines_and_title(axes=axes, unit=global_timeseries.unit,
                                  title="{}: combined estimate".format(region.long_name), legend_fontsize=7)

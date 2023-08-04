@@ -77,6 +77,10 @@ def run_global_results(glambie_run_config: GlambieRunConfig,
         plot_combination_of_regions_to_global(catalogue_region_results=regional_results_catalogue_homogenized_gt,
                                               global_timeseries=global_timeseries_gt, region=REGIONS["global"],
                                               output_filepath=plot_output_file)
+        # plot without global
+        plot_combination_of_regions_to_global(catalogue_region_results=regional_results_catalogue_homogenized_gt,
+                                              global_timeseries=None, region=REGIONS["global"],
+                                              output_filepath=plot_output_file)
         csv_output_file = output_path_handler.get_csv_output_file_path(region=REGIONS["global"],
                                                                        data_group=GLAMBIE_DATA_GROUPS["consensus"],
                                                                        csv_file_name="global_gt.csv")

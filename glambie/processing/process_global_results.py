@@ -5,7 +5,7 @@ from glambie.data.data_catalogue import DataCatalogue
 from glambie.data.timeseries import Timeseries, TimeseriesData
 from glambie.const.constants import YearType
 from glambie.processing.path_handling import OutputPathHandler
-from glambie.processing.processing_helpers import prepare_seasonal_calibration_dataset
+from glambie.processing.processing_helpers import convert_datasets_to_unit_gt, prepare_seasonal_calibration_dataset
 from glambie.processing.processing_helpers import get_reduced_catalogue_to_date_window
 from glambie.const.data_groups import GLAMBIE_DATA_GROUPS
 from glambie.plot.processing_plots import plot_combination_of_regions_to_global
@@ -39,7 +39,7 @@ def run_global_results(glambie_run_config: GlambieRunConfig,
     Timeseries
         Global timeseries
     """
-    log.info('Starting to combine regional results into global')
+    log.info('Starting to combine regional results into global in')
     regional_results_catalogue_homogenized = _homogenize_regional_results_to_calendar_year(glambie_run_config,
                                                                                            regional_results_catalogue,
                                                                                            original_data_catalogue)
@@ -49,20 +49,40 @@ def run_global_results(glambie_run_config: GlambieRunConfig,
         start_date=glambie_run_config.start_year,
         end_date=glambie_run_config.end_year)
 
-    global_timeseries = _combine_regional_results_into_global(regional_results_catalogue_homogenized)
+    global_timeseries_mwe = _combine_regional_results_in_mwe_into_global(regional_results_catalogue_homogenized)
+
+    # now convert to gigatonnes
+    regional_results_catalogue_homogenized_gt = convert_datasets_to_unit_gt(regional_results_catalogue_homogenized)
+    global_timeseries_gt = _combine_regional_results_in_gt_into_global(regional_results_catalogue_homogenized_gt)
+
     # plot
     if output_path_handler is not None:
-        plot_output_file = output_path_handler.get_plot_output_file_path(region=REGIONS["global"],
-                                                                         data_group=GLAMBIE_DATA_GROUPS["consensus"],
-                                                                         plot_file_name="1_global_picture.png")
+        # 1 in mwe
+        plot_output_file = output_path_handler.get_plot_output_file_path(
+            region=REGIONS["global"],
+            data_group=GLAMBIE_DATA_GROUPS["consensus"],
+            plot_file_name="1_global_picture_mwe.png")
         plot_combination_of_regions_to_global(catalogue_region_results=regional_results_catalogue_homogenized,
-                                              global_timeseries=global_timeseries, region=REGIONS["global"],
+                                              global_timeseries=global_timeseries_mwe, region=REGIONS["global"],
                                               output_filepath=plot_output_file)
         csv_output_file = output_path_handler.get_csv_output_file_path(region=REGIONS["global"],
                                                                        data_group=GLAMBIE_DATA_GROUPS["consensus"],
-                                                                       csv_file_name="global.csv")
-        global_timeseries.save_data_as_csv(csv_output_file)
-    return global_timeseries
+                                                                       csv_file_name="global_mwe.csv")
+        global_timeseries_mwe.save_data_as_csv(csv_output_file)
+        # 2 in gigatonnes
+        plot_output_file = output_path_handler.get_plot_output_file_path(
+            region=REGIONS["global"],
+            data_group=GLAMBIE_DATA_GROUPS["consensus"],
+            plot_file_name="2_global_picture_gt.png")
+        plot_combination_of_regions_to_global(catalogue_region_results=regional_results_catalogue_homogenized_gt,
+                                              global_timeseries=global_timeseries_gt, region=REGIONS["global"],
+                                              output_filepath=plot_output_file)
+        csv_output_file = output_path_handler.get_csv_output_file_path(region=REGIONS["global"],
+                                                                       data_group=GLAMBIE_DATA_GROUPS["consensus"],
+                                                                       csv_file_name="global_gt.csv")
+        global_timeseries_gt.save_data_as_csv(csv_output_file)
+
+    return global_timeseries_mwe
 
 
 def _homogenize_regional_results_to_calendar_year(glambie_run_config: GlambieRunConfig,
@@ -106,7 +126,7 @@ def _homogenize_regional_results_to_calendar_year(glambie_run_config: GlambieRun
     return result_catalogue
 
 
-def _combine_regional_results_into_global(regional_results_catalogue: DataCatalogue) -> Timeseries:
+def _combine_regional_results_in_mwe_into_global(regional_results_catalogue: DataCatalogue) -> Timeseries:
     """
     Combines all regional results into one global timeseries.
     Assumes that timeseries are all in same grid and resolution temporally (e.g. calendar year) and of unit mwe.
@@ -145,6 +165,58 @@ def _combine_regional_results_into_global(regional_results_catalogue: DataCatalo
     # apply square root to errors and divide by total area
     mean_uncertainties = np.sqrt(np.array(df[df.columns.intersection(
         df.filter(regex=("errors*")).columns.to_list())].sum(axis=1))) / total_area
+
+    # make timeseries object with combined solution
+    ts_data = TimeseriesData(start_dates=start_dates,
+                             end_dates=end_dates,
+                             changes=mean_changes,
+                             errors=mean_uncertainties,
+                             glacier_area_reference=None,
+                             glacier_area_observed=None,
+                             hydrological_correction_value=None,
+                             remarks=None)
+    # use this as a reference for filling metadata
+    reference_dataset_for_metadata = regional_results_catalogue.datasets[0]
+
+    return Timeseries(region=REGIONS["global"], data_group=GLAMBIE_DATA_GROUPS["consensus"],
+                      data=ts_data, unit=reference_dataset_for_metadata.unit)
+
+
+def _combine_regional_results_in_gt_into_global(regional_results_catalogue: DataCatalogue) -> Timeseries:
+    """
+    Combines all regional results into one global timeseries.
+    Assumes that timeseries are all in same grid and resolution temporally (e.g. calendar year) and of unit gt.
+
+    Parameters
+    ----------
+    regional_results_catalogue : DataCatalogue
+        regional results (homogenized to the same year)
+
+    Returns
+    -------
+    Timeseries
+        Globally aggregated timeseries
+    """
+    assert regional_results_catalogue.datasets_are_same_unit()
+    assert regional_results_catalogue.datasets[0].unit.lower() == "gt"
+
+    # merge all dataframes
+    catalogue_dfs = [ds.data.as_dataframe() for ds in regional_results_catalogue.datasets]
+
+    # # multiply changes and errors with area for each region
+    for df in catalogue_dfs:
+        df["errors"] = (df["errors"] * df["errors"])
+
+    # join all catalogues by start and end dates. The resulting dataframe has a set of columns with repeating prefixes
+    df = reduce(lambda left, right: left.merge(right, how="outer", on=["start_dates", "end_dates"]), catalogue_dfs)
+    df = df.sort_values(by="start_dates")
+    start_dates, end_dates = np.array(df["start_dates"]), np.array(df["end_dates"])
+    mean_changes = np.array(df[df.columns.intersection(
+        df.filter(regex=("changes*")).columns.to_list())].sum(axis=1))
+
+    # apply square root to errors
+    mean_uncertainties = np.sqrt(np.array(df[df.columns.intersection(
+        df.filter(regex=("errors*")).columns.to_list())].sum(axis=1)))
 
     # make timeseries object with combined solution
     ts_data = TimeseriesData(start_dates=start_dates,

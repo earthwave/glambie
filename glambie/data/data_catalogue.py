@@ -327,7 +327,8 @@ class DataCatalogue():
         reference_dataset_for_metadata = self.datasets[0]  # use this as a reference for filling metadata
 
         return Timeseries(region=reference_dataset_for_metadata.region, data_group=out_data_group,
-                          data=ts_data, unit=reference_dataset_for_metadata.unit), data_catalogue_out
+                          data=ts_data, unit=reference_dataset_for_metadata.unit,
+                          area_change_applied=reference_dataset_for_metadata.area_change_applied), data_catalogue_out
 
     def __len__(self) -> int:
         return len(self._datasets)

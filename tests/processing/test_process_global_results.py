@@ -1,5 +1,5 @@
 
-from glambie.processing.process_global_results import _combine_regional_results_into_global
+from glambie.processing.process_global_results import _combine_regional_results_in_mwe_into_global
 import pytest
 import numpy as np
 
@@ -42,7 +42,7 @@ def example_catalogue():
 
 
 def test_combine_regional_results_into_global(example_catalogue):
-    combined_result = _combine_regional_results_into_global(regional_results_catalogue=example_catalogue)
+    combined_result = _combine_regional_results_in_mwe_into_global(regional_results_catalogue=example_catalogue)
     dataset1 = example_catalogue.datasets[0]
     dataset2 = example_catalogue.datasets[1]
     expected_result = (dataset1.data.changes * dataset1.region.rgi6_area
@@ -52,7 +52,7 @@ def test_combine_regional_results_into_global(example_catalogue):
 
 
 def test_combine_regional_results_into_global_errors(example_catalogue):
-    combined_result = _combine_regional_results_into_global(regional_results_catalogue=example_catalogue)
+    combined_result = _combine_regional_results_in_mwe_into_global(regional_results_catalogue=example_catalogue)
     dataset1 = example_catalogue.datasets[0]
     dataset2 = example_catalogue.datasets[1]
     total_area = dataset1.region.rgi6_area + dataset2.region.rgi6_area

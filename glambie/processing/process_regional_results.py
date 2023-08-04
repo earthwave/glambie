@@ -169,8 +169,8 @@ def _run_region_timeseries_one_source(data_catalogue_annual: DataCatalogue,
         timeseries of combined dataset
     """
     # prepare annual and trend datasets
-    data_catalogue_annual, split_dataset_names = check_and_handle_gaps_in_timeseries(data_catalogue_annual)
-    data_catalogue_trends, _ = check_and_handle_gaps_in_timeseries(data_catalogue_trends)
+    data_catalogue_annual, split_dataset_names_annual = check_and_handle_gaps_in_timeseries(data_catalogue_annual)
+    data_catalogue_trends, split_dataset_names_trends = check_and_handle_gaps_in_timeseries(data_catalogue_trends)
     data_catalogue_annual = convert_datasets_to_monthly_grid(data_catalogue_annual)
     data_catalogue_trends = convert_datasets_to_monthly_grid(data_catalogue_trends)
 
@@ -200,9 +200,9 @@ def _run_region_timeseries_one_source(data_catalogue_annual: DataCatalogue,
     # calculate combined annual timeseries
     # first need to recombine timeseries in cases where we split them due to gaps
     # reason for this is that we want to remove trends over a common period
-    if len(split_dataset_names) > 0:
+    if len(split_dataset_names_annual) > 0:
         data_catalogue_annual = recombine_split_timeseries_in_catalogue(
-            data_catalogue_annual, split_dataset_names)
+            data_catalogue_annual, split_dataset_names_annual)
     # then average timeseries from annual catalogue, removing the trends
     annual_combined, catalogue_annual_anomalies = data_catalogue_annual.average_timeseries_in_catalogue(
         remove_trend=True, out_data_group=data_group)
@@ -235,14 +235,15 @@ def _run_region_timeseries_one_source(data_catalogue_annual: DataCatalogue,
                  output_path_handler.get_plot_output_file_path(region=region, data_group=data_group,
                                                                plot_file_name=""))
         # prepare data catalogues for plotting if they have been split due to gaps
-        if len(split_dataset_names) > 0:
-            data_catalogue_trends = recombine_split_timeseries_in_catalogue(data_catalogue_trends, split_dataset_names)
+        if len(split_dataset_names_annual) > 0:
+            data_catalogue_trends = recombine_split_timeseries_in_catalogue(
+                data_catalogue_trends, split_dataset_names_trends)
             catalogue_calibrated_series = recombine_split_timeseries_in_catalogue(
-                catalogue_calibrated_series, split_dataset_names)
+                catalogue_calibrated_series, split_dataset_names_trends)
             data_catalogue_annual_raw = recombine_split_timeseries_in_catalogue(
-                data_catalogue_annual_raw, split_dataset_names)
+                data_catalogue_annual_raw, split_dataset_names_annual)
             data_catalogue_trends_raw = recombine_split_timeseries_in_catalogue(
-                data_catalogue_trends_raw, split_dataset_names)
+                data_catalogue_trends_raw, split_dataset_names_trends)
 
         # save CSVs
         save_all_csvs_for_region_data_group_processing(output_path_handler=output_path_handler,

@@ -207,7 +207,7 @@ def _combine_regional_results_in_gt_into_global(regional_results_catalogue: Data
     # merge all dataframes
     catalogue_dfs = [ds.data.as_dataframe() for ds in regional_results_catalogue.datasets]
 
-    # # multiply changes and errors with area for each region
+    # square errors for error propagation
     for df in catalogue_dfs:
         df["errors"] = (df["errors"] * df["errors"])
 
@@ -218,7 +218,7 @@ def _combine_regional_results_in_gt_into_global(regional_results_catalogue: Data
     mean_changes = np.array(df[df.columns.intersection(
         df.filter(regex=("changes*")).columns.to_list())].sum(axis=1))
 
-    # apply square root to errors
+    # apply sum and square root to (squared) errors
     mean_uncertainties = np.sqrt(np.array(df[df.columns.intersection(
         df.filter(regex=("errors*")).columns.to_list())].sum(axis=1)))
 

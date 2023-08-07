@@ -216,12 +216,12 @@ def plot_annual_variability_of_data_group(catalogue_annual_anomalies: DataCatalo
     # plot non-cumulative timeseries
     for count, ds in enumerate(catalogue_annual_anomalies.datasets):
         plot_non_cumulative_timeseries_on_axis(
-            result_dataframe=ds.data.as_dataframe(), ax=axes[0], colour=colours[count], plot_errors=False,
+            result_dataframe=ds.data.as_dataframe(), ax=axes[0], colour=colours[count], plot_errors=plot_errors,
             label="Dataset: " + ds.user_group)
 
     # plot non-cumulative timeseries - combined solution
     plot_non_cumulative_timeseries_on_axis(result_dataframe=timeseries_combined_annual.data.as_dataframe(),
-                                           ax=axes[0], colour="black", linestyle="--", plot_errors=False)
+                                           ax=axes[0], colour="black", linestyle="--", plot_errors=plot_errors)
     axes[0].plot([], [], label="{} - combined solution".format(data_group.long_name), color="black", linestyle="--")
 
     # plot cumulative timeseries
@@ -255,10 +255,10 @@ def plot_recalibration_of_annual_variability_with_trends(catalogue_trends: DataC
     for count, (ds_trend, ds_annual) in enumerate(zip(catalogue_trends.datasets, catalogue_calibrated_series.datasets)):
         plot_non_cumulative_timeseries_on_axis(
             result_dataframe=ds_trend.data.as_dataframe(), ax=axes[0], colour=colours[count],
-            label="Trend: " + ds_trend.user_group)
+            label="Trend: " + ds_trend.user_group, plot_errors=plot_errors)
         plot_non_cumulative_timeseries_on_axis(
             result_dataframe=ds_annual.data.as_dataframe(), ax=axes[0], colour=colours[count], linestyle="--",
-            label="Calibrated annual: " + ds_annual.user_group)
+            label="Calibrated annual: " + ds_annual.user_group, plot_errors=plot_errors)
 
     # plot cumulative
     for count, (trends, annual) in enumerate(zip(catalogue_trends.datasets, catalogue_calibrated_series.datasets)):
@@ -295,11 +295,12 @@ def plot_recalibrated_result_of_data_group(catalogue_trends: DataCatalogue,
     for count, ds in enumerate(catalogue_calibrated_series.datasets):
         plot_non_cumulative_timeseries_on_axis(
             result_dataframe=ds.data.as_dataframe(), ax=axes[0], colour=colours[count], linestyle="--",
-            label="Calibrated annual series: " + ds.user_group + " (" + ds.data_group.name + ")")
+            label="Calibrated annual series: " + ds.user_group + " (" + ds.data_group.name + ")",
+            plot_errors=plot_errors)
 
     plot_non_cumulative_timeseries_on_axis(
         result_dataframe=trend_combined.data.as_dataframe(), ax=axes[0], colour="black", linestyle="--",
-        label="{} - combined solution".format(data_group.long_name))
+        label="{} - combined solution".format(data_group.long_name), plot_errors=plot_errors)
 
     # plot cumulative
     for count, timeseries in enumerate(catalogue_calibrated_series.datasets):
@@ -335,7 +336,8 @@ def plot_combination_of_sources_within_region(catalogue_results: DataCatalogue,
 
     # plot non-cumulative combined solution
     plot_non_cumulative_timeseries_on_axis(result_dataframe=combined_timeseries.data.as_dataframe(),
-                                           ax=axes[0], colour="black", linestyle="--", label="Consensus estimate")
+                                           ax=axes[0], colour="black", linestyle="--", label="Consensus estimate",
+                                           plot_errors=plot_errors)
 
     # plot cumulative timeseries
     for count, timeseries in enumerate(catalogue_results.datasets):
@@ -367,13 +369,13 @@ def plot_combination_of_regions_to_global(catalogue_region_results: DataCatalogu
     for count, timeseries in enumerate(catalogue_region_results.datasets):
         plot_non_cumulative_timeseries_on_axis(result_dataframe=timeseries.data.as_dataframe(),
                                                ax=axes[0], colour=colours[count],
-                                               label=timeseries.region.long_name)
+                                               label=timeseries.region.long_name, plot_errors=plot_errors)
 
     # plot combined solution
     if global_timeseries is not None:
         plot_non_cumulative_timeseries_on_axis(
             result_dataframe=global_timeseries.data.as_dataframe(), ax=axes[0], colour="black", linestyle="--",
-            label="Global estimate")
+            label="Global estimate", plot_errors=plot_errors)
 
     # plot cumulative timeseries
     for count, timeseries in enumerate(catalogue_region_results.datasets):

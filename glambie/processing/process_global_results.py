@@ -65,25 +65,25 @@ def run_global_results(glambie_run_config: GlambieRunConfig,
         plot_combination_of_regions_to_global(catalogue_region_results=regional_results_catalogue_homogenized,
                                               global_timeseries=global_timeseries_mwe, region=REGIONS["global"],
                                               output_filepath=plot_output_file)
-        csv_output_file = output_path_handler.get_csv_output_file_path(region=REGIONS["global"],
-                                                                       data_group=GLAMBIE_DATA_GROUPS["consensus"],
-                                                                       csv_file_name="global_mwe.csv")
+        csv_output_file = output_path_handler.get_csv_output_file_path(
+            region=REGIONS["global"], data_group=GLAMBIE_DATA_GROUPS["consensus"], csv_file_name="global_mwe.csv")
         global_timeseries_mwe.save_data_as_csv(csv_output_file)
         # 2 in gigatonnes
         plot_output_file = output_path_handler.get_plot_output_file_path(
-            region=REGIONS["global"],
-            data_group=GLAMBIE_DATA_GROUPS["consensus"],
+            region=REGIONS["global"], data_group=GLAMBIE_DATA_GROUPS["consensus"],
             plot_file_name="2_global_picture_gt.png")
         plot_combination_of_regions_to_global(catalogue_region_results=regional_results_catalogue_homogenized_gt,
                                               global_timeseries=global_timeseries_gt, region=REGIONS["global"],
                                               output_filepath=plot_output_file)
-        # plot without global
+        # plot without global timeseries
+        plot_output_file = output_path_handler.get_plot_output_file_path(
+            region=REGIONS["global"], data_group=GLAMBIE_DATA_GROUPS["consensus"],
+            plot_file_name="3_global_picture_gt_regional.png")
         plot_combination_of_regions_to_global(catalogue_region_results=regional_results_catalogue_homogenized_gt,
                                               global_timeseries=None, region=REGIONS["global"],
-                                              output_filepath=plot_output_file)
-        csv_output_file = output_path_handler.get_csv_output_file_path(region=REGIONS["global"],
-                                                                       data_group=GLAMBIE_DATA_GROUPS["consensus"],
-                                                                       csv_file_name="global_gt.csv")
+                                              output_filepath=plot_output_file, plot_errors=False)
+        csv_output_file = output_path_handler.get_csv_output_file_path(
+            region=REGIONS["global"], data_group=GLAMBIE_DATA_GROUPS["consensus"], csv_file_name="global_gt.csv")
         global_timeseries_gt.save_data_as_csv(csv_output_file)
 
     return global_timeseries_mwe

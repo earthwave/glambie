@@ -191,6 +191,30 @@ def convert_datasets_to_unit_mwe(data_catalogue: DataCatalogue) -> DataCatalogue
     return catalogue_mwe
 
 
+def convert_datasets_to_unit_gt(data_catalogue: DataCatalogue) -> DataCatalogue:
+    """
+    Convert all datasets in data catalogue to unit gt (Gigatonnes)
+
+    Parameters
+    ----------
+    data_catalogue : DataCatalogue
+        data catalogue to be converted
+
+    Returns
+    -------
+    DataCatalogue
+        New data catalogue with converted data
+    """
+    datasets = []
+    for ds in data_catalogue.datasets:
+        # first remove area change
+        ds = ds.apply_or_remove_area_change(apply_area_change=False)
+        # then convert to gt with constant area
+        datasets.append(ds.convert_timeseries_to_unit_gt())
+    catalogue_gt = DataCatalogue.from_list(datasets, base_path=data_catalogue.base_path)
+    return catalogue_gt
+
+
 def prepare_seasonal_calibration_dataset(region_config: RegionRunConfig,
                                          data_catalogue: DataCatalogue) -> Timeseries:
     """

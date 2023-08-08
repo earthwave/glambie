@@ -397,14 +397,16 @@ def test_convert_timeseries_to_longterm_trend_errors(example_timeseries_ingested
 
 
 def test_apply_area_change(example_timeseries_ingested):
-    timeseries_area_change = example_timeseries_ingested.apply_area_change(rgi_area_version=6, apply_change=True)
+    timeseries_area_change = example_timeseries_ingested.apply_or_remove_area_change(
+        rgi_area_version=6, apply_area_change=True)
     assert not np.array_equal(example_timeseries_ingested.data.changes, np.array(timeseries_area_change.data.changes))
     assert timeseries_area_change.data.changes[-1] > 5.0
     assert timeseries_area_change.area_change_applied
 
 
 def test_apply_area_change_convert_to_gt_equals_same(example_timeseries_ingested):
-    timeseries_area_change = example_timeseries_ingested.apply_area_change(rgi_area_version=6, apply_change=True)
+    timeseries_area_change = example_timeseries_ingested.apply_or_remove_area_change(
+        rgi_area_version=6, apply_area_change=True)
 
     # converting to gt should now give us the same result using the different areas
     # 1 convert the mwe without area change to Gt
@@ -422,8 +424,10 @@ def test_apply_area_change_convert_to_gt_equals_same(example_timeseries_ingested
 
 
 def test_apply_area_change_and_remove(example_timeseries_ingested):
-    timeseries_area_change = example_timeseries_ingested.apply_area_change(rgi_area_version=6, apply_change=True)
-    timeseries_area_change_removed = timeseries_area_change.apply_area_change(rgi_area_version=6, apply_change=False)
+    timeseries_area_change = example_timeseries_ingested.apply_or_remove_area_change(
+        rgi_area_version=6, apply_area_change=True)
+    timeseries_area_change_removed = timeseries_area_change.apply_or_remove_area_change(
+        rgi_area_version=6, apply_area_change=False)
     assert np.array_equal(example_timeseries_ingested.data.changes,
                           np.array(timeseries_area_change_removed.data.changes))
     assert timeseries_area_change.area_change_applied
@@ -433,23 +437,25 @@ def test_apply_area_change_and_remove(example_timeseries_ingested):
 def test_apply_area_change_and_wrong_unit(example_timeseries_ingested):
     example_timeseries_ingested.unit = "gt"
     with pytest.raises(AssertionError):
-        example_timeseries_ingested.apply_area_change(rgi_area_version=6, apply_change=True)
+        example_timeseries_ingested.apply_or_remove_area_change(rgi_area_version=6, apply_area_change=True)
 
 
 def test_apply_area_change_when_already_applied(example_timeseries_ingested):
-    timeseries_area_change = example_timeseries_ingested.apply_area_change(rgi_area_version=6, apply_change=True)
+    timeseries_area_change = example_timeseries_ingested.apply_or_remove_area_change(
+        rgi_area_version=6, apply_area_change=True)
     with pytest.raises(AssertionError):
-        timeseries_area_change.apply_area_change(rgi_area_version=6, apply_change=True)
+        timeseries_area_change.apply_or_remove_area_change(rgi_area_version=6, apply_area_change=True)
 
 
 def test_remove_area_change_when_already_removed(example_timeseries_ingested):
     assert not example_timeseries_ingested.area_change_applied
     with pytest.raises(AssertionError):
-        example_timeseries_ingested.apply_area_change(rgi_area_version=6, apply_change=False)
+        example_timeseries_ingested.apply_or_remove_area_change(rgi_area_version=6, apply_area_change=False)
 
 
 def test_raises_assertion_error_when_converting_to_gt_with_area_change_applied(example_timeseries_ingested):
-    timeseries_area_change = example_timeseries_ingested.apply_area_change(rgi_area_version=6, apply_change=True)
+    timeseries_area_change = example_timeseries_ingested.apply_or_remove_area_change(
+        rgi_area_version=6, apply_area_change=True)
     with pytest.raises(AssertionError):
         timeseries_area_change.convert_timeseries_to_unit_gt()
 

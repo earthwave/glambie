@@ -83,7 +83,7 @@ def run_one_region(glambie_run_config: GlambieRunConfig,
                                                                data_group=data_group,
                                                                output_path_handler=output_path_handler)
             # apply area change
-            trend_combined = trend_combined.apply_area_change(rgi_area_version=6, apply_change=True)
+            trend_combined = trend_combined.apply_or_remove_area_change(rgi_area_version=6, apply_area_change=True)
             # save out with area change applied
             trend_combined.save_data_as_csv(output_path_handler.get_csv_output_file_path(
                 region=trend_combined.region, data_group=data_group,
@@ -156,7 +156,7 @@ def convert_and_save_one_region_to_gigatonnes(
         Unit converted data catalogue and region timeseries (in Gigatonnes)
     """
     # convert to gigatonnes
-    combined_region_timeseries_gt = combined_region_timeseries.apply_area_change(apply_change=False)
+    combined_region_timeseries_gt = combined_region_timeseries.apply_or_remove_area_change(apply_area_change=False)
     combined_region_timeseries_gt = combined_region_timeseries_gt.convert_timeseries_to_unit_gt()
     catalogue_data_group_results_gt = convert_datasets_to_unit_gt(catalogue_data_group_results)
 

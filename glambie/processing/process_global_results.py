@@ -39,7 +39,7 @@ def run_global_results(glambie_run_config: GlambieRunConfig,
     Timeseries
         Global timeseries
     """
-    log.info('Starting to combine regional results into global in')
+    log.info('Starting to combine regional results into a global results.')
     regional_results_catalogue_homogenized = _homogenize_regional_results_to_calendar_year(glambie_run_config,
                                                                                            regional_results_catalogue,
                                                                                            original_data_catalogue)

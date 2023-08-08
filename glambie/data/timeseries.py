@@ -459,7 +459,7 @@ class Timeseries():
             raise NotImplementedError(
                 "Conversion to Gt not implemented yet for Timeseries with unit '{}'".format(self.unit))
 
-    def apply_area_change(self, rgi_area_version: int = 6, apply_change: bool = True) -> Timeseries:
+    def apply_or_remove_area_change(self, rgi_area_version: int = 6, apply_area_change: bool = True) -> Timeseries:
         """
         Applies or removes a changing area to observed changes.
         Returns a copy of itself with the converted timeseries.
@@ -468,7 +468,7 @@ class Timeseries():
         ----------
         rgi_area_version : int, optional
             version of RGI used for area change, by default 6
-        apply_change : bool, optional
+        apply_area_change : bool, optional
             Describes if the area change should be applied or removed
             If set to False, the area change is removed rather than applied, by default True
 
@@ -488,9 +488,9 @@ class Timeseries():
         """
         if self.unit not in ["mwe", "m"]:
             raise AssertionError("Area change should only be applied/removed to 'm' or 'mwe'.")
-        if self.area_change_applied and apply_change:
+        if self.area_change_applied and apply_area_change:
             raise AssertionError("Area change is already applied to current dataset. Cannot be applied again.")
-        if not self.area_change_applied and not apply_change:
+        if not self.area_change_applied and not apply_area_change:
             raise AssertionError("Area change is not applied to current dataset. Cannot be removed.")
 
         # get area
@@ -510,13 +510,13 @@ class Timeseries():
         for start_date, end_date, change in zip(df["start_dates"], df["end_dates"], df["changes"]):
             t_i = (start_date + end_date) / 2
             adjusted_area = glacier_area + (t_i - area_change_reference_year) * (area_change / 100) * glacier_area
-            if apply_change:
+            if apply_area_change:
                 adjusted_changes.append(glacier_area / adjusted_area * change)
             else:  # remove change
                 adjusted_changes.append(change / (glacier_area / adjusted_area))
             adjusted_areas.append(adjusted_area)
         object_copy.data.changes = np.array(adjusted_changes)
-        object_copy.area_change_applied = apply_change  # store if has been applied or not
+        object_copy.area_change_applied = apply_area_change  # store if has been applied or not
         return object_copy
 
     def reduce_to_date_window(self, start_date: float, end_date: float) -> Timeseries:

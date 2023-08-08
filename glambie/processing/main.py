@@ -85,8 +85,6 @@ def _run_regional_results(glambie_run_config: GlambieRunConfig,
                 output_path_handler=output_path_handler)
             combined_regional_results_gt.append(combined_results_gt)
 
-    # catalogue_data_group_results_per_region = DataCatalogue.from_list(
-    #    data_group_results_per_region)
     catalogue_combined_regional_results_mwe = DataCatalogue.from_list(
         combined_regional_results_mwe)
     catalogue_combined_regional_results_gt = DataCatalogue.from_list(

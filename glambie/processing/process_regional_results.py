@@ -6,7 +6,8 @@ from glambie.data.data_catalogue import DataCatalogue, Timeseries
 from glambie.const.data_groups import GlambieDataGroup, GLAMBIE_DATA_GROUPS
 from glambie.const.regions import REGIONS, RGIRegion
 from glambie.const.constants import YearType
-from glambie.processing.processing_helpers import convert_datasets_to_longterm_trends, convert_datasets_to_monthly_grid
+from glambie.processing.processing_helpers import convert_datasets_to_longterm_trends_in_unit_mwe
+from glambie.processing.processing_helpers import convert_datasets_to_monthly_grid
 from glambie.processing.processing_helpers import recombine_split_timeseries_in_catalogue
 from glambie.processing.processing_helpers import convert_datasets_to_annual_trends, convert_datasets_to_unit_mwe
 from glambie.processing.processing_helpers import convert_datasets_to_unit_gt
@@ -177,14 +178,16 @@ def convert_and_save_one_region_to_gigatonnes(
     return catalogue_data_group_results_gt, combined_region_timeseries_gt
 
 
-def _run_region_timeseries_one_source(data_catalogue_annual: DataCatalogue,
-                                      data_catalogue_trends: DataCatalogue,
-                                      seasonal_calibration_dataset: Timeseries,
-                                      annual_backup_dataset: Timeseries,
-                                      year_type: YearType,
-                                      region: RGIRegion,
-                                      data_group: GlambieDataGroup,
-                                      output_path_handler: OutputPathHandler) -> Timeseries:
+def _run_region_timeseries_one_source(
+        data_catalogue_annual: DataCatalogue,
+        data_catalogue_trends: DataCatalogue,
+        seasonal_calibration_dataset: Timeseries,
+        annual_backup_dataset: Timeseries,
+        year_type: YearType,
+        region: RGIRegion,
+        data_group: GlambieDataGroup,
+        output_path_handler: OutputPathHandler,
+        min_max_time_window_for_longterm_trends: Tuple[float, float] = None) -> Timeseries:
     """
     Runs the glambie algorithm for all datasets for one Glambie Data Group within a region
 
@@ -207,6 +210,8 @@ def _run_region_timeseries_one_source(data_catalogue_annual: DataCatalogue,
         Glambie Data Group which is calculated
     output_path_handler : OutputPathHandler
         object to handle output path. If set to None, no plots / other data will be saved
+    min_max_time_window_for_longterm_trends : Tuple[float, float], optional
+        if specified, longterm trends are not exceeding these dates
 
     Returns
     -------
@@ -256,11 +261,11 @@ def _run_region_timeseries_one_source(data_catalogue_annual: DataCatalogue,
     log.info("Using the following trend datasets for %s, %s : %s",
              data_group.long_name, region.long_name, str([d.user_group for d in data_catalogue_trends.datasets]))
     log.info("Recalibrating with longterm trends within data group and region...")
-    # get catalogue with longerm datasets for altimetry
-    data_catalogue_trends = convert_datasets_to_longterm_trends(data_catalogue_trends, year_type=year_type,
-                                                                season_calibration_dataset=seasonal_calibration_dataset)
-    # convert to mwe
-    data_catalogue_trends = convert_datasets_to_unit_mwe(data_catalogue_trends)
+    # get catalogue with longerm datasets in same unit as calibration dataset (mwe)
+    data_catalogue_trends = convert_datasets_to_longterm_trends_in_unit_mwe(
+        data_catalogue_trends, year_type=year_type,
+        season_calibration_dataset=seasonal_calibration_dataset,
+        min_max_time_window=min_max_time_window_for_longterm_trends)
 
     # now treat case where trends are outside annual combined timeseries
     annual_combined_full_ext = extend_annual_timeseries_if_outside_trends_period(

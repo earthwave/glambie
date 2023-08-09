@@ -592,8 +592,8 @@ class Timeseries():
 
         return object_copy  # return copy of itself
 
-    def convert_timeseries_to_annual_trends(self,
-                                            year_type: constants.YearType = constants.YearType.CALENDAR) -> Timeseries:
+    def convert_timeseries_to_annual_trends(
+            self, year_type: constants.YearType = constants.YearType.CALENDAR) -> Timeseries:
         """
         Converts a timeseries to annual trends. Note that this assumes that the timeseries is already using the annual
         grid for resolutions >= 1 year and the monthly grid for resolutions <= 1 year.

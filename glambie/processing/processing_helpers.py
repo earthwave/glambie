@@ -162,7 +162,7 @@ def convert_datasets_to_longterm_trends_in_unit_mwe(data_catalogue: DataCatalogu
     for idx, ds in enumerate(data_catalogue.datasets):
         # remove any dates outside minimum and maximum
         if min_max_time_window is not None:
-            ds.reduce_to_date_window(start_date=min_max_time_window[0], end_date=min_max_time_window[1])
+            ds = ds.reduce_to_date_window(start_date=min_max_time_window[0], end_date=min_max_time_window[1])
         # seasonal correction if resolution higher than 1 year
         if data_catalogue_original.datasets[idx].data.max_temporal_resolution > 1:
             ds = data_catalogue_original.datasets[idx].convert_timeseries_to_unit_mwe()
@@ -171,10 +171,10 @@ def convert_datasets_to_longterm_trends_in_unit_mwe(data_catalogue: DataCatalogu
         # if resolution 1 year, read longterm trend and then apply seasonal correction after
         elif data_catalogue_original.datasets[idx].data.max_temporal_resolution == 1:
             ds = ds.convert_timeseries_to_longterm_trend()
-            ds = data_catalogue_original.datasets[idx].convert_timeseries_to_unit_mwe()
+            ds = ds.convert_timeseries_to_unit_mwe()
             datasets.append(ds.convert_timeseries_using_seasonal_homogenization(
                 seasonal_calibration_dataset=season_calibration_dataset, year_type=year_type, p_value=0))
-        # Else read from lower resolution timeseries
+        # else read from lower resolution timeseries
         # note that this assumes we now have monthly resolution.
         # The case that we have datasets that are < 1 year but > monthly they will need to be handled here in the future
         else:

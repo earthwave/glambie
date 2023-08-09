@@ -75,14 +75,16 @@ def run_one_region(glambie_run_config: GlambieRunConfig,
             data_catalogue_trends = set_unneeded_columns_to_nan(data_catalogue_trends)
 
             # run annual and trends calibration timeseries for region
-            trend_combined = _run_region_timeseries_one_source(data_catalogue_annual=data_catalogue_annual,
-                                                               data_catalogue_trends=data_catalogue_trends,
-                                                               seasonal_calibration_dataset=season_calibration_dataset,
-                                                               annual_backup_dataset=annual_backup_dataset,
-                                                               year_type=region_config.year_type,
-                                                               region=REGIONS[region_config.region_name],
-                                                               data_group=data_group,
-                                                               output_path_handler=output_path_handler)
+            trend_combined = _run_region_timeseries_one_source(
+                data_catalogue_annual=data_catalogue_annual,
+                data_catalogue_trends=data_catalogue_trends,
+                seasonal_calibration_dataset=season_calibration_dataset,
+                annual_backup_dataset=annual_backup_dataset,
+                year_type=region_config.year_type,
+                region=REGIONS[region_config.region_name],
+                data_group=data_group,
+                output_path_handler=output_path_handler,
+                min_max_time_window_for_longterm_trends=[glambie_run_config.start_year, glambie_run_config.end_year])
             # apply area change
             trend_combined = trend_combined.apply_or_remove_area_change(rgi_area_version=6, apply_area_change=True)
             # save out with area change applied

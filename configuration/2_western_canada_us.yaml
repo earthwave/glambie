@@ -4,10 +4,10 @@ region_name: western_canada_us
 year_type: glaciological # glaciological or calendar
 
 seasonal_correction_dataset:
-  user_group: Huss_monthly
-  data_group: combined
-  # user_group: UZH_GlaciolSineWave
-  # data_group: glaciological
+  # user_group: Huss_monthly
+  # data_group: combined
+  user_group: UZH_GlaciolSineWave
+  data_group: glaciological
 
 region_run_settings:
   altimetry:
@@ -15,7 +15,7 @@ region_run_settings:
     - Menounos_WNA_alt1
     - Menounos_WNA_is2gedi
     exclude_trend_datasets :
-    - Menounos_WNA_is2gedi
+    - 
   gravimetry:
     exclude_annual_datasets :
     - 

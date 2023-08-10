@@ -130,9 +130,10 @@ def convert_datasets_to_annual_trends(data_catalogue: DataCatalogue,
     return catalogue_annual_grid
 
 
-def convert_datasets_to_longterm_trends_in_unit_mwe(data_catalogue: DataCatalogue, year_type: YearType,
-                                                    season_calibration_dataset: Timeseries,
-                                                    min_max_time_window: Tuple[float, float] = None) -> DataCatalogue:
+def convert_datasets_to_longterm_trends_in_unit_mwe(
+        data_catalogue: DataCatalogue, year_type: YearType,
+        season_calibration_dataset: Timeseries,
+        output_trend_date_range: Tuple[float, float] = None) -> DataCatalogue:
     """
     Convert all datasets in data catalogue to longterm trends.
     If dataset in catalogue has a lower resolution than a year, seasonal homogenization is used.
@@ -147,9 +148,10 @@ def convert_datasets_to_longterm_trends_in_unit_mwe(data_catalogue: DataCatalogu
     season_calibration_dataset: Timeseries
         Timeseries dataset for seasonal calibration if trends are at lower resolution than 1 year.
     min_max_time_window : Tuple[float, float], optional
-        Tuple[min_start_date, max_end_date]
-        If specified, the longterm trend will not start earlier than this date min_start_date and
-        end later than max_end_date
+        if specified, the time series are filtered by the time window before the longterm trend is axtracted,
+        meaning that the resulting longterm trends are within the minimum and maximum of the time window.
+        Note that existing longterm trends are removed if the are outside the time window
+        the dates are expected in decimal years format (float), e.g. 2012.75
 
     Returns
     -------
@@ -157,29 +159,32 @@ def convert_datasets_to_longterm_trends_in_unit_mwe(data_catalogue: DataCatalogu
         New data catalogue with converted data
     """
     data_catalogue = convert_datasets_to_monthly_grid(data_catalogue)
-    data_catalogue_original = data_catalogue.copy()
     datasets = []
-    for idx, ds in enumerate(data_catalogue.datasets):
+    for original_dataset in data_catalogue.datasets:
+        temporal_resolution = original_dataset.data.max_temporal_resolution
         # remove any dates outside minimum and maximum
-        if min_max_time_window is not None:
-            ds = ds.reduce_to_date_window(start_date=min_max_time_window[0], end_date=min_max_time_window[1])
+        if output_trend_date_range is not None:
+            ds = original_dataset.reduce_to_date_window(start_date=output_trend_date_range[0],
+                                                        end_date=output_trend_date_range[1])
+        else:
+            ds = original_dataset
+
         # seasonal correction if resolution higher than 1 year
-        if data_catalogue_original.datasets[idx].data.max_temporal_resolution > 1:
-            ds = data_catalogue_original.datasets[idx].convert_timeseries_to_unit_mwe()
-            datasets.append(ds.convert_timeseries_using_seasonal_homogenization(
-                seasonal_calibration_dataset=season_calibration_dataset, year_type=year_type, p_value=0))
+        if temporal_resolution > 1:
+            ds = ds.convert_timeseries_to_unit_mwe().convert_timeseries_using_seasonal_homogenization(
+                seasonal_calibration_dataset=season_calibration_dataset, year_type=year_type, p_value=0)
         # if resolution 1 year, read longterm trend and then apply seasonal correction after
-        elif data_catalogue_original.datasets[idx].data.max_temporal_resolution == 1:
-            ds = ds.convert_timeseries_to_longterm_trend()
-            ds = ds.convert_timeseries_to_unit_mwe()
-            datasets.append(ds.convert_timeseries_using_seasonal_homogenization(
-                seasonal_calibration_dataset=season_calibration_dataset, year_type=year_type, p_value=0))
+        elif temporal_resolution == 1:
+            ds = ds.convert_timeseries_to_longterm_trend().convert_timeseries_to_unit_mwe()
+            ds = ds.convert_timeseries_using_seasonal_homogenization(
+                seasonal_calibration_dataset=season_calibration_dataset, year_type=year_type, p_value=0)
         # else read from lower resolution timeseries
         # note that this assumes we now have monthly resolution.
         # The case that we have datasets that are < 1 year but > monthly they will need to be handled here in the future
         else:
             ds = ds.convert_timeseries_to_annual_trends(year_type=year_type)
-            datasets.append(ds.convert_timeseries_to_longterm_trend().convert_timeseries_to_unit_mwe())
+            ds = ds.convert_timeseries_to_longterm_trend().convert_timeseries_to_unit_mwe()
+        datasets.append(ds)
     catalogue_trends = DataCatalogue.from_list(datasets, base_path=data_catalogue.base_path)
     return catalogue_trends
 

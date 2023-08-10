@@ -40,7 +40,6 @@ def plot_all_plots_for_region_data_group_processing(output_path_handler: OutputP
                                       output_filepath=plot_fp,
                                       plot_errors=False)
     # Convert to same unit as annual datasets now
-    # data_catalogue_annual_raw = convert_datasets_to_monthly_grid(data_catalogue_annual_raw)
     data_catalogue_annual_raw = convert_datasets_to_unit_mwe(data_catalogue_annual_raw)
     plot_fp = output_path_handler.get_plot_output_file_path(region=region, data_group=data_group,
                                                             plot_file_name="2_annual_homogenize_data_2.png")

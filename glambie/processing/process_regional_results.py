@@ -213,7 +213,10 @@ def _run_region_timeseries_one_source(
     output_path_handler : OutputPathHandler
         object to handle output path. If set to None, no plots / other data will be saved
     min_max_time_window_for_longterm_trends : Tuple[float, float], optional
-        if specified, longterm trends are not exceeding these dates
+        if specified, the time series are filtered by the time window before the longterm trend is axtracted,
+        meaning that the resulting longterm trends are within the minimum and maximum of the time window
+        Note that existing longterm trends are removed if the are outside the time window
+        the dates are expected in decimal years format (float), e.g. 2012.75
 
     Returns
     -------
@@ -267,7 +270,7 @@ def _run_region_timeseries_one_source(
     data_catalogue_trends = convert_datasets_to_longterm_trends_in_unit_mwe(
         data_catalogue_trends, year_type=year_type,
         season_calibration_dataset=seasonal_calibration_dataset,
-        min_max_time_window=min_max_time_window_for_longterm_trends)
+        output_trend_date_range=min_max_time_window_for_longterm_trends)
 
     # now treat case where trends are outside annual combined timeseries
     annual_combined_full_ext = extend_annual_timeseries_if_outside_trends_period(

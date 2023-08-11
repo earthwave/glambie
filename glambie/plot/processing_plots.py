@@ -25,6 +25,13 @@ def plot_all_plots_for_region_data_group_processing(output_path_handler: OutputP
                                                     ):
     plot_fp = output_path_handler.get_plot_output_file_path(region=region, data_group=data_group,
                                                             plot_file_name="1_annual_input_data.png")
+    # if not all datasets are the same unit they need to be converted to mwe for plotting
+    # otherwise the plots are very confusing
+    if not data_catalogue_annual_raw.datasets_are_same_unit():  # annual
+        data_catalogue_annual_raw = convert_datasets_to_unit_mwe(data_catalogue_annual_raw)
+    if not data_catalogue_trends_raw.datasets_are_same_unit():  # trends
+        data_catalogue_trends_raw = convert_datasets_to_unit_mwe(data_catalogue_trends_raw)
+
     plot_raw_input_data_of_data_group(catalogue_raw=data_catalogue_annual_raw,
                                       trend_combined=timeseries_trend_combined,
                                       data_group=data_group,
@@ -33,7 +40,6 @@ def plot_all_plots_for_region_data_group_processing(output_path_handler: OutputP
                                       output_filepath=plot_fp,
                                       plot_errors=False)
     # Convert to same unit as annual datasets now
-    data_catalogue_annual_raw = convert_datasets_to_monthly_grid(data_catalogue_annual_raw)
     data_catalogue_annual_raw = convert_datasets_to_unit_mwe(data_catalogue_annual_raw)
     plot_fp = output_path_handler.get_plot_output_file_path(region=region, data_group=data_group,
                                                             plot_file_name="2_annual_homogenize_data_2.png")
@@ -300,7 +306,7 @@ def plot_recalibrated_result_of_data_group(catalogue_trends: DataCatalogue,
 
     plot_non_cumulative_timeseries_on_axis(
         result_dataframe=trend_combined.data.as_dataframe(), ax=axes[0], colour="black", linestyle="--",
-        label="{} - combined solution".format(data_group.long_name), plot_errors=plot_errors)
+        label="Consensus solution", plot_errors=plot_errors)
 
     # plot cumulative
     for count, timeseries in enumerate(catalogue_calibrated_series.datasets):
@@ -312,7 +318,7 @@ def plot_recalibrated_result_of_data_group(catalogue_trends: DataCatalogue,
     plot_cumulative_timeseries_on_axis(
         timeseries=trend_combined, ax=axes[1], colour="black", plot_errors=plot_errors, linestyle="--",
         timeseries_for_vertical_adjustment=None,
-        label="{} - combined solution".format(data_group.long_name))
+        label="Consensus solution")
 
     add_labels_axlines_and_title(axes=axes, unit=catalogue_trends.datasets[0].unit, legend_fontsize=7,
                                  title="{} - {}: combined solution".format(region.long_name, data_group.long_name))
@@ -344,7 +350,7 @@ def plot_combination_of_sources_within_region(catalogue_results: DataCatalogue,
         plot_cumulative_timeseries_on_axis(
             timeseries=timeseries, ax=axes[1], colour=colours[count], plot_errors=plot_errors, linestyle="-",
             timeseries_for_vertical_adjustment=combined_timeseries,
-            label="{} - combined solution".format(timeseries.data_group.long_name))
+            label="{} - solution".format(timeseries.data_group.long_name))
 
     # plot combined solution
     plot_cumulative_timeseries_on_axis(

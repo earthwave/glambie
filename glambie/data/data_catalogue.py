@@ -221,8 +221,11 @@ class DataCatalogue():
         bool
             True if all dataset units are the same, False otherwise
         """
-        unit = self.datasets[0].unit
-        return all(dataset.unit == unit for dataset in self.datasets)
+        if len(self.datasets) > 0:
+            unit = self.datasets[0].unit
+            return all(dataset.unit == unit for dataset in self.datasets)
+        else:
+            return True
 
     def average_timeseries_in_catalogue(self, remove_trend: bool = True, add_trend_after_averaging: bool = False,
                                         out_data_group: GlambieDataGroup = GLAMBIE_DATA_GROUPS["consensus"]) \

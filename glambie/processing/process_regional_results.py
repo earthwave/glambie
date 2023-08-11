@@ -216,7 +216,7 @@ def _run_region_timeseries_one_source(
         if specified, the time series are filtered by the time window before the longterm trend is extracted,
         meaning that the resulting longterm trends are within the minimum and maximum of the time window.
         Note that existing longterm trends are removed if they are outside the time window.
-        the dates are expected in decimal years format (float), e.g. 2012.75
+        The dates are expected in decimal years format (float), e.g. 2012.75.
 
     Returns
     -------

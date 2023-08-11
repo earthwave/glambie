@@ -148,7 +148,7 @@ def convert_datasets_to_longterm_trends_in_unit_mwe(
     season_calibration_dataset: Timeseries
         Timeseries dataset for seasonal calibration if trends are at lower resolution than 1 year.
     min_max_time_window : Tuple[float, float], optional
-        if specified, the time series are filtered by the time window before the longterm trend is axtracted,
+        If specified, the time series are filtered by the time window before the longterm trend is extracted,
         meaning that the resulting longterm trends are within the minimum and maximum of the time window.
         Note that existing longterm trends are removed if the are outside the time window
         the dates are expected in decimal years format (float), e.g. 2012.75

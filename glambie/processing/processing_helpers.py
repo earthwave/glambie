@@ -150,7 +150,7 @@ def convert_datasets_to_longterm_trends_in_unit_mwe(
     min_max_time_window : Tuple[float, float], optional
         If specified, the time series are filtered by the time window before the longterm trend is extracted,
         meaning that the resulting longterm trends are within the minimum and maximum of the time window.
-        Note that existing longterm trends are removed if the are outside the time window
+        Note that existing longterm trends are removed if the are outside the time window.
         The dates are expected in decimal years format (float), e.g. 2012.75.
 
     Returns

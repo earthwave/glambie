@@ -23,5 +23,6 @@ region_run_settings:
   demdiff_and_glaciological :
     exclude_annual_datasets : # glaciological datasets
     - UZH_GlaciolSineWave
+    - WGMS-mean_ba
     exclude_trend_datasets : # demdiff datasets
     - 

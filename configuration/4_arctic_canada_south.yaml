@@ -17,9 +17,13 @@ region_run_settings:
     - 
   gravimetry:
     exclude_annual_datasets :
-    - 
+    - LEGOS-MAGELLIUM_gap
+    - LEGOS-MAG-bis_gap
+    - Sasgen_AWIarc_gap
     exclude_trend_datasets :
-    - 
+    - LEGOS-MAGELLIUM_gap
+    - LEGOS-MAG-bis_gap
+    - Sasgen_AWIarc_gap
   demdiff_and_glaciological :
     exclude_annual_datasets : # glaciological datasets
     - UZH_GlaciolSineWave

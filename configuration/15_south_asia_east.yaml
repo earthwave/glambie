@@ -14,13 +14,14 @@ region_run_settings:
     exclude_annual_datasets :
     - Ke
     - Treichler_ICESat
+    - Treichler_snowfall
     exclude_trend_datasets :
     - 
   gravimetry:
     exclude_annual_datasets :
-    - 
+    - Sasgen_AWIarc_gap
     exclude_trend_datasets :
-    - 
+    - Sasgen_AWIarc_gap
   demdiff_and_glaciological :
     exclude_annual_datasets : # glaciological datasets
     - UZH_GlaciolSineWave

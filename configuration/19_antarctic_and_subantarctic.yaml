@@ -17,7 +17,7 @@ region_run_settings:
     - 
   gravimetry:
     exclude_annual_datasets :
-    - Sasgen_AWIarc_gap
+    - 
     exclude_trend_datasets :
     - 
   demdiff_and_glaciological :

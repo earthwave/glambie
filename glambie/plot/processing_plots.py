@@ -338,7 +338,7 @@ def plot_combination_of_sources_within_region(catalogue_results: DataCatalogue,
     for count, df in enumerate(catalogue_results.datasets):
         plot_non_cumulative_timeseries_on_axis(
             result_dataframe=df.data.as_dataframe(), ax=axes[0], colour=colours[count],
-            label="{}".format(df.data_group.long_name))
+            label="{}".format(df.data_group.long_name), plot_errors=plot_errors)
 
     # plot non-cumulative combined solution
     plot_non_cumulative_timeseries_on_axis(result_dataframe=combined_timeseries.data.as_dataframe(),

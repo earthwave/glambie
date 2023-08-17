@@ -290,7 +290,8 @@ def extend_annual_timeseries_if_outside_trends_period(annual_timeseries: Timeser
     annual_timeseries_copy = annual_timeseries.copy()
     for ds in data_catalogue_trends.datasets:
         if (min(ds.data.start_dates) < min(annual_timeseries_copy.data.start_dates)) \
-                or (max(ds.data.end_dates) > max(annual_timeseries_copy.data.end_dates)):
+                or (max(ds.data.end_dates) > max(annual_timeseries_copy.data.end_dates)) \
+                or not annual_timeseries_copy.data.is_cumulative_valid():  # or the case where the timeseries has a gap
             log.info("Extension of annual is performed, as the trends are longer than the annual timeseries")
 
             # Remove trend of timeseries for extension over the common time period

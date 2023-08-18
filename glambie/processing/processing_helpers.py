@@ -70,7 +70,9 @@ def filter_catalogue_with_config_settings(data_group: GlambieDataGroup,
             catalogue_filtered = data_catalogue_original.get_filtered_catalogue(
                 data_group="combined", region_name=region_config.region_name, user_group=ds)
             if len(catalogue_filtered.datasets) > 0:
-                datasets_annual.append(catalogue_filtered.datasets[0])
+                ds = catalogue_filtered.datasets[0]
+                ds.user_group = ds.user_group + "_*"
+                datasets_annual.append(ds)
             else:
                 log.info("Cannot find and add the following combined dataset to annual datasets: %s", ds)
 
@@ -92,7 +94,9 @@ def filter_catalogue_with_config_settings(data_group: GlambieDataGroup,
             catalogue_filtered = data_catalogue_original.get_filtered_catalogue(
                 data_group="combined", region_name=region_config.region_name, user_group=ds)
             if len(catalogue_filtered.datasets) > 0:
-                datasets_trend.append(catalogue_filtered.datasets[0])
+                ds = catalogue_filtered.datasets[0]
+                ds.user_group = ds.user_group + "_*"
+                datasets_trend.append(ds)
             else:
                 log.info("Cannot find and add the following combined dataset to trend datasets: %s", ds)
 

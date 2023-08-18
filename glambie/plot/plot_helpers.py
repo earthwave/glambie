@@ -100,7 +100,7 @@ def apply_vertical_adjustment_for_cumulative_plot(timeseries_to_adjust: pd.DataF
 
         # read adjustment at specific date
         row = reference_timeseries[reference_timeseries.dates == adjustment_date]
-        if len(row) >= 1:
+        if len(row) == 1:
             adjustment = row.iloc[0].changes
         # else need to upsample reference timeseries to monthly changes
         else:
@@ -109,6 +109,8 @@ def apply_vertical_adjustment_for_cumulative_plot(timeseries_to_adjust: pd.DataF
                                         np.array(reference_timeseries.changes),
                                         monthly_grid)
             ts_new = pd.DataFrame({"dates": monthly_grid, "changes": changes})
+            # handle Nan values, e.g. when there is a gap in the timeseries
+            ts_new = ts_new.fillna(method="bfill")
             adjustment = ts_new[ts_new.dates == adjustment_date].iloc[0].changes
     else:
         # this means we adjust the adjustment series at the first date of the reference series

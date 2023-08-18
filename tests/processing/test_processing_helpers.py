@@ -164,11 +164,11 @@ def test_filter_catalogue_with_config_settings_with_added_combined_dataset_to_an
 
     # length of annual datasets should be 2, with the combined added
     assert len(datasets_annual.datasets) == 2
-    # hello_kitty should have been added to annual datasets
-    assert any(d.user_group == "hello_kitty" for d in datasets_annual.datasets)
+    # hello_kitty should have been added to annual datasets; with an asterix added
+    assert any(d.user_group == "hello_kitty_*" for d in datasets_annual.datasets)
     assert not all(d.data_group == GLAMBIE_DATA_GROUPS["glaciological"] for d in datasets_annual.datasets)
-    # hello_kitty should not have been added to trend datasets
-    assert not any(d.user_group == "hello_kitty" for d in datasets_trend.datasets)
+    # hello_kitty should not have been added to trend datasets; with an asterix added
+    assert not any(d.user_group == "hello_kitty_*" for d in datasets_trend.datasets)
 
 
 def test_filter_catalogue_with_config_settings_with_added_combined_dataset_to_trends(
@@ -182,11 +182,11 @@ def test_filter_catalogue_with_config_settings_with_added_combined_dataset_to_tr
     datasets_annual, datasets_trend = filter_catalogue_with_config_settings(
         data_group=data_group, region_config=region_config, data_catalogue=data_catalogue)
 
-    # hello_kitty should have been added to trend datasets
-    assert any(d.user_group == "hello_kitty" for d in datasets_trend.datasets)
+    # hello_kitty should have been added to trend datasets; with an asterix added
+    assert any(d.user_group == "hello_kitty_*" for d in datasets_trend.datasets)
     assert not all(d.data_group == GLAMBIE_DATA_GROUPS["glaciological"] for d in datasets_trend.datasets)
-    # hello_kitty should not have been added to annual datasets
-    assert not any(d.user_group == "hello_kitty" for d in datasets_annual.datasets)
+    # hello_kitty should not have been added to annual datasets; with an asterix added
+    assert not any(d.user_group == "hello_kitty_*" for d in datasets_annual.datasets)
 
 
 def test_slice_timeseries_at_gaps():

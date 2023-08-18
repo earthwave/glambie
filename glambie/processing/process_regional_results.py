@@ -59,7 +59,6 @@ def run_one_region(glambie_run_config: GlambieRunConfig,
     # TODO: add annual backup dataset to config?
     annual_backup_dataset = season_calibration_dataset.copy()
 
-    # TODO: convert to RGIv6 if not already done
     result_datasets = []
     for data_group in glambie_run_config.datagroups_to_calculate:
         log.info('Starting to process region=%s datagroup=%s', region_config.region_name, data_group.name)

@@ -104,10 +104,14 @@ def filter_catalogue_with_config_settings(data_group: GlambieDataGroup,
     for ds in additional_annual_datasets:
         ds.user_group = ds.user_group + "_*"
     for ds in additional_trend_datasets:
-        ds.user_group = ds.user_group + "_*"
+        if ds not in additional_annual_datasets:
+            ds.user_group = ds.user_group + "_*"
 
     datasets_annual.extend(additional_annual_datasets)
     datasets_trend.extend(additional_trend_datasets)
+    log.info('Including the following combined datasets to ANNUAL calculations: datasets=%s',
+             additional_annual_datasets)
+    log.info('Including the following combined datasets to TREND calculations: datasets=%s', additional_trend_datasets)
 
     data_catalogue_annual = DataCatalogue.from_list(datasets_annual, base_path=data_catalogue.base_path)
     data_catalogue_trend = DataCatalogue.from_list(datasets_trend, base_path=data_catalogue.base_path)

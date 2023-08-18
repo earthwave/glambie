@@ -7,7 +7,6 @@ from glambie.const.data_groups import GlambieDataGroup, GLAMBIE_DATA_GROUPS
 from glambie.const.regions import REGIONS, RGIRegion
 from glambie.const.constants import YearType
 from glambie.processing.processing_helpers import convert_datasets_to_longterm_trends_in_unit_mwe
-from glambie.processing.processing_helpers import get_reduced_catalogue_to_date_window
 from glambie.processing.processing_helpers import convert_datasets_to_monthly_grid
 from glambie.processing.processing_helpers import recombine_split_timeseries_in_catalogue
 from glambie.processing.processing_helpers import convert_datasets_to_annual_trends, convert_datasets_to_unit_mwe
@@ -309,36 +308,31 @@ def _run_region_timeseries_one_source(
                 data_catalogue_trends_raw, split_dataset_names_trends)
 
         # save CSVs
-        save_all_csvs_for_region_data_group_processing(output_path_handler=output_path_handler,
-                                                       region=region,
-                                                       data_group=data_group,
-                                                       data_catalogue_annual_raw=data_catalogue_annual_raw,
-                                                       data_catalogue_trends_raw=data_catalogue_trends_raw,
-                                                       data_catalogue_annual_homogenized=data_catalogue_annual,
-                                                       data_catalogue_annual_anomalies=catalogue_annual_anomalies,
-                                                       timeseries_annual_combined=annual_combined,
-                                                       data_catalogue_trends_homogenized=data_catalogue_trends,
-                                                       data_catalogue_calibrated_series=catalogue_calibrated_series,
-                                                       timeseries_trend_combined=trend_combined)
+        save_all_csvs_for_region_data_group_processing(
+            output_path_handler=output_path_handler,
+            region=region,
+            data_group=data_group,
+            data_catalogue_annual_raw=data_catalogue_annual_raw,
+            data_catalogue_trends_raw=data_catalogue_trends_raw,
+            data_catalogue_annual_homogenized=data_catalogue_annual,
+            data_catalogue_annual_anomalies=catalogue_annual_anomalies,
+            timeseries_annual_combined=annual_combined,
+            data_catalogue_trends_homogenized=data_catalogue_trends,
+            data_catalogue_calibrated_series=catalogue_calibrated_series,
+            timeseries_trend_combined=trend_combined)
         # plot
-        # remove any dates that are far off the config time period, so that the plotting focuses on that period
-        data_catalogue_annual_raw = get_reduced_catalogue_to_date_window(
-            data_catalogue=data_catalogue_annual_raw,
-            start_date=min_max_time_window_for_longterm_trends[0] - 3,
-            end_date=min_max_time_window_for_longterm_trends[1] + 3)
-        data_catalogue_trends_raw = get_reduced_catalogue_to_date_window(
-            data_catalogue=data_catalogue_trends_raw,
-            start_date=min_max_time_window_for_longterm_trends[0] - 3,
-            end_date=min_max_time_window_for_longterm_trends[1] + 3)
-        plot_all_plots_for_region_data_group_processing(output_path_handler=output_path_handler,
-                                                        region=region,
-                                                        data_group=data_group,
-                                                        data_catalogue_annual_raw=data_catalogue_annual_raw,
-                                                        data_catalogue_trends_raw=data_catalogue_trends_raw,
-                                                        data_catalogue_annual_homogenized=data_catalogue_annual,
-                                                        data_catalogue_annual_anomalies=catalogue_annual_anomalies,
-                                                        timeseries_annual_combined=annual_combined,
-                                                        data_catalogue_trends_homogenized=data_catalogue_trends,
-                                                        data_catalogue_calibrated_series=catalogue_calibrated_series,
-                                                        timeseries_trend_combined=trend_combined)
+        plot_all_plots_for_region_data_group_processing(
+            output_path_handler=output_path_handler,
+            region=region,
+            data_group=data_group,
+            data_catalogue_annual_raw=data_catalogue_annual_raw,
+            data_catalogue_trends_raw=data_catalogue_trends_raw,
+            data_catalogue_annual_homogenized=data_catalogue_annual,
+            data_catalogue_annual_anomalies=catalogue_annual_anomalies,
+            timeseries_annual_combined=annual_combined,
+            data_catalogue_trends_homogenized=data_catalogue_trends,
+            data_catalogue_calibrated_series=catalogue_calibrated_series,
+            timeseries_trend_combined=trend_combined,
+            min_date=min_max_time_window_for_longterm_trends[0] - 1,
+            max_date=min_max_time_window_for_longterm_trends[1] + 1)
     return trend_combined

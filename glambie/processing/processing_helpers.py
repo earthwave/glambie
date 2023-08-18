@@ -17,7 +17,10 @@ def filter_catalogue_with_config_settings(data_group: GlambieDataGroup,
                                           region_config: RegionRunConfig,
                                           data_catalogue: DataCatalogue) -> Tuple[DataCatalogue, DataCatalogue]:
     """
-    Filters data catalogue by the "exclude_trend_datasets" and "exclude_annual_datasets" config settings
+    Filters data catalogue by the 'exclude_trend_datasets' and 'exclude_annual_datasets' config settings
+
+    Adds combined datasets to other data groups via the 'include_combined_trend_datasets' and
+    'include_combined_trend_datasets' config settings
 
     Parameters
     ----------

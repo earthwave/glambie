@@ -151,7 +151,8 @@ def test_filter_catalogue_with_config_settings_demdiff_and_glaciological(example
     assert any(d.user_group == "sloths" for d in datasets_trend.datasets)
 
 
-def test_filter_catalogue_with_config_settings_with_added_combined_dataset_to_annual(example_catalogue_2, glambie_config):
+def test_filter_catalogue_with_config_settings_with_added_combined_dataset_to_annual(
+        example_catalogue_2, glambie_config):
     data_group = GLAMBIE_DATA_GROUPS["demdiff_and_glaciological"]
     data_catalogue = example_catalogue_2
     region_config = glambie_config.regions[1]
@@ -170,7 +171,8 @@ def test_filter_catalogue_with_config_settings_with_added_combined_dataset_to_an
     assert not any(d.user_group == "hello_kitty" for d in datasets_trend.datasets)
 
 
-def test_filter_catalogue_with_config_settings_with_added_combined_dataset_to_trends(example_catalogue_2, glambie_config):
+def test_filter_catalogue_with_config_settings_with_added_combined_dataset_to_trends(
+        example_catalogue_2, glambie_config):
     data_group = GLAMBIE_DATA_GROUPS["demdiff_and_glaciological"]
     data_catalogue = example_catalogue_2
     region_config = glambie_config.regions[1]

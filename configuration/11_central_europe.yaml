@@ -26,3 +26,9 @@ region_run_settings:
     - WGMS-mean_ba
     exclude_trend_datasets : # demdiff datasets
     - 
+    include_combined_annual_datasets:
+    - DUS-combined
+    - Huss
+    include_combined_trend_datasets:
+    - DUS-combined
+    - Huss

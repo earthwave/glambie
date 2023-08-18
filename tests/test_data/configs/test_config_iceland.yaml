@@ -9,17 +9,29 @@ seasonal_correction_dataset:
 
 region_run_settings:
   altimetry:
-    exclude_annual_datasets :
-      - xxxxxxxxxxxxxxxxxxxx
-    exclude_trend_datasets :
-      - xxxxxxxxxxxxxxxxxxxx
+    exclude_annual_datasets:
+      - 
+    exclude_trend_datasets:
+      - 
+    include_combined_annual_datasets:
+      -
+    include_combined_trend_datasets:
+      -
   gravimetry:
-    exclude_annual_datasets :
+    exclude_annual_datasets:
     - ciraci
-    exclude_trend_datasets :
+    exclude_trend_datasets:
     - wouters
+    include_combined_annual_datasets:
+      -
+    include_combined_trend_datasets:
+      -
   demdiff_and_glaciological:
-    exclude_annual_datasets : # glaciological datasets
+    exclude_annual_datasets: # glaciological datasets
     - sharks
-    exclude_trend_datasets : # demdiff datasets
+    exclude_trend_datasets: # demdiff datasets
     - hugonnet
+    include_combined_annual_datasets:
+      -
+    include_combined_trend_datasets:
+      -

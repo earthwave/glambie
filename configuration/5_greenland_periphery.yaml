@@ -16,14 +16,24 @@ region_run_settings:
     - Bolch_2013
     exclude_trend_datasets :
     - 
+    include_combined_trend_datasets:
+    - Colgan2015
   gravimetry:
     exclude_annual_datasets :
     - 
     exclude_trend_datasets :
     - 
+    include_combined_trend_datasets:
+    - Colgan2015
   demdiff_and_glaciological :
     exclude_annual_datasets : # glaciological datasets
     - UZH_GlaciolSineWave
     - WGMS-mean_ba
     exclude_trend_datasets : # demdiff datasets
     - 
+    include_combined_annual_datasets:
+    - DUS-combined
+    - Huss
+    include_combined_trend_datasets:
+    - DUS-combined
+    - Huss

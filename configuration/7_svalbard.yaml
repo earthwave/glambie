@@ -4,10 +4,10 @@ region_name: svalbard
 year_type: glaciological # glaciological or calendar
 
 seasonal_correction_dataset:
-  user_group: Huss_monthly
-  data_group: combined
-  # user_group: UZH_GlaciolSineWave
-  # data_group: glaciological
+  # user_group: Huss_monthly
+  # data_group: combined
+  user_group: UZH_GlaciolSineWave
+  data_group: glaciological
 
 region_run_settings:
   altimetry:
@@ -24,9 +24,18 @@ region_run_settings:
     - LEGOS-MAGELLIUM_gap
     - LEGOS-MAG-bis_gap
     - Sasgen_AWIarc_gap
+    include_combined_trend_datasets:
+    - ArcticInSituvGRACE
   demdiff_and_glaciological :
     exclude_annual_datasets : # glaciological datasets
     - UZH_GlaciolSineWave
     - WGMS-mean_ba
     exclude_trend_datasets : # demdiff datasets
     - 
+    include_combined_annual_datasets:
+    - ArcticInSituvGRACE
+    - DUS-combined
+    - Huss
+    include_combined_trend_datasets:
+    - DUS-combined
+    - Huss

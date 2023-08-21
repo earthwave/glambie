@@ -59,7 +59,6 @@ def run_one_region(glambie_run_config: GlambieRunConfig,
     # TODO: add annual backup dataset to config?
     annual_backup_dataset = season_calibration_dataset.copy()
 
-    # TODO: convert to RGIv6 if not already done
     result_datasets = []
     for data_group in glambie_run_config.datagroups_to_calculate:
         log.info('Starting to process region=%s datagroup=%s', region_config.region_name, data_group.name)
@@ -126,10 +125,13 @@ def combine_within_one_region(catalogue_data_group_results: DataCatalogue,
         output_path = output_path_handler.get_plot_output_file_path(region=combined_ts.region,
                                                                     data_group=GLAMBIE_DATA_GROUPS["consensus"],
                                                                     plot_file_name="1_consensus_sources_mwe.png")
-        # plot
-        plot_combination_of_sources_within_region(catalogue_results=catalogue_data_group_results,
-                                                  combined_timeseries=combined_ts, region=combined_ts.region,
-                                                  output_filepath=output_path)
+        output_path_unc = output_path.replace("mwe", "mwe_unc")
+
+        for output_filepath, plot_errors in ((output_path, False), (output_path_unc, True)):
+            plot_combination_of_sources_within_region(
+                catalogue_results=catalogue_data_group_results, combined_timeseries=combined_ts,
+                region=combined_ts.region, output_filepath=output_filepath, plot_errors=plot_errors)
+
         # save csv
         combined_ts.save_data_as_csv(output_path_handler.get_csv_output_file_path(
             region=combined_ts.region, data_group=GLAMBIE_DATA_GROUPS["consensus"],
@@ -164,14 +166,16 @@ def convert_and_save_one_region_to_gigatonnes(
     catalogue_data_group_results_gt = convert_datasets_to_unit_gt(catalogue_data_group_results)
 
     if output_path_handler is not None:
-        output_path = output_path_handler.get_plot_output_file_path(region=combined_region_timeseries_gt.region,
-                                                                    data_group=GLAMBIE_DATA_GROUPS["consensus"],
-                                                                    plot_file_name="2_consensus_sources_gt.png")
-        # plot
-        plot_combination_of_sources_within_region(catalogue_results=catalogue_data_group_results_gt,
-                                                  combined_timeseries=combined_region_timeseries_gt,
-                                                  region=combined_region_timeseries_gt.region,
-                                                  output_filepath=output_path)
+        output_path = output_path_handler.get_plot_output_file_path(
+            region=combined_region_timeseries_gt.region, data_group=GLAMBIE_DATA_GROUPS["consensus"],
+            plot_file_name="2_consensus_sources_gt.png")
+        output_path_unc = output_path.replace("gt", "gt_unc")
+
+        for output_filepath, plot_errors in ((output_path, False), (output_path_unc, True)):
+            plot_combination_of_sources_within_region(
+                catalogue_results=catalogue_data_group_results, combined_timeseries=combined_region_timeseries_gt,
+                region=combined_region_timeseries_gt.region, output_filepath=output_filepath, plot_errors=plot_errors)
+
         # save csv
         combined_region_timeseries_gt.save_data_as_csv(output_path_handler.get_csv_output_file_path(
             region=combined_region_timeseries_gt.region, data_group=GLAMBIE_DATA_GROUPS["consensus"],
@@ -301,27 +305,31 @@ def _run_region_timeseries_one_source(
                 data_catalogue_trends_raw, split_dataset_names_trends)
 
         # save CSVs
-        save_all_csvs_for_region_data_group_processing(output_path_handler=output_path_handler,
-                                                       region=region,
-                                                       data_group=data_group,
-                                                       data_catalogue_annual_raw=data_catalogue_annual_raw,
-                                                       data_catalogue_trends_raw=data_catalogue_trends_raw,
-                                                       data_catalogue_annual_homogenized=data_catalogue_annual,
-                                                       data_catalogue_annual_anomalies=catalogue_annual_anomalies,
-                                                       timeseries_annual_combined=annual_combined,
-                                                       data_catalogue_trends_homogenized=data_catalogue_trends,
-                                                       data_catalogue_calibrated_series=catalogue_calibrated_series,
-                                                       timeseries_trend_combined=trend_combined)
+        save_all_csvs_for_region_data_group_processing(
+            output_path_handler=output_path_handler,
+            region=region,
+            data_group=data_group,
+            data_catalogue_annual_raw=data_catalogue_annual_raw,
+            data_catalogue_trends_raw=data_catalogue_trends_raw,
+            data_catalogue_annual_homogenized=data_catalogue_annual,
+            data_catalogue_annual_anomalies=catalogue_annual_anomalies,
+            timeseries_annual_combined=annual_combined,
+            data_catalogue_trends_homogenized=data_catalogue_trends,
+            data_catalogue_calibrated_series=catalogue_calibrated_series,
+            timeseries_trend_combined=trend_combined)
         # plot
-        plot_all_plots_for_region_data_group_processing(output_path_handler=output_path_handler,
-                                                        region=region,
-                                                        data_group=data_group,
-                                                        data_catalogue_annual_raw=data_catalogue_annual_raw,
-                                                        data_catalogue_trends_raw=data_catalogue_trends_raw,
-                                                        data_catalogue_annual_homogenized=data_catalogue_annual,
-                                                        data_catalogue_annual_anomalies=catalogue_annual_anomalies,
-                                                        timeseries_annual_combined=annual_combined,
-                                                        data_catalogue_trends_homogenized=data_catalogue_trends,
-                                                        data_catalogue_calibrated_series=catalogue_calibrated_series,
-                                                        timeseries_trend_combined=trend_combined)
+        plot_all_plots_for_region_data_group_processing(
+            output_path_handler=output_path_handler,
+            region=region,
+            data_group=data_group,
+            data_catalogue_annual_raw=data_catalogue_annual_raw,
+            data_catalogue_trends_raw=data_catalogue_trends_raw,
+            data_catalogue_annual_homogenized=data_catalogue_annual,
+            data_catalogue_annual_anomalies=catalogue_annual_anomalies,
+            timeseries_annual_combined=annual_combined,
+            data_catalogue_trends_homogenized=data_catalogue_trends,
+            data_catalogue_calibrated_series=catalogue_calibrated_series,
+            timeseries_trend_combined=trend_combined,
+            min_date=min_max_time_window_for_longterm_trends[0] - 1,
+            max_date=min_max_time_window_for_longterm_trends[1] + 1)
     return trend_combined

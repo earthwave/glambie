@@ -5,7 +5,7 @@ from glambie.data.timeseries import Timeseries
 from glambie.const.data_groups import GlambieDataGroup
 from glambie.const.regions import RGIRegion
 from glambie.processing.path_handling import OutputPathHandler
-from glambie.processing.processing_helpers import convert_datasets_to_monthly_grid
+from glambie.processing.processing_helpers import convert_datasets_to_monthly_grid, get_reduced_catalogue_to_date_window
 from glambie.processing.processing_helpers import convert_datasets_to_unit_mwe
 from glambie.plot.plot_helpers import get_colours, add_labels_axlines_and_title, finalise_save_to_file_and_close_plot
 from glambie.plot.plot_helpers import plot_non_cumulative_timeseries_on_axis, plot_cumulative_timeseries_on_axis
@@ -21,8 +21,9 @@ def plot_all_plots_for_region_data_group_processing(output_path_handler: OutputP
                                                     timeseries_annual_combined: Timeseries,
                                                     data_catalogue_trends_homogenized: DataCatalogue,
                                                     data_catalogue_calibrated_series: DataCatalogue,
-                                                    timeseries_trend_combined: Timeseries
-                                                    ):
+                                                    timeseries_trend_combined: Timeseries,
+                                                    min_date: float,
+                                                    max_date: float):
     plot_fp = output_path_handler.get_plot_output_file_path(region=region, data_group=data_group,
                                                             plot_file_name="1_annual_input_data.png")
     # if not all datasets are the same unit they need to be converted to mwe for plotting
@@ -31,6 +32,18 @@ def plot_all_plots_for_region_data_group_processing(output_path_handler: OutputP
         data_catalogue_annual_raw = convert_datasets_to_unit_mwe(data_catalogue_annual_raw)
     if not data_catalogue_trends_raw.datasets_are_same_unit():  # trends
         data_catalogue_trends_raw = convert_datasets_to_unit_mwe(data_catalogue_trends_raw)
+
+    # clip raw datasets to minimum and maximum, so that the plotting focuses on the desired period
+    data_catalogue_annual_raw = get_reduced_catalogue_to_date_window(
+        data_catalogue=data_catalogue_annual_raw, start_date=min_date, end_date=max_date)
+    data_catalogue_trends_raw = get_reduced_catalogue_to_date_window(
+        data_catalogue=data_catalogue_trends_raw, start_date=min_date, end_date=max_date)
+    data_catalogue_annual_homogenized = get_reduced_catalogue_to_date_window(
+        data_catalogue=data_catalogue_annual_homogenized, start_date=min_date, end_date=max_date)
+    data_catalogue_annual_anomalies = get_reduced_catalogue_to_date_window(
+        data_catalogue=data_catalogue_annual_anomalies, start_date=min_date, end_date=max_date)
+    timeseries_annual_combined = timeseries_annual_combined.reduce_to_date_window(
+        start_date=min_date, end_date=max_date)
 
     plot_raw_input_data_of_data_group(catalogue_raw=data_catalogue_annual_raw,
                                       trend_combined=timeseries_trend_combined,
@@ -338,7 +351,7 @@ def plot_combination_of_sources_within_region(catalogue_results: DataCatalogue,
     for count, df in enumerate(catalogue_results.datasets):
         plot_non_cumulative_timeseries_on_axis(
             result_dataframe=df.data.as_dataframe(), ax=axes[0], colour=colours[count],
-            label="{}".format(df.data_group.long_name))
+            label="{}".format(df.data_group.long_name), plot_errors=plot_errors)
 
     # plot non-cumulative combined solution
     plot_non_cumulative_timeseries_on_axis(result_dataframe=combined_timeseries.data.as_dataframe(),

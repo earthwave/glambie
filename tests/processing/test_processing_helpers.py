@@ -64,6 +64,13 @@ def example_catalogue_2():
             "user_group": "dolphins",
             "data_group": "glaciological",
             "unit": "mwe"
+        },
+        {
+            "filename": "xx.csv",
+            "region": "svalbard",
+            "user_group": "hello_kitty",
+            "data_group": "combined",
+            "unit": "mwe"
         }]})
 
 
@@ -142,6 +149,44 @@ def test_filter_catalogue_with_config_settings_demdiff_and_glaciological(example
     assert all(d.user_group != "sharks" for d in datasets_trend.datasets)
     assert all(d.data_group != GLAMBIE_DATA_GROUPS["glaciological"] for d in datasets_trend.datasets)
     assert any(d.user_group == "sloths" for d in datasets_trend.datasets)
+
+
+def test_filter_catalogue_with_config_settings_with_added_combined_dataset_to_annual(
+        example_catalogue_2, glambie_config):
+    data_group = GLAMBIE_DATA_GROUPS["demdiff_and_glaciological"]
+    data_catalogue = example_catalogue_2
+    region_config = glambie_config.regions[1]
+    # include a combined dataset
+    region_config.region_run_settings[data_group.name]["include_combined_annual_datasets"] = ["hello_kitty"]
+
+    datasets_annual, datasets_trend = filter_catalogue_with_config_settings(
+        data_group=data_group, region_config=region_config, data_catalogue=data_catalogue)
+
+    # length of annual datasets should be 2, with the combined added
+    assert len(datasets_annual.datasets) == 2
+    # hello_kitty should have been added to annual datasets; with an asterix added
+    assert any(d.user_group == "hello_kitty_*" for d in datasets_annual.datasets)
+    assert not all(d.data_group == GLAMBIE_DATA_GROUPS["glaciological"] for d in datasets_annual.datasets)
+    # hello_kitty should not have been added to trend datasets; with an asterix added
+    assert not any(d.user_group == "hello_kitty_*" for d in datasets_trend.datasets)
+
+
+def test_filter_catalogue_with_config_settings_with_added_combined_dataset_to_trends(
+        example_catalogue_2, glambie_config):
+    data_group = GLAMBIE_DATA_GROUPS["demdiff_and_glaciological"]
+    data_catalogue = example_catalogue_2
+    region_config = glambie_config.regions[1]
+    # include a combined dataset
+    region_config.region_run_settings[data_group.name]["include_combined_trend_datasets"] = ["hello_kitty"]
+
+    datasets_annual, datasets_trend = filter_catalogue_with_config_settings(
+        data_group=data_group, region_config=region_config, data_catalogue=data_catalogue)
+
+    # hello_kitty should have been added to trend datasets; with an asterix added
+    assert any(d.user_group == "hello_kitty_*" for d in datasets_trend.datasets)
+    assert not all(d.data_group == GLAMBIE_DATA_GROUPS["glaciological"] for d in datasets_trend.datasets)
+    # hello_kitty should not have been added to annual datasets; with an asterix added
+    assert not any(d.user_group == "hello_kitty_*" for d in datasets_annual.datasets)
 
 
 def test_slice_timeseries_at_gaps():

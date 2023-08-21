@@ -22,7 +22,7 @@ def filter_catalogue_with_config_settings(data_group: GlambieDataGroup,
     Adds combined datasets to other data groups via the 'include_combined_trend_datasets' and
     'include_combined_trend_datasets' config settings
     An asterix is added to the user_group name of combined solutions so that they are recognized as combined solutions
-    bu the name
+    by their name
 
     Parameters
     ----------
@@ -63,19 +63,6 @@ def filter_catalogue_with_config_settings(data_group: GlambieDataGroup,
             datasets_annual = [d for d in datasets_annual if d.user_group.lower() != ds.lower()]
     if data_group == GLAMBIE_DATA_GROUPS["demdiff_and_glaciological"]:
         datasets_annual = [d for d in datasets_annual if d.data_group != GLAMBIE_DATA_GROUPS["demdiff"]]
-    # 2.1 add combined datasets
-    additional_annual_datasets = []
-    if "include_combined_annual_datasets" in region_config.region_run_settings[data_group.name]:
-        include_combined_annual_datasets = region_config.region_run_settings[data_group.name].get(
-            "include_combined_annual_datasets", [])
-        include_combined_annual_datasets = [x for x in include_combined_annual_datasets if x is not None]
-        for ds in include_combined_annual_datasets:
-            catalogue_filtered = data_catalogue_original.get_filtered_catalogue(
-                data_group="combined", region_name=region_config.region_name, user_group=ds)
-            if len(catalogue_filtered.datasets) > 0:
-                additional_annual_datasets.append(catalogue_filtered.datasets[0])
-            else:
-                log.info("Cannot find and add the following combined dataset to annual datasets: %s", ds)
 
     # 3 filter out what has been specified in config for longterm trend datasets
     datasets_trend = data_catalogue.datasets.copy()
@@ -86,20 +73,14 @@ def filter_catalogue_with_config_settings(data_group: GlambieDataGroup,
             datasets_trend = [d for d in datasets_trend if d.user_group.lower() != ds.lower()]
     if data_group == GLAMBIE_DATA_GROUPS["demdiff_and_glaciological"]:
         datasets_trend = [d for d in datasets_trend if d.data_group != GLAMBIE_DATA_GROUPS["glaciological"]]
-    # 3.1 add combined trend datasets
-    additional_trend_datasets = []
-    if "include_combined_trend_datasets" in region_config.region_run_settings[data_group.name]:
-        include_combined_trend_datasets = region_config.region_run_settings[data_group.name].get(
-            "include_combined_trend_datasets", [])
-        include_combined_trend_datasets = [x for x in include_combined_trend_datasets if x is not None]
-        for ds in include_combined_trend_datasets:
-            catalogue_filtered = data_catalogue_original.get_filtered_catalogue(
-                data_group="combined", region_name=region_config.region_name, user_group=ds)
-            if len(catalogue_filtered.datasets) > 0:
-                additional_trend_datasets.append(catalogue_filtered.datasets[0])
-            else:
-                log.info("Cannot find and add the following combined dataset to trend datasets: %s", ds)
 
+    # 4 add combined trend datasets
+    additional_annual_datasets = get_additional_combined_datasets(
+        data_catalogue=data_catalogue_original, data_group=data_group,
+        region_config=region_config, type_of_information="annual")
+    additional_trend_datasets = get_additional_combined_datasets(
+        data_catalogue=data_catalogue_original, data_group=data_group,
+        region_config=region_config, type_of_information="trend")
     # combined solution should have an asterix so that they are recognized in the plots
     for ds in additional_annual_datasets:
         ds.user_group = ds.user_group + "_*"
@@ -117,6 +98,43 @@ def filter_catalogue_with_config_settings(data_group: GlambieDataGroup,
     data_catalogue_trend = DataCatalogue.from_list(datasets_trend, base_path=data_catalogue.base_path)
 
     return data_catalogue_annual, data_catalogue_trend
+
+
+def get_additional_combined_datasets(data_catalogue: DataCatalogue, data_group: GlambieDataGroup,
+                                     region_config: RegionRunConfig, type_of_information: str) -> list[Timeseries]:
+    """
+    Returns a list of combined datasets to be added to a data group using the run config
+
+    Parameters
+    ----------
+    data_catalogue : DataCatalogue
+        the catalogue containing the combined datasets
+    data_group : GlambieDataGroup
+        the data group for which we want to add the combined datasets
+    region_config : RegionRunConfig
+        region config which will contain the information on which combined datasets to add
+    type_of_information : str
+        which category of information, i.e. either 'annual' or 'trend'
+
+    Returns
+    -------
+    list[Timeseries]
+        a list of Timeseries of the data source 'combined' which have been identified
+    """
+    additional_datasets = []
+    if "include_combined_{}_datasets".format(type_of_information) in region_config.region_run_settings[data_group.name]:
+        include_combined_datasets = region_config.region_run_settings[data_group.name].get(
+            "include_combined_{}_datasets".format(type_of_information), [])
+        include_combined_datasets = [x for x in include_combined_datasets if x is not None]
+        for ds in include_combined_datasets:
+            catalogue_filtered = data_catalogue.get_filtered_catalogue(
+                data_group="combined", region_name=region_config.region_name, user_group=ds)
+            if len(catalogue_filtered.datasets) > 0:
+                additional_datasets.append(catalogue_filtered.datasets[0])
+            else:
+                log.info("Cannot find and add the following combined dataset to %s datasets: %s",
+                         type_of_information, ds)
+    return additional_datasets
 
 
 def convert_datasets_to_monthly_grid(data_catalogue: DataCatalogue) -> DataCatalogue:

@@ -125,14 +125,13 @@ def combine_within_one_region(catalogue_data_group_results: DataCatalogue,
         output_path = output_path_handler.get_plot_output_file_path(region=combined_ts.region,
                                                                     data_group=GLAMBIE_DATA_GROUPS["consensus"],
                                                                     plot_file_name="1_consensus_sources_mwe.png")
-        # plot without uncertainties
-        plot_combination_of_sources_within_region(
-            catalogue_results=catalogue_data_group_results, combined_timeseries=combined_ts,
-            region=combined_ts.region, output_filepath=output_path, plot_errors=False)
-        # plot with uncertainties
-        plot_combination_of_sources_within_region(
-            catalogue_results=catalogue_data_group_results, combined_timeseries=combined_ts, region=combined_ts.region,
-            output_filepath=output_path.replace("mwe", "mwe_unc"), plot_errors=True)
+        output_path_unc = output_path.replace("mwe", "mwe_unc")
+
+        for output_filepath, plot_errors in ((output_path, False), (output_path_unc, True)):
+            plot_combination_of_sources_within_region(
+                catalogue_results=catalogue_data_group_results, combined_timeseries=combined_ts,
+                region=combined_ts.region, output_filepath=output_filepath, plot_errors=plot_errors)
+
         # save csv
         combined_ts.save_data_as_csv(output_path_handler.get_csv_output_file_path(
             region=combined_ts.region, data_group=GLAMBIE_DATA_GROUPS["consensus"],
@@ -170,15 +169,13 @@ def convert_and_save_one_region_to_gigatonnes(
         output_path = output_path_handler.get_plot_output_file_path(
             region=combined_region_timeseries_gt.region, data_group=GLAMBIE_DATA_GROUPS["consensus"],
             plot_file_name="2_consensus_sources_gt.png")
-        # plot without uncertainties
-        plot_combination_of_sources_within_region(
-            catalogue_results=catalogue_data_group_results_gt, combined_timeseries=combined_region_timeseries_gt,
-            region=combined_region_timeseries_gt.region, output_filepath=output_path, plot_errors=False)
-        # plot with uncertainties
-        plot_combination_of_sources_within_region(
-            catalogue_results=catalogue_data_group_results_gt, combined_timeseries=combined_region_timeseries_gt,
-            region=combined_region_timeseries_gt.region, output_filepath=output_path.replace("gt", "gt_unc"),
-            plot_errors=True)
+        output_path_unc = output_path.replace("gt", "gt_unc")
+
+        for output_filepath, plot_errors in ((output_path, False), (output_path_unc, True)):
+            plot_combination_of_sources_within_region(
+                catalogue_results=catalogue_data_group_results, combined_timeseries=combined_region_timeseries_gt,
+                region=combined_region_timeseries_gt.region, output_filepath=output_filepath, plot_errors=plot_errors)
+
         # save csv
         combined_region_timeseries_gt.save_data_as_csv(output_path_handler.get_csv_output_file_path(
             region=combined_region_timeseries_gt.region, data_group=GLAMBIE_DATA_GROUPS["consensus"],

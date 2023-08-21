@@ -74,7 +74,7 @@ def filter_catalogue_with_config_settings(data_group: GlambieDataGroup,
     if data_group == GLAMBIE_DATA_GROUPS["demdiff_and_glaciological"]:
         datasets_trend = [d for d in datasets_trend if d.data_group != GLAMBIE_DATA_GROUPS["glaciological"]]
 
-    # 4 add combined trend datasets
+    # 4 add additional combined datasets stated in configs to data group
     additional_annual_datasets = get_additional_combined_datasets(
         data_catalogue=data_catalogue_original, data_group=data_group,
         region_config=region_config, type_of_information="annual")

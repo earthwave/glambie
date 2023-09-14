@@ -13,13 +13,13 @@ import os
 import re
 from typing import List, Optional, Union
 
-from google.cloud import storage
+from google.cloud.storage import Client
 import pandas as pd
 
 from glambie.const.data_groups import GlambieDataGroup
 from glambie.const.regions import RGIRegion
 
-_storage_client = storage.Client(project='glambie')
+_storage_client = None
 
 _SUBMISSIONS_BUCKET_URI = 'gs://glambie-submissions'
 
@@ -28,6 +28,18 @@ _SUBMISSIONS_BUCKET_URI = 'gs://glambie-submissions'
 # "fake basepath" to indicate that the data has actually come from the submission system instead,
 # which is not a filesystem location.
 SUBMISSION_SYSTEM_BASEPATH_PLACEHOLDER = 'glambie_submission_system'
+
+
+def _instantiate_storage_client_if_needed() -> Client:
+    """
+    Instantiate the storage client, if needed.
+
+    We do not do this immediately because that makes it impossible to import the module without Google Credentials.
+    We use a module-scoped variable to prevent unecessarily repeatedly instantiating the client as the code runs.
+    """
+    global _storage_client
+    if _storage_client is None:
+        _storage_client = Client(project='glambie')
 
 
 def _download_blob(blob_uri: str) -> Union[pd.DataFrame, dict]:
@@ -70,6 +82,7 @@ def fetch_timeseries_dataframe(user_group: str, region: RGIRegion, data_group: G
     pd.DataFrame
         A dataframe containing the loaded submission data. Will have a different format per data_group.
     """
+    _instantiate_storage_client_if_needed()
     csv_name_in_bucket = "_".join(
         [region.short_name.lower(),
          data_group.name.lower().replace("demdiff", "dem_differencing"),
@@ -91,6 +104,7 @@ def fetch_all_submission_metadata() -> List[dict]:
         A list of dictionaries containing the metadata for each GlaMBIE submission.
         The field values provided for each submission are repeated for each individual Timeseries.
     """
+    _instantiate_storage_client_if_needed()
     # note that here, a "dataset" is a single csv file.
     datasets = _download_blob(_SUBMISSIONS_BUCKET_URI + '/meta.json')['datasets']
 
@@ -132,6 +146,7 @@ def download_dataset_information_file_to_disk(
     target_directory : Optional[str]
         The directory into which to download the file, by default the current working directory.
     """
+    _instantiate_storage_client_if_needed()    
     dataset_information_filename = "_".join(
         [data_group.name.lower().replace("demdiff", "dem_differencing"),
          'dataset_information',

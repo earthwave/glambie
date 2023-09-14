@@ -146,7 +146,7 @@ def download_dataset_information_file_to_disk(
     target_directory : Optional[str]
         The directory into which to download the file, by default the current working directory.
     """
-    _instantiate_storage_client_if_needed()    
+    _instantiate_storage_client_if_needed()
     dataset_information_filename = "_".join(
         [data_group.name.lower().replace("demdiff", "dem_differencing"),
          'dataset_information',

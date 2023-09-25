@@ -1,27 +1,33 @@
 import logging
 from typing import Tuple
 
-from glambie.config.config_classes import GlambieRunConfig, RegionRunConfig
-from glambie.data.data_catalogue import DataCatalogue, Timeseries
-from glambie.const.data_groups import GlambieDataGroup, GLAMBIE_DATA_GROUPS
-from glambie.const.regions import REGIONS, RGIRegion
+from glambie.config.config_classes import GlambieRunConfig
+from glambie.config.config_classes import RegionRunConfig
+from glambie.const.constants import GraceGap
 from glambie.const.constants import YearType
-from glambie.processing.processing_helpers import convert_datasets_to_longterm_trends_in_unit_mwe
-from glambie.processing.processing_helpers import convert_datasets_to_monthly_grid
-from glambie.processing.processing_helpers import recombine_split_timeseries_in_catalogue
-from glambie.processing.processing_helpers import convert_datasets_to_annual_trends, convert_datasets_to_unit_mwe
-from glambie.processing.processing_helpers import convert_datasets_to_unit_gt
-from glambie.processing.processing_helpers import filter_catalogue_with_config_settings
-from glambie.processing.processing_helpers import prepare_seasonal_calibration_dataset
-from glambie.processing.processing_helpers import extend_annual_timeseries_if_outside_trends_period
-from glambie.processing.processing_helpers import check_and_handle_gaps_in_timeseries
-from glambie.processing.processing_helpers import set_unneeded_columns_to_nan
-from glambie.processing.output_helpers import save_all_csvs_for_region_data_group_processing
+from glambie.const.data_groups import GLAMBIE_DATA_GROUPS
+from glambie.const.data_groups import GlambieDataGroup
+from glambie.const.regions import REGIONS
+from glambie.const.regions import RGIRegion
+from glambie.data.data_catalogue import DataCatalogue
+from glambie.data.data_catalogue import Timeseries
 from glambie.data.data_catalogue_helpers import calibrate_timeseries_with_trends_catalogue
 from glambie.plot.processing_plots import plot_all_plots_for_region_data_group_processing
 from glambie.plot.processing_plots import plot_combination_of_sources_within_region
+from glambie.processing.output_helpers import save_all_csvs_for_region_data_group_processing
 from glambie.processing.path_handling import OutputPathHandler
-
+from glambie.processing.processing_helpers import check_and_handle_gaps_in_timeseries
+from glambie.processing.processing_helpers import convert_datasets_to_annual_trends
+from glambie.processing.processing_helpers import convert_datasets_to_longterm_trends_in_unit_mwe
+from glambie.processing.processing_helpers import convert_datasets_to_monthly_grid
+from glambie.processing.processing_helpers import convert_datasets_to_unit_gt
+from glambie.processing.processing_helpers import convert_datasets_to_unit_mwe
+from glambie.processing.processing_helpers import extend_annual_timeseries_if_outside_trends_period
+from glambie.processing.processing_helpers import filter_catalogue_with_config_settings
+from glambie.processing.processing_helpers import get_reduced_catalogue_to_date_window
+from glambie.processing.processing_helpers import prepare_seasonal_calibration_dataset
+from glambie.processing.processing_helpers import recombine_split_timeseries_in_catalogue
+from glambie.processing.processing_helpers import set_unneeded_columns_to_nan
 
 log = logging.getLogger(__name__)
 
@@ -72,6 +78,13 @@ def run_one_region(glambie_run_config: GlambieRunConfig,
             data_catalogue_trends.load_all_data()
             data_catalogue_annual = set_unneeded_columns_to_nan(data_catalogue_annual)
             data_catalogue_trends = set_unneeded_columns_to_nan(data_catalogue_trends)
+
+            # remove GRACE gap from annual catalogue so that the variability isn't impacted by the lower resolution gap
+            if data_group == GLAMBIE_DATA_GROUPS["gravimetry"]:
+                data_catalogue_annual = get_reduced_catalogue_to_date_window(data_catalogue=data_catalogue_annual,
+                                                                             start_date=GraceGap.START_DATE.value,
+                                                                             end_date=GraceGap.END_DATE.value,
+                                                                             date_window_is_gap=True)
 
             # run annual and trends calibration timeseries for region
             trend_combined = _run_region_timeseries_one_source(

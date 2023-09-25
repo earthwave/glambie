@@ -549,7 +549,8 @@ def set_unneeded_columns_to_nan(data_catalogue: DataCatalogue) -> DataCatalogue:
 
 def get_reduced_catalogue_to_date_window(data_catalogue: DataCatalogue,
                                          start_date: float,
-                                         end_date: float) -> DataCatalogue:
+                                         end_date: float,
+                                         date_window_is_gap: bool = False) -> DataCatalogue:
     """
     Reduces all datasets within a data catalogue to desired minimum and maximum dates
 
@@ -561,6 +562,11 @@ def get_reduced_catalogue_to_date_window(data_catalogue: DataCatalogue,
         desired start date of output datasets
     end_date : float
         desired end date of output datasets
+    date_window_is_gap : bool
+        If set to False, all values smaller than start date and larger than end date are removed.
+        If set to True the start and end date are taken as start and end of a gap that is removed from
+        the timeseries. This means that all values between start and end date are removed.
+        by default False
 
     Returns
     -------
@@ -569,5 +575,6 @@ def get_reduced_catalogue_to_date_window(data_catalogue: DataCatalogue,
     """
     reduced_datasets = []
     for dataset in data_catalogue.datasets:
-        reduced_datasets.append(dataset.reduce_to_date_window(start_date=start_date, end_date=end_date))
+        reduced_datasets.append(dataset.reduce_to_date_window(start_date=start_date, end_date=end_date,
+                                                              date_window_is_gap=date_window_is_gap))
     return DataCatalogue.from_list(reduced_datasets, base_path=data_catalogue.base_path)

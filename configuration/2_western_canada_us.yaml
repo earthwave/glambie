@@ -15,16 +15,21 @@ region_run_settings:
     - Menounos_WNA_alt1
     - Menounos_WNA_is2gedi
     exclude_trend_datasets :
-    - 
+    -
   gravimetry:
     exclude_annual_datasets :
-    - Sasgen_AWIarc_gap
+    - Harig_Group
+    - Sasgen_AWIarc_RL01.1
+    - Wouters
     exclude_trend_datasets :
-    - Sasgen_AWIarc_gap
+    - Harig_Group
+    - Sasgen_AWIarc_RL01.1
+    - Wouters
   demdiff_and_glaciological :
     exclude_annual_datasets : # glaciological datasets
     - UZH_GlaciolSineWave
     - WGMS-mean_ba
+    - Menounos_WNA_glac
     exclude_trend_datasets : # demdiff datasets
     - 
     include_combined_annual_datasets:

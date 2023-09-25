@@ -17,9 +17,13 @@ region_run_settings:
     - 
   gravimetry:
     exclude_annual_datasets :
-    - Sasgen_AWIarc_gap
+    - Sasgen_AWIarc_RL01.1
+    - Wouters
+    - Harig_Group
     exclude_trend_datasets :
-    - Sasgen_AWIarc_gap
+    - Sasgen_AWIarc_RL01.1
+    - Wouters
+    - Harig_Group
   demdiff_and_glaciological :
     exclude_annual_datasets : # glaciological datasets
     - UZH_GlaciolSineWave

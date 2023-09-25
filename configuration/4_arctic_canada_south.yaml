@@ -13,19 +13,14 @@ region_run_settings:
   altimetry:
     exclude_annual_datasets :
     - Tepes
+    - Khan
     exclude_trend_datasets :
     - 
-    include_combined_trend_datasets:
-    - Colgan2015
   gravimetry:
     exclude_annual_datasets :
-    - LEGOS-MAGELLIUM_gap
-    - LEGOS-MAG-bis_gap
-    - Sasgen_AWIarc_gap
+    - 
     exclude_trend_datasets :
-    - LEGOS-MAGELLIUM_gap
-    - LEGOS-MAG-bis_gap
-    - Sasgen_AWIarc_gap
+    - 
     include_combined_trend_datasets:
     - ArcticInSituvGRACE
     - Colgan2015

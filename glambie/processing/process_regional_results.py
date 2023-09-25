@@ -186,7 +186,7 @@ def convert_and_save_one_region_to_gigatonnes(
 
         for output_filepath, plot_errors in ((output_path, False), (output_path_unc, True)):
             plot_combination_of_sources_within_region(
-                catalogue_results=catalogue_data_group_results, combined_timeseries=combined_region_timeseries_gt,
+                catalogue_results=catalogue_data_group_results_gt, combined_timeseries=combined_region_timeseries_gt,
                 region=combined_region_timeseries_gt.region, output_filepath=output_filepath, plot_errors=plot_errors)
 
         # save csv

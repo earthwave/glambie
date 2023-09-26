@@ -1,25 +1,18 @@
 import logging
 from typing import Tuple
 
-from glambie.config.config_classes import GlambieRunConfig
-from glambie.config.config_classes import RegionRunConfig
-from glambie.const.constants import GraceGap
-from glambie.const.constants import YearType
-from glambie.const.data_groups import GLAMBIE_DATA_GROUPS
-from glambie.const.data_groups import GlambieDataGroup
-from glambie.const.regions import REGIONS
-from glambie.const.regions import RGIRegion
-from glambie.data.data_catalogue import DataCatalogue
-from glambie.data.data_catalogue import Timeseries
+from glambie.config.config_classes import GlambieRunConfig, RegionRunConfig
+from glambie.const.constants import GraceGap, YearType
+from glambie.const.data_groups import GLAMBIE_DATA_GROUPS, GlambieDataGroup
+from glambie.const.regions import REGIONS, RGIRegion
+from glambie.data.data_catalogue import DataCatalogue, Timeseries
 from glambie.data.data_catalogue_helpers import calibrate_timeseries_with_trends_catalogue
-from glambie.plot.processing_plots import plot_all_plots_for_region_data_group_processing
-from glambie.plot.processing_plots import plot_combination_of_sources_within_region
+from glambie.plot.processing_plots import (
+plot_all_plots_for_region_data_group_processing, plot_combination_of_sources_within_region)
 from glambie.processing.output_helpers import save_all_csvs_for_region_data_group_processing
 from glambie.processing.path_handling import OutputPathHandler
-from glambie.processing.processing_helpers import check_and_handle_gaps_in_timeseries
-from glambie.processing.processing_helpers import convert_datasets_to_annual_trends
-from glambie.processing.processing_helpers import convert_datasets_to_longterm_trends_in_unit_mwe
-from glambie.processing.processing_helpers import convert_datasets_to_monthly_grid
+from glambie.processing.processing_helpers import (
+check_and_handle_gaps_in_timeseries, convert_datasets_to_annual_trends, convert_datasets_to_longterm_trends_in_unit_mwe, convert_datasets_to_monthly_grid)
 from glambie.processing.processing_helpers import convert_datasets_to_unit_gt
 from glambie.processing.processing_helpers import convert_datasets_to_unit_mwe
 from glambie.processing.processing_helpers import extend_annual_timeseries_if_outside_trends_period

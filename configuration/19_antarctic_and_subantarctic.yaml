@@ -12,7 +12,8 @@ seasonal_correction_dataset:
 region_run_settings:
   altimetry:
     exclude_annual_datasets :
-    - 
+    - Khan
+    - Gardner2013_icesat
     exclude_trend_datasets :
     - 
   gravimetry:

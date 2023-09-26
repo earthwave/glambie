@@ -16,15 +16,11 @@ region_run_settings:
       - Tepes
   gravimetry:
     exclude_annual_datasets :
-    - LEGOS-MAGELLIUM_gap
-    - LEGOS-MAG-bis_gap
-    - Sasgen_AWIarc_gap
+    - 
     exclude_trend_datasets :
-    - LEGOS-MAGELLIUM_gap
-    - LEGOS-MAG-bis_gap
-    - Sasgen_AWIarc_gap
+    - 
     include_combined_trend_datasets:
-    - ArcticInSituvGRACE
+    - Box2018
   demdiff_and_glaciological :
     exclude_annual_datasets : # glaciological datasets
     - UZH_GlaciolSineWave
@@ -36,9 +32,7 @@ region_run_settings:
     - DUS-combined
     - Huss
     - Iceland-mb-group_tot
-    - Iceland-mb-group_smb
     include_combined_trend_datasets:
     - DUS-combined
     - Huss
     - Iceland-mb-group_tot
-    - Iceland-mb-group_smb

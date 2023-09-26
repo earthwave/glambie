@@ -469,3 +469,16 @@ def test_reduce_to_date_window(example_timeseries_ingested):
     assert np.array_equal(reduced_timeseries.data.changes, example_timeseries_ingested.data.changes[1:])
     assert np.array_equal(reduced_timeseries.data.errors, example_timeseries_ingested.data.errors[1:])
     assert np.array_equal(reduced_timeseries.data.end_dates, example_timeseries_ingested.data.end_dates[1:])
+
+
+def test_reduce_to_date_window_with_gap(example_timeseries_ingested):
+    reduced_timeseries = example_timeseries_ingested.reduce_to_date_window(start_date=2010.0, end_date=2010.2,
+                                                                           date_window_is_gap=True)
+    assert np.array_equal(reduced_timeseries.data.changes, example_timeseries_ingested.data.changes[1:])
+    assert np.array_equal(reduced_timeseries.data.errors, example_timeseries_ingested.data.errors[1:])
+    assert np.array_equal(reduced_timeseries.data.start_dates, example_timeseries_ingested.data.start_dates[1:])
+    reduced_timeseries = example_timeseries_ingested.reduce_to_date_window(start_date=2010.2, end_date=2010.3,
+                                                                           date_window_is_gap=True)
+    assert np.array_equal(reduced_timeseries.data.changes, example_timeseries_ingested.data.changes[:-1])
+    assert np.array_equal(reduced_timeseries.data.errors, example_timeseries_ingested.data.errors[:-1])
+    assert np.array_equal(reduced_timeseries.data.end_dates, example_timeseries_ingested.data.end_dates[:-1])

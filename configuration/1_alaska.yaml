@@ -17,11 +17,11 @@ region_run_settings:
     - 
   gravimetry:
     exclude_annual_datasets :
-    - Sasgen_AWIarc_gap
+    - 
     exclude_trend_datasets :
-    - Sasgen_AWIarc_gap
+    - 
     include_combined_trend_datasets:
-    - ArcticInSituvGRACE
+    - Box2018
   demdiff_and_glaciological :
     exclude_annual_datasets : # glaciological datasets
     - UZH_GlaciolSineWave

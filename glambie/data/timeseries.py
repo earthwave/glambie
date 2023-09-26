@@ -519,7 +519,7 @@ class Timeseries():
         object_copy.area_change_applied = apply_area_change  # store if has been applied or not
         return object_copy
 
-    def reduce_to_date_window(self, start_date: float, end_date: float) -> Timeseries:
+    def reduce_to_date_window(self, start_date: float, end_date: float, date_window_is_gap: bool = False) -> Timeseries:
         """
         Filter timeseries by start and end date
 
@@ -529,6 +529,11 @@ class Timeseries():
             decimal year of start date
         end_date : float
             decimal year of end date
+        date_window_is_gap : bool
+            If set to False, all values smaller than start date and larger than end date are removed.
+            If set to True the start and end date are taken as start and end of a gap that is removed from
+            the timeseries. This means that all values between start and end date are removed.
+            by default False
 
         Returns
         -------
@@ -537,7 +542,10 @@ class Timeseries():
         """
         object_copy = self.copy()
         df = object_copy.data.as_dataframe()
-        df = df[((df.end_dates <= end_date) & (df.start_dates >= start_date))].reset_index(drop=True)
+        if date_window_is_gap:  # remove values between start and end date
+            df = df[~((df.end_dates <= end_date) & (df.start_dates >= start_date))].reset_index(drop=True)
+        else:  # remove values smaller than start date or larger than end date
+            df = df[((df.end_dates <= end_date) & (df.start_dates >= start_date))].reset_index(drop=True)
         object_copy.data = TimeseriesData(start_dates=np.array(df["start_dates"]),
                                           end_dates=np.array(df["end_dates"]),
                                           changes=np.array(df["changes"]),

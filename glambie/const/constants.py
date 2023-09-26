@@ -11,3 +11,11 @@ OCEAN_AREA_IN_KM2 = 3.625e8  # Cogley et al. (2012)
 class YearType(Enum):
     GLACIOLOGICAL = "glaciological"
     CALENDAR = "calendar"
+
+
+class GraceGap(Enum):
+    """
+    A class describing the time gap between the two gravimetry missions (GRACE and GRACE-FO).
+    """
+    START_DATE = 2017.4
+    END_DATE = 2018.6

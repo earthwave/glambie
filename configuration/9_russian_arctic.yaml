@@ -13,6 +13,7 @@ region_run_settings:
   altimetry:
     exclude_annual_datasets :
     - Tepes
+    - Gardner2013_icesat
     exclude_trend_datasets :
     - 
   gravimetry:
@@ -21,7 +22,7 @@ region_run_settings:
     exclude_trend_datasets :
     - 
     include_combined_trend_datasets:
-    - ArcticInSituvGRACE
+    - Box2018
   demdiff_and_glaciological :
     exclude_annual_datasets : # glaciological datasets
     - UZH_GlaciolSineWave

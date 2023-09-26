@@ -14,7 +14,7 @@ region_run_settings:
     exclude_annual_datasets :
     - Khan
     - Bolch_2013
-    - Nilsson_Gardner
+    - Gardner2013_icesat
     exclude_trend_datasets :
     - Nilsson_Gardner
   gravimetry:

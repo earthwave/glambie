@@ -238,6 +238,19 @@ def test_def_get_total_trend():
     assert df_trend.changes.iloc[0] == np.sum(derivative_changes)
 
 
+def test_def_get_total_trend_with_linear_regression():
+    start_dates = [2010, 2011, 2012]
+    end_dates = [2011, 2012, 2013]
+    derivative_changes = [1., 2., 3.]
+    trend_reg = get_total_trend(start_dates, end_dates, derivative_changes, return_type="value", linear_regression=True)
+    trend_sum = get_total_trend(start_dates, end_dates, derivative_changes, return_type="value")
+    assert trend_reg == trend_sum  # changes are in a linear relationship we expect same results as total trend
+    derivative_changes = [1., 2., 8.]
+    trend_reg = get_total_trend(start_dates, end_dates, derivative_changes, return_type="value", linear_regression=True)
+    trend_sum = get_total_trend(start_dates, end_dates, derivative_changes, return_type="value")
+    assert trend_reg != trend_sum  # changes are not in a linear relationship we expect different results as total trend
+
+
 def test_timeseries_is_monthly_grid():
     assert timeseries_is_monthly_grid([2010, 2011])
     assert timeseries_is_monthly_grid([2010, 2010 + (1 / 12), 2010 + (2 / 12), 2010 + (3 / 12)])

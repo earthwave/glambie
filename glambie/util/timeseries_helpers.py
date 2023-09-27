@@ -537,7 +537,8 @@ def resample_derivative_timeseries_to_monthly_grid(start_dates, end_dates, chang
         return pd.DataFrame({"start_dates": start_dates, "end_dates": end_dates, "changes": changes})
 
 
-def get_total_trend(start_dates, end_dates, changes, calculate_as_errors=False, return_type="dataframe"):
+def get_total_trend(start_dates: Iterable, end_dates: Iterable, changes: Iterable, linear_regression: bool = False,
+                    calculate_as_errors: bool = False, return_type: str = "dataframe"):
     """
     Calculates the full longterm trend of a derivatives timeseries
 
@@ -549,6 +550,10 @@ def get_total_trend(start_dates, end_dates, changes, calculate_as_errors=False, 
         input end dates of each time period
     changes : np.array or list
         input changes between start and end date
+    linear_regression : bool
+        If set to False, trends will be calculated as end_date minus start_date (i.e. mean of non-cumulative changes)
+        If set to True, trends will be calculated using a linear regression
+        By default False
     calculate_as_errors : bool
         if set to True, the error of the trend will be calculaterd instead, assuming 'changes' are uncertainties
         by default False
@@ -566,7 +571,11 @@ def get_total_trend(start_dates, end_dates, changes, calculate_as_errors=False, 
     if calculate_as_errors:
         result = np.sqrt(np.nansum(changes**2)) / len(changes)
     else:
-        result = np.nansum(changes)
+        if linear_regression:
+            dates, changes = derivative_to_cumulative(start_dates, end_dates, changes, add_gaps_for_plotting=False)
+            result, _ = get_slope_of_timeseries_with_linear_regression(dates, changes)
+        else:
+            result = np.nansum(changes)
     if return_type == "value":
         return result
     elif return_type == "dataframe":

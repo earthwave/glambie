@@ -9,6 +9,7 @@ from glambie.util.timeseries_helpers import resample_derivative_timeseries_to_mo
 from glambie.util.timeseries_helpers import get_total_trend
 from glambie.util.timeseries_helpers import timeseries_is_monthly_grid
 from glambie.util.timeseries_helpers import get_average_trends_over_new_time_periods
+from glambie.util.timeseries_helpers import get_slope_of_timeseries_with_linear_regression
 
 
 import numpy as np
@@ -280,3 +281,14 @@ def test_get_average_trends_over_new_time_periods_raises_warning():
         # Verify warning has been triggered
         assert len(w) == 1
         assert "invalid" in str(w[-1].message)
+
+
+def test_get_slope_of_timeseries_with_linear_regression():
+    dates = [2010, 2011, 2012]
+    changes = [1., 2., 3.]
+    slope, _ = get_slope_of_timeseries_with_linear_regression(dates, changes)
+    assert slope == 2.
+    dates = [2010, 2012, 2014]
+    changes = [1., 2.5, 4.]
+    slope, _ = get_slope_of_timeseries_with_linear_regression(dates, changes)
+    assert slope == 3.0

@@ -1,6 +1,6 @@
 import datetime
 import math
-from typing import Tuple
+from typing import Iterable, Tuple
 import warnings
 
 from dateutil.relativedelta import relativedelta
@@ -8,6 +8,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
 from scipy import interpolate
+from scipy.stats import linregress
 
 from glambie.util.date_helpers import datetime_dates_to_fractional_years
 
@@ -624,6 +625,30 @@ def get_average_trends_over_new_time_periods(start_dates, end_dates, changes, ne
     return pd.DataFrame({"start_dates": new_start_dates,
                          "end_dates": new_end_dates,
                          "changes": annual_changes})
+
+
+def get_slope_of_timeseries_with_linear_regression(dates: Iterable, changes: Iterable) -> Tuple[float, float]:
+    """
+    Calculate linear regression over a timeseries and return it's total slope
+
+    Parameters
+    ----------
+    dates : np.array
+        Array with start dates of input timeseries (in fractional years)
+    changes : np.array
+        Array with timeseries changes
+
+    Returns
+    -------
+    Tuple[float, float]
+        - 'slope': total change between dates[0] and dates[-1] calculated using a linear regression
+        - 'slope_err': error on slope
+    """
+    result = linregress(dates, changes)
+    slope = result.slope * (dates[-1] - dates[0])
+    slope_err = result.stderr * (dates[-1] - dates[0])
+
+    return slope, slope_err
 
 
 def interpolate_change_per_day_to_fill_gaps(elevation_time_series: pd.DataFrame) -> pd.DataFrame:

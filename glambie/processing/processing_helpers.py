@@ -2,10 +2,12 @@ import logging
 from typing import Tuple
 
 from glambie.config.config_classes import RegionRunConfig
+from glambie.const import constants
 from glambie.data.data_catalogue import DataCatalogue
 from glambie.const.data_groups import GLAMBIE_DATA_GROUPS, GlambieDataGroup
 from glambie.data.timeseries import Timeseries
 from glambie.const.constants import YearType
+from glambie.util.date_helpers import get_years
 import numpy as np
 import pandas as pd
 import warnings
@@ -211,7 +213,7 @@ def convert_datasets_to_longterm_trends_in_unit_mwe(
         type of annual year when longterm timeseries should start and end, e.g hydrological or calendar
     season_calibration_dataset: Timeseries
         Timeseries dataset for seasonal calibration if trends are at lower resolution than 1 year.
-    min_max_time_window : Tuple[float, float], optional
+    output_trend_date_range : Tuple[float, float], optional
         If specified, the time series are filtered by the time window before the longterm trend is extracted,
         meaning that the resulting longterm trends are within the minimum and maximum of the time window.
         Note that existing longterm trends are removed if the are outside the time window.
@@ -246,8 +248,14 @@ def convert_datasets_to_longterm_trends_in_unit_mwe(
         # note that this assumes we now have monthly resolution.
         # The case that we have datasets that are < 1 year but > monthly they will need to be handled here in the future
         else:
-            ds = ds.convert_timeseries_to_annual_trends(year_type=year_type)
-            ds = ds.convert_timeseries_to_longterm_trend().convert_timeseries_to_unit_mwe()
+            if year_type == constants.YearType.CALENDAR:
+                year_start = 0
+            elif year_type == constants.YearType.GLACIOLOGICAL:
+                year_start = ds.region.glaciological_year_start
+            new_start_dates, new_end_dates = get_years(year_start, min_date=ds.data.min_start_date,
+                                                       max_date=ds.data.max_end_date, return_type="arrays")
+            ds.reduce_to_date_window(new_start_dates[0], new_end_dates[-1])
+            ds = ds.convert_timeseries_to_longterm_trend(linear_regression=True).convert_timeseries_to_unit_mwe()
         datasets.append(ds)
     catalogue_trends = DataCatalogue.from_list(datasets, base_path=data_catalogue.base_path)
     return catalogue_trends

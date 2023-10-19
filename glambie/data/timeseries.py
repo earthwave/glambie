@@ -661,7 +661,7 @@ class Timeseries():
         # 2) Case where resolution is >= a year: we upsample and take the average from the longterm trend
         else:  # make sure that the trends don't start in the middle of the year
             if not self.timeseries_is_annual_grid(year_type=year_type):
-                raise AssertionError("Timeseries needs be at to fit into annual grid before \
+                raise AssertionError("Timeseries needs to fit into annual grid before \
                                      up-sampling to annual changes.")
             new_start_dates, new_end_dates = get_years(year_start, min_date=self.data.start_dates.min(),
                                                        max_date=self.data.end_dates.max(), return_type="arrays")
@@ -684,10 +684,14 @@ class Timeseries():
 
         return object_copy  # return copy of itself
 
-    def convert_timeseries_to_longterm_trend(self) -> Timeseries:
+    def convert_timeseries_to_longterm_trend(self, linear_regression: bool = False) -> Timeseries:
         """
         Converts a timeseries to a longterm trend.
         The calculated longterm trend will be the overall trend from min(start_dates) to max(end_dates)).
+        linear_regression : bool
+            If set to False, trends are calculated as end_date minus start_date (i.e. mean of non-cumulative changes)
+            If set to True, trends are calculated using a linear regression
+            By default False
 
         Returns
         -------
@@ -695,7 +699,8 @@ class Timeseries():
             A copy of the Timeseries object containing the converted timeseries data to a longterm trend.
         """
         object_copy = self.copy()
-        trend = get_total_trend(self.data.start_dates, self.data.end_dates, self.data.changes, return_type="dataframe")
+        trend = get_total_trend(self.data.start_dates, self.data.end_dates, self.data.changes,
+                                linear_regression=linear_regression, return_type="dataframe")
 
         trend_errors = get_total_trend(self.data.start_dates, self.data.end_dates,
                                        self.data.errors, return_type="value", calculate_as_errors=True)

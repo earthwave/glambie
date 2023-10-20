@@ -18,10 +18,10 @@ region_run_settings:
   gravimetry:
     exclude_annual_datasets :
     - Wouters
-    - Sasgen_AWIarc_RL01.1
+    - Jacob_2012_dmdt
     exclude_trend_datasets :
     - Wouters
-    - Sasgen_AWIarc_RL01.1
+    - Jacob_2012_dmdt
   demdiff_and_glaciological :
     exclude_annual_datasets : # glaciological datasets
     - UZH_GlaciolSineWave

@@ -18,6 +18,7 @@ region_run_settings:
   gravimetry:
     exclude_annual_datasets :
     - Harig_Group
+    - Jacob_2012_dmdt
     exclude_trend_datasets :
     - Harig_Group
   demdiff_and_glaciological :

@@ -20,10 +20,12 @@ region_run_settings:
     - Sasgen_AWIarc_RL01.1
     - Wouters
     - Harig_Group
+    - Jacob_2012_dmdt
     exclude_trend_datasets :
     - Sasgen_AWIarc_RL01.1
     - Wouters
     - Harig_Group
+    - Jacob_2012_dmdt
   demdiff_and_glaciological :
     exclude_annual_datasets : # glaciological datasets
     - UZH_GlaciolSineWave

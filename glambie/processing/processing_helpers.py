@@ -254,7 +254,7 @@ def convert_datasets_to_longterm_trends_in_unit_mwe(
                 year_start = ds.region.glaciological_year_start
             new_start_dates, new_end_dates = get_years(year_start, min_date=ds.data.min_start_date,
                                                        max_date=ds.data.max_end_date, return_type="arrays")
-            ds.reduce_to_date_window(new_start_dates[0], new_end_dates[-1])
+            ds = ds.reduce_to_date_window(new_start_dates[0], new_end_dates[-1])
             ds = ds.convert_timeseries_to_longterm_trend(linear_regression=True).convert_timeseries_to_unit_mwe()
         datasets.append(ds)
     catalogue_trends = DataCatalogue.from_list(datasets, base_path=data_catalogue.base_path)

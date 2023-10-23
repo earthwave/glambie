@@ -13,6 +13,11 @@ class YearType(Enum):
     CALENDAR = "calendar"
 
 
+class ExtractTrendsMethod(Enum):
+    REGRESSION = "regression"
+    START_VS_END = "start_vs_end"
+
+
 class GraceGap(Enum):
     """
     A class describing the time gap between the two gravimetry missions (GRACE and GRACE-FO).

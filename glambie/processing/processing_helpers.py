@@ -6,7 +6,7 @@ from glambie.const import constants
 from glambie.data.data_catalogue import DataCatalogue
 from glambie.const.data_groups import GLAMBIE_DATA_GROUPS, GlambieDataGroup
 from glambie.data.timeseries import Timeseries
-from glambie.const.constants import YearType
+from glambie.const.constants import ExtractTrendsMethod, YearType
 from glambie.util.date_helpers import get_years
 import numpy as np
 import pandas as pd
@@ -199,6 +199,7 @@ def convert_datasets_to_annual_trends(data_catalogue: DataCatalogue,
 def convert_datasets_to_longterm_trends_in_unit_mwe(
         data_catalogue: DataCatalogue, year_type: YearType,
         season_calibration_dataset: Timeseries,
+        method_to_extract_trends: ExtractTrendsMethod,
         output_trend_date_range: Tuple[float, float] = None) -> DataCatalogue:
     """
     Convert all datasets in data catalogue to longterm trends.
@@ -213,6 +214,8 @@ def convert_datasets_to_longterm_trends_in_unit_mwe(
         type of annual year when longterm timeseries should start and end, e.g hydrological or calendar
     season_calibration_dataset: Timeseries
         Timeseries dataset for seasonal calibration if trends are at lower resolution than 1 year.
+    method_to_extract_trends: ExtractTrendsMethod:
+        method as to how the long-term trends are extracted from a high resolution (e.g. monthly) timeseries
     output_trend_date_range : Tuple[float, float], optional
         If specified, the time series are filtered by the time window before the longterm trend is extracted,
         meaning that the resulting longterm trends are within the minimum and maximum of the time window.
@@ -241,7 +244,8 @@ def convert_datasets_to_longterm_trends_in_unit_mwe(
                 seasonal_calibration_dataset=season_calibration_dataset, year_type=year_type, p_value=0)
         # if resolution 1 year, read longterm trend and then apply seasonal correction after
         elif temporal_resolution == 1:
-            ds = ds.convert_timeseries_to_longterm_trend().convert_timeseries_to_unit_mwe()
+            ds = ds.convert_timeseries_to_longterm_trend(
+                method_to_extract_trends=ExtractTrendsMethod.START_VS_END).convert_timeseries_to_unit_mwe()
             ds = ds.convert_timeseries_using_seasonal_homogenization(
                 seasonal_calibration_dataset=season_calibration_dataset, year_type=year_type, p_value=0)
         # else read from lower resolution timeseries
@@ -255,7 +259,8 @@ def convert_datasets_to_longterm_trends_in_unit_mwe(
             new_start_dates, new_end_dates = get_years(year_start, min_date=ds.data.min_start_date,
                                                        max_date=ds.data.max_end_date, return_type="arrays")
             ds = ds.reduce_to_date_window(new_start_dates[0], new_end_dates[-1])
-            ds = ds.convert_timeseries_to_longterm_trend(linear_regression=True).convert_timeseries_to_unit_mwe()
+            ds = ds.convert_timeseries_to_longterm_trend(
+                method_to_extract_trends=method_to_extract_trends).convert_timeseries_to_unit_mwe()
         datasets.append(ds)
     catalogue_trends = DataCatalogue.from_list(datasets, base_path=data_catalogue.base_path)
     return catalogue_trends

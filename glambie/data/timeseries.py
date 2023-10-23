@@ -24,6 +24,7 @@ from glambie.util.timeseries_combination_helpers import calibrate_timeseries_wit
 from glambie.util.timeseries_combination_helpers import combine_calibrated_timeseries
 from glambie.const import constants
 from glambie.const.density_uncertainty import get_density_uncertainty_over_survey_period
+from glambie.const.constants import ExtractTrendsMethod
 
 
 import numpy as np
@@ -684,14 +685,16 @@ class Timeseries():
 
         return object_copy  # return copy of itself
 
-    def convert_timeseries_to_longterm_trend(self, linear_regression: bool = False) -> Timeseries:
+    def convert_timeseries_to_longterm_trend(self, method_to_extract_trends:
+                                             ExtractTrendsMethod = ExtractTrendsMethod.START_VS_END) -> Timeseries:
         """
         Converts a timeseries to a longterm trend.
         The calculated longterm trend will be the overall trend from min(start_dates) to max(end_dates)).
-        linear_regression : bool
-            If set to False, trends are calculated as end_date minus start_date (i.e. mean of non-cumulative changes)
-            If set to True, trends are calculated using a linear regression
-            By default False
+        method_to_extract_trends: ExtractTrendsMethod:
+            method as to how the long-term trends are extracted from a high resolution (e.g. monthly) timeseries
+            trends can be calculated as end_date minus start_date (i.e. mean of non-cumulative changes)
+            or calculated using a linear regression
+            By default start versus end date is used
 
         Returns
         -------
@@ -699,6 +702,10 @@ class Timeseries():
             A copy of the Timeseries object containing the converted timeseries data to a longterm trend.
         """
         object_copy = self.copy()
+        if method_to_extract_trends == ExtractTrendsMethod.REGRESSION:
+            linear_regression = True
+        else:
+            linear_regression = False
         trend = get_total_trend(self.data.start_dates, self.data.end_dates, self.data.changes,
                                 linear_regression=linear_regression, return_type="dataframe")
 

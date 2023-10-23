@@ -2,7 +2,7 @@ import logging
 from typing import Tuple
 
 from glambie.config.config_classes import GlambieRunConfig, RegionRunConfig
-from glambie.const.constants import ExtractTrendsMethod, GraceGap, YearType
+from glambie.const.constants import ExtractTrendsMethod, GraceGap, YearType, SeasonalCorrectionMethod
 from glambie.const.data_groups import GLAMBIE_DATA_GROUPS, GlambieDataGroup
 from glambie.const.regions import REGIONS, RGIRegion
 from glambie.data.data_catalogue import DataCatalogue, Timeseries
@@ -88,6 +88,7 @@ def run_one_region(glambie_run_config: GlambieRunConfig,
                 annual_backup_dataset=annual_backup_dataset,
                 year_type=region_config.year_type,
                 method_to_extract_trends=glambie_run_config.method_to_extract_trends,
+                seasonal_correction_method=glambie_run_config.seasonal_correction_method,
                 region=REGIONS[region_config.region_name],
                 data_group=data_group,
                 output_path_handler=output_path_handler,
@@ -199,6 +200,7 @@ def _run_region_timeseries_one_source(
         annual_backup_dataset: Timeseries,
         year_type: YearType,
         method_to_extract_trends: ExtractTrendsMethod,
+        method_to_correct_seasonally: SeasonalCorrectionMethod,
         region: RGIRegion,
         data_group: GlambieDataGroup,
         output_path_handler: OutputPathHandler,
@@ -221,6 +223,9 @@ def _run_region_timeseries_one_source(
         type of year to be used, e.g calendar or glaciological
     method_to_extract_trends: ExtractTrendsMethod:
         method as to how the long-term trends are extracted from a high resolution (e.g. monthly) timeseries
+    method_to_correct_seasonally: SeasonalCorrectionMethod
+        method as to how long-term trends are correct when they don't start in the desired season, i.e. don't follow
+        the desired annual grid defined with 'year_type'
     region : RGIRegion
         RGI region
     data_group : GlambieDataGroup
@@ -263,6 +268,7 @@ def _run_region_timeseries_one_source(
 
     # convert to annual trends
     data_catalogue_annual = convert_datasets_to_annual_trends(data_catalogue_annual, year_type=year_type,
+                                                              method_to_correct_seasonally=method_to_correct_seasonally,
                                                               season_calibration_dataset=seasonal_calibration_dataset)
     # convert to mwe
     data_catalogue_annual = convert_datasets_to_unit_mwe(data_catalogue_annual)
@@ -286,6 +292,7 @@ def _run_region_timeseries_one_source(
         data_catalogue_trends, year_type=year_type,
         season_calibration_dataset=seasonal_calibration_dataset,
         method_to_extract_trends=method_to_extract_trends,
+        method_to_correct_seasonally=method_to_correct_seasonally,
         output_trend_date_range=min_max_time_window_for_longterm_trends)
 
     # now treat case where trends are outside annual combined timeseries

@@ -6,7 +6,7 @@ from glambie.const import constants
 from glambie.data.data_catalogue import DataCatalogue
 from glambie.const.data_groups import GLAMBIE_DATA_GROUPS, GlambieDataGroup
 from glambie.data.timeseries import Timeseries
-from glambie.const.constants import ExtractTrendsMethod, YearType
+from glambie.const.constants import ExtractTrendsMethod, YearType, SeasonalCorrectionMethod
 from glambie.util.date_helpers import get_years
 import numpy as np
 import pandas as pd
@@ -162,7 +162,8 @@ def convert_datasets_to_monthly_grid(data_catalogue: DataCatalogue) -> DataCatal
 
 def convert_datasets_to_annual_trends(data_catalogue: DataCatalogue,
                                       year_type: YearType,
-                                      season_calibration_dataset: Timeseries) -> DataCatalogue:
+                                      method_to_correct_seasonally: SeasonalCorrectionMethod,
+                                      season_calibration_dataset: Timeseries = None) -> DataCatalogue:
     """
     Convert all datasets in data catalogue to annual trends.
     If an input dataset within the catalogue is at annual resolution, seasonal homogenization is performed.
@@ -174,8 +175,12 @@ def convert_datasets_to_annual_trends(data_catalogue: DataCatalogue,
         data catalogue to be converted
     year_type : YearType
         type of annual year, e.g hydrological or calendar
-    season_calibration_dataset: Timeseries
-        Timeseries dataset for seasonal calibration if trends are at annual resolution.
+    method_to_correct_seasonally: SeasonalCorrectionMethod
+        method as to how long-term trends are correct when they don't start in the desired season, i.e. don't follow
+        the desired annual grid defined with 'year_type'
+    season_calibration_dataset: Timeseries, by default None
+        Timeseries dataset for seasonal calibration if trends are at annual resolution. Will be ignore if seasonal
+        correction method is not set to SeasonalCorrectionMethod.SEASONAL_HOMOGENIZATION
 
     Returns
     -------
@@ -187,7 +192,20 @@ def convert_datasets_to_annual_trends(data_catalogue: DataCatalogue,
     for ds in data_catalogue.datasets:
         if ds.data.max_temporal_resolution == ds.data.min_temporal_resolution == 1:
             ds = ds.convert_timeseries_to_unit_mwe()
-            datasets.append(ds.convert_timeseries_using_seasonal_homogenization(
+
+            # apply seasonal correction depending on settings given
+            if method_to_correct_seasonally == SeasonalCorrectionMethod.SEASONAL_HOMOGENIZATION:
+                if season_calibration_dataset is None:
+                    raise AssertionError("Seasonal calibration dataset is None, cannot perform operation.")
+                datasets.append(ds.shift_timeseries_to_annual_grid_with_seasonal_homogenization(
+                    seasonal_calibration_dataset=season_calibration_dataset, year_type=year_type, p_value=0))
+            elif method_to_correct_seasonally == SeasonalCorrectionMethod.PROPORTIONAL:
+                datasets.append(ds.shift_timeseries_to_annual_grid_proportionally(year_type=year_type))
+            else:
+                raise NotImplementedError("Seasonal correction method '{}' is not implemented yet."
+                                          .format(method_to_correct_seasonally))
+
+            datasets.append(ds.shift_timeseries_to_annual_grid_with_seasonal_homogenization(
                 seasonal_calibration_dataset=season_calibration_dataset, year_type=year_type, p_value=0))
         else:
             datasets.append(ds.convert_timeseries_to_annual_trends(year_type=year_type))
@@ -198,8 +216,9 @@ def convert_datasets_to_annual_trends(data_catalogue: DataCatalogue,
 
 def convert_datasets_to_longterm_trends_in_unit_mwe(
         data_catalogue: DataCatalogue, year_type: YearType,
-        season_calibration_dataset: Timeseries,
         method_to_extract_trends: ExtractTrendsMethod,
+        method_to_correct_seasonally: SeasonalCorrectionMethod,
+        season_calibration_dataset: Timeseries = None,
         output_trend_date_range: Tuple[float, float] = None) -> DataCatalogue:
     """
     Convert all datasets in data catalogue to longterm trends.
@@ -212,10 +231,14 @@ def convert_datasets_to_longterm_trends_in_unit_mwe(
         data catalogue to be converted
     year_type : YearType
         type of annual year when longterm timeseries should start and end, e.g hydrological or calendar
-    season_calibration_dataset: Timeseries
-        Timeseries dataset for seasonal calibration if trends are at lower resolution than 1 year.
     method_to_extract_trends: ExtractTrendsMethod:
         method as to how the long-term trends are extracted from a high resolution (e.g. monthly) timeseries
+    method_to_correct_seasonally: SeasonalCorrectionMethod
+        method as to how long-term trends are correct when they don't start in the desired season, i.e. don't follow
+        the desired annual grid defined with 'year_type'
+    season_calibration_dataset: Timeseries, by default None
+        Timeseries dataset for seasonal calibration if trends are at lower resolution than 1 year.
+        Will be ignore if seasonal correction method is not set to SeasonalCorrectionMethod.SEASONAL_HOMOGENIZATION
     output_trend_date_range : Tuple[float, float], optional
         If specified, the time series are filtered by the time window before the longterm trend is extracted,
         meaning that the resulting longterm trends are within the minimum and maximum of the time window.
@@ -238,20 +261,10 @@ def convert_datasets_to_longterm_trends_in_unit_mwe(
         else:
             ds = original_dataset
 
-        # seasonal correction if resolution higher than 1 year
-        if temporal_resolution > 1:
-            ds = ds.convert_timeseries_to_unit_mwe().convert_timeseries_using_seasonal_homogenization(
-                seasonal_calibration_dataset=season_calibration_dataset, year_type=year_type, p_value=0)
-        # if resolution 1 year, read longterm trend and then apply seasonal correction after
-        elif temporal_resolution == 1:
-            ds = ds.convert_timeseries_to_longterm_trend(
-                method_to_extract_trends=ExtractTrendsMethod.START_VS_END).convert_timeseries_to_unit_mwe()
-            ds = ds.convert_timeseries_using_seasonal_homogenization(
-                seasonal_calibration_dataset=season_calibration_dataset, year_type=year_type, p_value=0)
-        # else read from lower resolution timeseries
+        # if temporal resolution lower than a year read from higher resolution timeseries
         # note that this assumes we now have monthly resolution.
         # The case that we have datasets that are < 1 year but > monthly they will need to be handled here in the future
-        else:
+        if temporal_resolution < 1:
             if year_type == constants.YearType.CALENDAR:
                 year_start = 0
             elif year_type == constants.YearType.GLACIOLOGICAL:
@@ -261,6 +274,30 @@ def convert_datasets_to_longterm_trends_in_unit_mwe(
             ds = ds.reduce_to_date_window(new_start_dates[0], new_end_dates[-1])
             ds = ds.convert_timeseries_to_longterm_trend(
                 method_to_extract_trends=method_to_extract_trends).convert_timeseries_to_unit_mwe()
+
+        # if temporal resolution is a year or higher, seaonal correction should be applied
+        else:
+            # if resolution 1 year, read longterm trend and then apply seasonal correction after
+            if temporal_resolution == 1:
+                ds = ds.convert_timeseries_to_longterm_trend(
+                    method_to_extract_trends=ExtractTrendsMethod.START_VS_END)
+
+            # now convert to mwe unit. This needs to be done here and not earlier due to the density uncertainties
+            # for different time periods
+            ds = ds.convert_timeseries_to_unit_mwe()
+
+            # apply seasonal correction depending on settings given
+            if method_to_correct_seasonally == SeasonalCorrectionMethod.SEASONAL_HOMOGENIZATION:
+                if season_calibration_dataset is None:
+                    raise AssertionError("Seasonal calibration dataset is None, cannot perform operation.")
+                ds = ds.shift_timeseries_to_annual_grid_with_seasonal_homogenization(
+                    seasonal_calibration_dataset=season_calibration_dataset, year_type=year_type, p_value=0)
+            elif method_to_correct_seasonally == SeasonalCorrectionMethod.PROPORTIONAL:
+                ds = ds.shift_timeseries_to_annual_grid_proportionally(year_type=year_type)
+            else:
+                raise NotImplementedError("Seasonal correction method '{}' is not implemented yet."
+                                          .format(method_to_correct_seasonally))
+
         datasets.append(ds)
     catalogue_trends = DataCatalogue.from_list(datasets, base_path=data_catalogue.base_path)
     return catalogue_trends

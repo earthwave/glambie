@@ -2,7 +2,7 @@ import os
 
 from glambie.config.config_classes import GlambieRunConfig
 from glambie.config.config_classes import RegionRunConfig
-from glambie.const.constants import ExtractTrendsMethod, YearType
+from glambie.const.constants import ExtractTrendsMethod, YearType, SeasonalCorrectionMethod
 from glambie.const.data_groups import GlambieDataGroup
 import pytest
 import yaml
@@ -18,12 +18,14 @@ def test_glambie_run_config_from_file():
     yaml_abspath = os.path.join('tests', 'test_data', 'configs', 'test_config.yaml')
     config = GlambieRunConfig.from_yaml(yaml_abspath)
     assert isinstance(config.method_to_extract_trends, ExtractTrendsMethod)
+    assert isinstance(config.seasonal_correction_method, SeasonalCorrectionMethod)
     with open(yaml_abspath, 'r') as fh:
         config_dict = yaml.safe_load(fh)
         assert config_dict["catalogue_path"] == config.catalogue_path
         assert all(isinstance(g, GlambieDataGroup) for g in config.datagroups_to_calculate)
         assert config_dict["datagroups_to_calculate"][0] == config.datagroups_to_calculate[0].name
         assert config.method_to_extract_trends == ExtractTrendsMethod(config_dict["method_to_extract_trends"])
+        assert config.seasonal_correction_method == SeasonalCorrectionMethod(config_dict["seasonal_correction_method"])
 
 
 def test_glambie_run_config_regions_from_file():

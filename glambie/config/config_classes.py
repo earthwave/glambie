@@ -5,7 +5,7 @@ from dataclasses import dataclass
 import yaml
 import logging
 from abc import ABC, abstractclassmethod
-from glambie.const.constants import ExtractTrendsMethod, YearType
+from glambie.const.constants import ExtractTrendsMethod, YearType, SeasonalCorrectionMethod
 from glambie.config.yaml_helpers import region_run_config_class_representer, year_type_class_representer
 from glambie.const.data_groups import GLAMBIE_DATA_GROUPS, GlambieDataGroup
 import os
@@ -82,6 +82,7 @@ class GlambieRunConfig(Config):
     start_year: float
     end_year: float
     method_to_extract_trends: str
+    seasonal_correction_method: str
 
     @classmethod
     def from_params(cls: type[Config], **config_obj):
@@ -90,6 +91,7 @@ class GlambieRunConfig(Config):
         config_obj = cls(**config_obj)
         config_obj._init_datagroups()
         config_obj._init_method_to_extract_trends()
+        config_obj._init_seasonal_correction_method()
         config_obj._init_glambie_region_run_settings()
         return config_obj
 
@@ -105,6 +107,10 @@ class GlambieRunConfig(Config):
     def _init_method_to_extract_trends(self):
         if not isinstance(self.method_to_extract_trends, ExtractTrendsMethod):
             self.method_to_extract_trends = ExtractTrendsMethod(self.method_to_extract_trends)
+
+    def _init_seasonal_correction_method(self):
+        if not isinstance(self.seasonal_correction_method, SeasonalCorrectionMethod):
+            self.seasonal_correction_method = SeasonalCorrectionMethod(self.seasonal_correction_method)
 
     def _init_glambie_region_run_settings(self):
         new_regions = []

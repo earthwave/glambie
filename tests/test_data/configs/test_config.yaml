@@ -13,6 +13,7 @@ datagroups_to_calculate:
   - gravimetry
 
 method_to_extract_trends: regression
+seasonal_correction_method: proportional
 
 regions: 
   - region_name: iceland

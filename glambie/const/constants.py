@@ -14,8 +14,25 @@ class YearType(Enum):
 
 
 class ExtractTrendsMethod(Enum):
+    """
+    Describing methods used to extract trends from a higher reolution timeseries
+    """
+    # fitting a linear regression when extracting a trend from a higher resolution timeseries
     REGRESSION = "regression"
+    # calculating end_date minus start_date value when extracting a trend from a higher resolution timeseries
     START_VS_END = "start_vs_end"
+
+
+class SeasonalCorrectionMethod(Enum):
+    """
+    Describing methods used to correct long-term trends or annual trends when they are not starting or ending in
+    the desired season, i.e. do not follow the desired annual grid
+    """
+    # using proportional scaling when converting a low resolution (annual or longer) timeseries to the annual grid
+    PROPORTIONAL = "proportional"
+    # using a high resolution seasonal correction dataset when converting a low resolution (annual or longer)
+    # timeseries to the annual grid
+    SEASONAL_HOMOGENIZATION = "seasonal_homogenization"
 
 
 class GraceGap(Enum):

@@ -269,7 +269,7 @@ def _run_region_timeseries_one_source(
     # convert to annual trends
     data_catalogue_annual = convert_datasets_to_annual_trends(data_catalogue_annual, year_type=year_type,
                                                               method_to_correct_seasonally=method_to_correct_seasonally,
-                                                              season_calibration_dataset=seasonal_calibration_dataset)
+                                                              seasonal_calibration_dataset=seasonal_calibration_dataset)
     # convert to mwe
     data_catalogue_annual = convert_datasets_to_unit_mwe(data_catalogue_annual)
 
@@ -290,7 +290,7 @@ def _run_region_timeseries_one_source(
     # get catalogue with longerm datasets in same unit as calibration dataset (mwe)
     data_catalogue_trends = convert_datasets_to_longterm_trends_in_unit_mwe(
         data_catalogue_trends, year_type=year_type,
-        season_calibration_dataset=seasonal_calibration_dataset,
+        seasonal_calibration_dataset=seasonal_calibration_dataset,
         method_to_extract_trends=method_to_extract_trends,
         method_to_correct_seasonally=method_to_correct_seasonally,
         output_trend_date_range=min_max_time_window_for_longterm_trends)

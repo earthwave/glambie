@@ -15,7 +15,7 @@ class YearType(Enum):
 
 class ExtractTrendsMethod(Enum):
     """
-    Describing methods used to extract trends from a higher reolution timeseries
+    Describing methods used to extract trends from a higher resolution timeseries
     """
     # fitting a linear regression when extracting a trend from a higher resolution timeseries
     REGRESSION = "regression"

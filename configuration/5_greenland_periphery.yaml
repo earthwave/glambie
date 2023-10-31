@@ -16,7 +16,7 @@ region_run_settings:
     - Bolch_2013
     - Gardner2013_icesat
     exclude_trend_datasets :
-    - Nilsson_Gardner
+    - 
   gravimetry:
     exclude_annual_datasets :
     - 

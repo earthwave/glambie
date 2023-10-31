@@ -702,12 +702,9 @@ class Timeseries():
             A copy of the Timeseries object containing the converted timeseries data to a longterm trend.
         """
         object_copy = self.copy()
-        if method_to_extract_trends == ExtractTrendsMethod.REGRESSION:
-            linear_regression = True
-        else:
-            linear_regression = False
+
         trend = get_total_trend(self.data.start_dates, self.data.end_dates, self.data.changes,
-                                linear_regression=linear_regression, return_type="dataframe")
+                                method_to_extract_trends=method_to_extract_trends, return_type="dataframe")
 
         trend_errors = get_total_trend(self.data.start_dates, self.data.end_dates,
                                        self.data.errors, return_type="value", calculate_as_errors=True)

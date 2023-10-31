@@ -10,6 +10,7 @@ from glambie.util.timeseries_helpers import get_total_trend
 from glambie.util.timeseries_helpers import timeseries_is_monthly_grid
 from glambie.util.timeseries_helpers import get_average_trends_over_new_time_periods
 from glambie.util.timeseries_helpers import get_slope_of_timeseries_with_linear_regression
+from glambie.const.constants import ExtractTrendsMethod
 
 
 import numpy as np
@@ -242,12 +243,16 @@ def test_def_get_total_trend_with_linear_regression():
     start_dates = [2010, 2011, 2012]
     end_dates = [2011, 2012, 2013]
     derivative_changes = [1., 2., 3.]
-    trend_reg = get_total_trend(start_dates, end_dates, derivative_changes, return_type="value", linear_regression=True)
-    trend_sum = get_total_trend(start_dates, end_dates, derivative_changes, return_type="value")
+    trend_reg = get_total_trend(start_dates, end_dates, derivative_changes, return_type="value",
+                                method_to_extract_trends=ExtractTrendsMethod.REGRESSION)
+    trend_sum = get_total_trend(start_dates, end_dates, derivative_changes, return_type="value",
+                                method_to_extract_trends=ExtractTrendsMethod.START_VS_END)
     assert trend_reg == trend_sum  # changes are in a linear relationship we expect same results as total trend
     derivative_changes = [1., 2., 8.]
-    trend_reg = get_total_trend(start_dates, end_dates, derivative_changes, return_type="value", linear_regression=True)
-    trend_sum = get_total_trend(start_dates, end_dates, derivative_changes, return_type="value")
+    trend_reg = get_total_trend(start_dates, end_dates, derivative_changes, return_type="value",
+                                method_to_extract_trends=ExtractTrendsMethod.REGRESSION)
+    trend_sum = get_total_trend(start_dates, end_dates, derivative_changes, return_type="value",
+                                method_to_extract_trends=ExtractTrendsMethod.START_VS_END)
     assert trend_reg != trend_sum  # changes are not in a linear relationship we expect different results as total trend
 
 

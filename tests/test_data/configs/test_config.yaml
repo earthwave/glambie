@@ -12,6 +12,9 @@ datagroups_to_calculate:
   - demdiff_and_glaciological
   - gravimetry
 
+method_to_extract_trends: regression
+seasonal_correction_method: proportional
+
 regions: 
   - region_name: iceland
     enable_this_region: true

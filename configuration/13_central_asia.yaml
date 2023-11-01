@@ -19,13 +19,15 @@ region_run_settings:
     - Treichler_ICESat
   gravimetry:
     exclude_annual_datasets :
-    - Sasgen_AWIarc_RL01.1
+    - Sasgen_AWIarc_RL01_2
     - Harig_Group
     - Wouters
+    - Jacob_2012_dmdt
     exclude_trend_datasets :
-    - Sasgen_AWIarc_RL01.1
+    - Sasgen_AWIarc_RL01_2
     - Harig_Group
     - Wouters
+    - Jacob_2012_dmdt
   demdiff_and_glaciological :
     exclude_annual_datasets : # glaciological datasets
     - UZH_GlaciolSineWave

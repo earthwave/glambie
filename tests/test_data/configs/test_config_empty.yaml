@@ -10,6 +10,9 @@ end_year: 2022
 datagroups_to_calculate:
   - gravimetry
 
+method_to_extract_trends: start_vs_end
+seasonal_correction_method: seasonal_homogenization
+
 regions: 
   - region_name: iceland
     enable_this_region: false

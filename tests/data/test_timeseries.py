@@ -482,3 +482,32 @@ def test_reduce_to_date_window_with_gap(example_timeseries_ingested):
     assert np.array_equal(reduced_timeseries.data.changes, example_timeseries_ingested.data.changes[:-1])
     assert np.array_equal(reduced_timeseries.data.errors, example_timeseries_ingested.data.errors[:-1])
     assert np.array_equal(reduced_timeseries.data.end_dates, example_timeseries_ingested.data.end_dates[:-1])
+
+
+def test_shift_timeseries_to_annual_grid_proportionally_period_stays_same_length(example_timeseries_ingested):
+
+    # case where the adapted period length stays the same
+    example_timeseries_ingested.data.start_dates = np.array([2010.1, 2011.1])
+    example_timeseries_ingested.data.end_dates = np.array([2011.1, 2012.1])
+    shifted_ts = example_timeseries_ingested.shift_timeseries_to_annual_grid_proportionally(
+        year_type=constants.YearType.CALENDAR)
+    # in this case the change should stay the same as the adapted period length is the same
+    assert np.array_equal(shifted_ts.data.changes, example_timeseries_ingested.data.changes)
+    assert np.array_equal(shifted_ts.data.errors, example_timeseries_ingested.data.errors)
+    assert not np.array_equal(shifted_ts.data.start_dates, example_timeseries_ingested.data.end_dates)
+
+
+def test_shift_timeseries_to_annual_grid_proportionally_period_length_changes(example_timeseries_ingested):
+    # case where the adapted period length changes
+    example_timeseries_ingested.data.start_dates = np.array([2010.1, 2011.2])
+    example_timeseries_ingested.data.end_dates = np.array([2011.2, 2011.9])
+    shifted_ts = example_timeseries_ingested.shift_timeseries_to_annual_grid_proportionally(
+        year_type=constants.YearType.CALENDAR)
+    # in this case the change should stay the same as the adapted period length is the same
+    expected_start_dates = np.array([2010.0, 2011.0])
+    expected_end_dates = np.array([2011.0, 2012.0])
+    expected_changes = example_timeseries_ingested.data.changes / \
+        (example_timeseries_ingested.data.end_dates - example_timeseries_ingested.data.start_dates)
+    assert np.array_equal(shifted_ts.data.start_dates, expected_start_dates)
+    assert np.array_equal(shifted_ts.data.end_dates, expected_end_dates)
+    assert np.array_equal(shifted_ts.data.changes, expected_changes)

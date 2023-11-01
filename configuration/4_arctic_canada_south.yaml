@@ -19,7 +19,7 @@ region_run_settings:
     - 
   gravimetry:
     exclude_annual_datasets :
-    - 
+    - Jacob_2012_dmdt
     exclude_trend_datasets :
     - 
     include_combined_trend_datasets:

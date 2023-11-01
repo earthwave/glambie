@@ -24,6 +24,7 @@ from glambie.util.timeseries_combination_helpers import calibrate_timeseries_wit
 from glambie.util.timeseries_combination_helpers import combine_calibrated_timeseries
 from glambie.const import constants
 from glambie.const.density_uncertainty import get_density_uncertainty_over_survey_period
+from glambie.const.constants import ExtractTrendsMethod
 
 
 import numpy as np
@@ -661,7 +662,7 @@ class Timeseries():
         # 2) Case where resolution is >= a year: we upsample and take the average from the longterm trend
         else:  # make sure that the trends don't start in the middle of the year
             if not self.timeseries_is_annual_grid(year_type=year_type):
-                raise AssertionError("Timeseries needs be at to fit into annual grid before \
+                raise AssertionError("Timeseries needs to fit into annual grid before \
                                      up-sampling to annual changes.")
             new_start_dates, new_end_dates = get_years(year_start, min_date=self.data.start_dates.min(),
                                                        max_date=self.data.end_dates.max(), return_type="arrays")
@@ -684,10 +685,16 @@ class Timeseries():
 
         return object_copy  # return copy of itself
 
-    def convert_timeseries_to_longterm_trend(self) -> Timeseries:
+    def convert_timeseries_to_longterm_trend(self, method_to_extract_trends:
+                                             ExtractTrendsMethod = ExtractTrendsMethod.START_VS_END) -> Timeseries:
         """
         Converts a timeseries to a longterm trend.
         The calculated longterm trend will be the overall trend from min(start_dates) to max(end_dates)).
+        method_to_extract_trends: ExtractTrendsMethod:
+            method as to how the long-term trends are extracted from a high resolution (e.g. monthly) timeseries
+            trends can be calculated as end_date minus start_date (i.e. mean of non-cumulative changes)
+            or calculated using a linear regression
+            By default start versus end date is used
 
         Returns
         -------
@@ -695,7 +702,9 @@ class Timeseries():
             A copy of the Timeseries object containing the converted timeseries data to a longterm trend.
         """
         object_copy = self.copy()
-        trend = get_total_trend(self.data.start_dates, self.data.end_dates, self.data.changes, return_type="dataframe")
+
+        trend = get_total_trend(self.data.start_dates, self.data.end_dates, self.data.changes,
+                                method_to_extract_trends=method_to_extract_trends, return_type="dataframe")
 
         trend_errors = get_total_trend(self.data.start_dates, self.data.end_dates,
                                        self.data.errors, return_type="value", calculate_as_errors=True)
@@ -710,9 +719,10 @@ class Timeseries():
 
         return object_copy  # return copy of itself
 
-    def convert_timeseries_using_seasonal_homogenization(self, seasonal_calibration_dataset: Timeseries,
-                                                         year_type: constants.YearType = constants.YearType.CALENDAR,
-                                                         p_value: int = 0) -> Timeseries:
+    def shift_timeseries_to_annual_grid_with_seasonal_homogenization(
+            self, seasonal_calibration_dataset: Timeseries,
+            year_type: constants.YearType = constants.YearType.CALENDAR,
+            p_value: int = 0) -> Timeseries:
         """
         Converts a timeseries to a specific annual grid using seasonal homogenization.
         A high resolution timeseries with seasonal information is used to 'shift' and correct the current
@@ -848,5 +858,70 @@ class Timeseries():
             object_copy.data.end_dates = np.array(df_nan_removed["end_dates"])
             object_copy.data.changes = np.array(df_nan_removed["changes"])
             object_copy.data.errors = np.array(df_nan_removed["errors"])
+
+        return object_copy
+
+    def shift_timeseries_to_annual_grid_proportionally(
+            self, year_type: constants.YearType = constants.YearType.CALENDAR) -> Timeseries:
+        """
+        Shifts a timeseries to a desired annual grid (e.g. calendar or glaciological) by simply changing start and
+        end date to the closest annual values and adapting the change rate proportionally to the new period length.
+
+        This is used in the same cases as seasonal homogenization, but is a much simpler approach.
+
+        For more information check the Glambie algorithm description document.
+
+        Parameters
+        ----------
+        year_type : constants.YearType, optional
+            annual grid to which the timeseries will be homogenized to, options are 'calendar', 'glaciological'
+            by default "calendar"
+
+        Returns
+        -------
+        Timeseries
+            A copy of the Timeseries object containing the converted timeseries data to annual trends.
+            The timeseries will have the same temporal resolution as the input timeseries, but will be shifted
+            and corrected to the annual grid (which is defined through year_type).
+
+        Raises
+        ------
+        AssertionError
+            Thrown if timeseries resolution below half a year. In that case the operation cannot be performed.
+        """
+        if self.data.max_temporal_resolution < 0.5:
+            raise AssertionError("Resolution of timeseries is below half a year. Operation not possible.")
+
+        if year_type == constants.YearType.CALENDAR:
+            year_start = 0
+        elif year_type == constants.YearType.GLACIOLOGICAL:
+            year_start = self.region.glaciological_year_start
+
+        object_copy = self.copy()
+        if not self.timeseries_is_annual_grid(year_type=year_type):  # if already annual then no need to homogenize
+            # get desired annual grid, buffer 3 years to work with start and end dates and include rounded years
+            annual_grid = get_years(year_start, min_date=self.data.start_dates.min() - 2,
+                                    max_date=self.data.end_dates.max() + 3, return_type="arrays")[0]
+            new_start_dates, new_end_dates, new_changes, new_errors = [], [], [], []
+            for start_date, end_date, change, error \
+                    in zip(self.data.start_dates, self.data.end_dates, self.data.changes, self.data.errors):
+                # get closest dates from annual grid
+                new_start_date = annual_grid[np.abs(annual_grid - start_date).argmin()]
+                new_end_date = annual_grid[np.abs(annual_grid - end_date).argmin()]
+
+                period_length_old = end_date - start_date
+                period_length_new = new_end_date - new_start_date
+
+                # calculate pro rata change and extend to new period length
+                new_changes.append(float(change / period_length_old * period_length_new))
+                new_errors.append(float(error / period_length_old * period_length_new))
+                new_start_dates.append(float(new_start_date))
+                new_end_dates.append(float(new_end_date))
+
+            # apply new arrays to object copy
+            object_copy.data.start_dates = np.array(new_start_dates)
+            object_copy.data.end_dates = np.array(new_end_dates)
+            object_copy.data.changes = np.array(new_changes)
+            object_copy.data.errors = np.array(new_errors)
 
         return object_copy

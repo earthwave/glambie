@@ -5,12 +5,15 @@ region_config_base_path: configuration
 catalogue_path: glambie_submission_system
 
 start_year: 2000
-end_year: 2023
+end_year: 2024
 
 datagroups_to_calculate:
   - altimetry
   - demdiff_and_glaciological
   - gravimetry
+
+method_to_extract_trends: regression # or start_vs_end
+seasonal_correction_method: proportional # or seasonal_homogenization
 
 regions: 
   - region_name: alaska

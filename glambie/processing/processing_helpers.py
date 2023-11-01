@@ -176,7 +176,7 @@ def convert_datasets_to_annual_trends(data_catalogue: DataCatalogue,
     year_type : YearType
         type of annual year, e.g hydrological or calendar
     method_to_correct_seasonally: SeasonalCorrectionMethod
-        method as to how long-term trends are correct when they don't start in the desired season, i.e. don't follow
+        method as to how annual trends are corrected when they don't start in the desired season, i.e. don't follow
         the desired annual grid defined with 'year_type'
     seasonal_calibration_dataset: Timeseries, by default None
         Timeseries dataset for seasonal calibration if trends are at annual resolution. Will be ignore if seasonal

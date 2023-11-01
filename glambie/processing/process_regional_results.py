@@ -81,7 +81,7 @@ def run_one_region(glambie_run_config: GlambieRunConfig,
                                                                              date_window_is_gap=True)
 
             # run annual and trends calibration timeseries for region
-            trend_combined = _run_region_timeseries_one_source(
+            trend_combined = _run_region_timeseries_for_one_source(
                 data_catalogue_annual=data_catalogue_annual,
                 data_catalogue_trends=data_catalogue_trends,
                 seasonal_calibration_dataset=season_calibration_dataset,
@@ -193,7 +193,69 @@ def convert_and_save_one_region_to_gigatonnes(
     return catalogue_data_group_results_gt, combined_region_timeseries_gt
 
 
-def _run_region_timeseries_one_source(
+def _run_region_variability_for_one_source(
+        data_catalogue_annual: DataCatalogue,
+        seasonal_calibration_dataset: Timeseries,
+        year_type: YearType,
+        method_to_correct_seasonally: SeasonalCorrectionMethod,
+        data_group: GlambieDataGroup,
+        dataset_names_where_split_at_gap: list) -> Tuple[Timeseries, DataCatalogue]:
+
+    # convert to annual trends
+    data_catalogue_annual = convert_datasets_to_annual_trends(data_catalogue_annual, year_type=year_type,
+                                                              method_to_correct_seasonally=method_to_correct_seasonally,
+                                                              seasonal_calibration_dataset=seasonal_calibration_dataset)
+    # convert to mwe
+    data_catalogue_annual = convert_datasets_to_unit_mwe(data_catalogue_annual)
+
+    # calculate combined annual timeseries
+    # first need to recombine timeseries in cases where we split them due to gaps
+    # reason for this is that we want to remove trends over a common period
+    if len(dataset_names_where_split_at_gap) > 0:
+        data_catalogue_annual = recombine_split_timeseries_in_catalogue(
+            data_catalogue_annual, dataset_names_where_split_at_gap)
+    # then average timeseries from annual catalogue, removing the trends
+    annual_combined, catalogue_annual_anomalies = data_catalogue_annual.average_timeseries_in_catalogue(
+        remove_trend=True, out_data_group=data_group)
+    return annual_combined, catalogue_annual_anomalies
+
+
+def _run_region_trends_for_one_source(
+        data_catalogue_trends: DataCatalogue,
+        seasonal_calibration_dataset: Timeseries,
+        annual_backup_dataset: Timeseries,
+        annual_combined: Timeseries,
+        year_type: YearType,
+        method_to_extract_trends: ExtractTrendsMethod,
+        method_to_correct_seasonally: SeasonalCorrectionMethod,
+        data_group: GlambieDataGroup,
+        min_max_time_window_for_longterm_trends: Tuple[float, float] = None):
+
+    log.info("Recalibrating with longterm trends within data group and region...")
+    # get catalogue with longerm datasets in same unit as calibration dataset (mwe)
+    data_catalogue_trends = convert_datasets_to_longterm_trends_in_unit_mwe(
+        data_catalogue_trends, year_type=year_type,
+        seasonal_calibration_dataset=seasonal_calibration_dataset,
+        method_to_extract_trends=method_to_extract_trends,
+        method_to_correct_seasonally=method_to_correct_seasonally,
+        output_trend_date_range=min_max_time_window_for_longterm_trends)
+
+    # now treat case where trends are outside annual combined timeseries
+    annual_combined_full_ext = extend_annual_timeseries_if_outside_trends_period(
+        annual_timeseries=annual_combined,
+        data_catalogue_trends=data_catalogue_trends,
+        timeseries_for_extension=annual_backup_dataset.convert_timeseries_to_annual_trends(year_type=year_type))
+
+    # recalibrate
+    catalogue_calibrated_series = calibrate_timeseries_with_trends_catalogue(
+        data_catalogue_trends, annual_combined_full_ext)
+    # we dont remove trends as these are calibrated series with trends
+    trend_combined, _ = catalogue_calibrated_series.average_timeseries_in_catalogue(remove_trend=False,
+                                                                                    out_data_group=data_group)
+    return trend_combined, catalogue_calibrated_series
+
+
+def _run_region_timeseries_for_one_source(
         data_catalogue_annual: DataCatalogue,
         data_catalogue_trends: DataCatalogue,
         seasonal_calibration_dataset: Timeseries,
@@ -256,7 +318,6 @@ def _run_region_timeseries_one_source(
     # 1) ANNUAL TRENDS
     log.info("Calculating combined annual trends within data group %s "
              "and region %s", data_group.long_name, region.long_name)
-
     # add annual dataset if none in catalogue
     if len(data_catalogue_annual.datasets) == 0:
         log.info('No annual dataset found for %s in region %s, using backup dataset %s',
@@ -266,48 +327,22 @@ def _run_region_timeseries_one_source(
     log.info("Using the following annual datasets for %s, %s : %s",
              data_group.long_name, region.long_name, str([d.user_group for d in data_catalogue_annual.datasets]))
 
-    # convert to annual trends
-    data_catalogue_annual = convert_datasets_to_annual_trends(data_catalogue_annual, year_type=year_type,
-                                                              method_to_correct_seasonally=method_to_correct_seasonally,
-                                                              seasonal_calibration_dataset=seasonal_calibration_dataset)
-    # convert to mwe
-    data_catalogue_annual = convert_datasets_to_unit_mwe(data_catalogue_annual)
-
-    # calculate combined annual timeseries
-    # first need to recombine timeseries in cases where we split them due to gaps
-    # reason for this is that we want to remove trends over a common period
-    if len(split_dataset_names_annual) > 0:
-        data_catalogue_annual = recombine_split_timeseries_in_catalogue(
-            data_catalogue_annual, split_dataset_names_annual)
-    # then average timeseries from annual catalogue, removing the trends
-    annual_combined, catalogue_annual_anomalies = data_catalogue_annual.average_timeseries_in_catalogue(
-        remove_trend=True, out_data_group=data_group)
+    annual_combined, catalogue_annual_anomalies = _run_region_variability_for_one_source(
+        data_catalogue_annual=data_catalogue_annual, seasonal_calibration_dataset=seasonal_calibration_dataset,
+        year_type=year_type, method_to_correct_seasonally=method_to_correct_seasonally, region=region,
+        data_group=data_group, dataset_names_where_split_at_gap=split_dataset_names_annual)
 
     # 2) LONGTERM TRENDS
     log.info("Using the following trend datasets for %s, %s : %s",
              data_group.long_name, region.long_name, str([d.user_group for d in data_catalogue_trends.datasets]))
-    log.info("Recalibrating with longterm trends within data group and region...")
-    # get catalogue with longerm datasets in same unit as calibration dataset (mwe)
-    data_catalogue_trends = convert_datasets_to_longterm_trends_in_unit_mwe(
-        data_catalogue_trends, year_type=year_type,
-        seasonal_calibration_dataset=seasonal_calibration_dataset,
-        method_to_extract_trends=method_to_extract_trends,
-        method_to_correct_seasonally=method_to_correct_seasonally,
-        output_trend_date_range=min_max_time_window_for_longterm_trends)
 
-    # now treat case where trends are outside annual combined timeseries
-    annual_combined_full_ext = extend_annual_timeseries_if_outside_trends_period(
-        annual_timeseries=annual_combined,
-        data_catalogue_trends=data_catalogue_trends,
-        timeseries_for_extension=annual_backup_dataset.convert_timeseries_to_annual_trends(year_type=year_type))
+    trend_combined, catalogue_calibrated_series = _run_region_trends_for_one_source(
+        data_catalogue_trends=data_catalogue_trends, seasonal_calibration_dataset=seasonal_calibration_dataset,
+        annual_backup_dataset=annual_backup_dataset, annual_combined=annual_combined, year_type=year_type,
+        method_to_extract_trends=method_to_extract_trends, method_to_correct_seasonally=method_to_correct_seasonally,
+        data_group=data_group, min_max_time_window_for_longterm_trends=min_max_time_window_for_longterm_trends)
 
-    # recalibrate
-    catalogue_calibrated_series = calibrate_timeseries_with_trends_catalogue(
-        data_catalogue_trends, annual_combined_full_ext)
-    # we dont remove trends as these are calibrated series with trends
-    trend_combined, _ = catalogue_calibrated_series.average_timeseries_in_catalogue(remove_trend=False,
-                                                                                    out_data_group=data_group)
-
+    # 3) Save and plot
     if output_path_handler is not None:
         log.info("Saving plots for region=%s datagroup=%s under path=%s", region.name, data_group.name,
                  output_path_handler.get_plot_output_file_path(region=region, data_group=data_group,

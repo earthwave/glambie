@@ -265,16 +265,17 @@ def _run_region_timeseries_for_one_source(
     log.info("Using the following annual datasets for %s, %s : %s",
              data_group.long_name, region.long_name, str([d.user_group for d in data_catalogue_annual.datasets]))
 
-    annual_combined, catalogue_annual_anomalies = _run_region_variability_for_one_source(
-        data_catalogue_annual=data_catalogue_annual, seasonal_calibration_dataset=seasonal_calibration_dataset,
-        year_type=year_type, method_to_correct_seasonally=method_to_correct_seasonally, region=region,
-        data_group=data_group, dataset_names_where_split_at_gap=split_dataset_names_annual)
+    annual_combined, data_catalogue_annual_homogenized, catalogue_annual_anomalies = \
+        _run_region_variability_for_one_source(
+            data_catalogue_annual=data_catalogue_annual, seasonal_calibration_dataset=seasonal_calibration_dataset,
+            year_type=year_type, method_to_correct_seasonally=method_to_correct_seasonally,
+            data_group=data_group, dataset_names_where_split_at_gap=split_dataset_names_annual)
 
     # 2) LONGTERM TRENDS
     log.info("Using the following trend datasets for %s, %s : %s",
              data_group.long_name, region.long_name, str([d.user_group for d in data_catalogue_trends.datasets]))
 
-    trend_combined, catalogue_calibrated_series = _run_region_trends_for_one_source(
+    trend_combined, data_catalogue_trends_homogenized, catalogue_calibrated_series = _run_region_trends_for_one_source(
         data_catalogue_trends=data_catalogue_trends, seasonal_calibration_dataset=seasonal_calibration_dataset,
         annual_backup_dataset=annual_backup_dataset, annual_combined_dataset=annual_combined, year_type=year_type,
         method_to_extract_trends=method_to_extract_trends, method_to_correct_seasonally=method_to_correct_seasonally,
@@ -303,10 +304,10 @@ def _run_region_timeseries_for_one_source(
             data_group=data_group,
             data_catalogue_annual_raw=data_catalogue_annual_raw,
             data_catalogue_trends_raw=data_catalogue_trends_raw,
-            data_catalogue_annual_homogenized=data_catalogue_annual,
+            data_catalogue_annual_homogenized=data_catalogue_annual_homogenized,
             data_catalogue_annual_anomalies=catalogue_annual_anomalies,
             timeseries_annual_combined=annual_combined,
-            data_catalogue_trends_homogenized=data_catalogue_trends,
+            data_catalogue_trends_homogenized=data_catalogue_trends_homogenized,
             data_catalogue_calibrated_series=catalogue_calibrated_series,
             timeseries_trend_combined=trend_combined)
         # plot
@@ -316,10 +317,10 @@ def _run_region_timeseries_for_one_source(
             data_group=data_group,
             data_catalogue_annual_raw=data_catalogue_annual_raw,
             data_catalogue_trends_raw=data_catalogue_trends_raw,
-            data_catalogue_annual_homogenized=data_catalogue_annual,
+            data_catalogue_annual_homogenized=data_catalogue_annual_homogenized,
             data_catalogue_annual_anomalies=catalogue_annual_anomalies,
             timeseries_annual_combined=annual_combined,
-            data_catalogue_trends_homogenized=data_catalogue_trends,
+            data_catalogue_trends_homogenized=data_catalogue_trends_homogenized,
             data_catalogue_calibrated_series=catalogue_calibrated_series,
             timeseries_trend_combined=trend_combined,
             min_date=min_max_time_window_for_longterm_trends[0] - 1,
@@ -359,26 +360,27 @@ def _run_region_variability_for_one_source(
     -------
     Tuple[Timeseries, DataCatalogue]
         1) a single timeseries of all the annual datasets combined
-        2) a data catalogue of all the annual anomalies/variability that went into the combination
+        2) a data catalogue of homogenized annual datasets
+        3) a data catalogue of all the annual anomalies/variability that went into the combination
     """
 
     # convert to annual trends
-    data_catalogue_annual = convert_datasets_to_annual_trends(data_catalogue_annual, year_type=year_type,
-                                                              method_to_correct_seasonally=method_to_correct_seasonally,
-                                                              seasonal_calibration_dataset=seasonal_calibration_dataset)
+    data_catalogue_annual_homogenized = convert_datasets_to_annual_trends(
+        data_catalogue_annual, year_type=year_type, method_to_correct_seasonally=method_to_correct_seasonally,
+        seasonal_calibration_dataset=seasonal_calibration_dataset)
     # convert to mwe
-    data_catalogue_annual = convert_datasets_to_unit_mwe(data_catalogue_annual)
+    data_catalogue_annual_homogenized = convert_datasets_to_unit_mwe(data_catalogue_annual_homogenized)
 
     # calculate combined annual timeseries
     # first need to recombine timeseries in cases where we split them due to gaps
     # reason for this is that we want to remove trends over a common period
     if len(dataset_names_where_split_at_gap) > 0:
-        data_catalogue_annual = recombine_split_timeseries_in_catalogue(
-            data_catalogue_annual, dataset_names_where_split_at_gap)
+        data_catalogue_annual_homogenized = recombine_split_timeseries_in_catalogue(
+            data_catalogue_annual_homogenized, dataset_names_where_split_at_gap)
     # then average timeseries from annual catalogue, removing the trends
-    annual_combined, catalogue_annual_anomalies = data_catalogue_annual.average_timeseries_in_catalogue(
+    annual_combined, catalogue_annual_anomalies = data_catalogue_annual_homogenized.average_timeseries_in_catalogue(
         remove_trend=True, out_data_group=data_group)
-    return annual_combined, catalogue_annual_anomalies
+    return annual_combined, data_catalogue_annual_homogenized, catalogue_annual_anomalies
 
 
 def _run_region_trends_for_one_source(
@@ -390,7 +392,8 @@ def _run_region_trends_for_one_source(
         method_to_extract_trends: ExtractTrendsMethod,
         method_to_correct_seasonally: SeasonalCorrectionMethod,
         data_group: GlambieDataGroup,
-        min_max_time_window_for_longterm_trends: Tuple[float, float] = None) -> Tuple[Timeseries, DataCatalogue]:
+        min_max_time_window_for_longterm_trends: Tuple[float, float] = None) -> Tuple[
+            Timeseries, DataCatalogue, DataCatalogue]:
     """
     Runs the combination algorithm for all trend datasets for one Glambie Data Group within a region
 
@@ -423,14 +426,15 @@ def _run_region_trends_for_one_source(
 
     Returns
     -------
-    Tuple[Timeseries, DataCatalogue]
+    Tuple[Timeseries, DataCatalogue, DataCatalogue]
         1) a single timeseries of all the trend datasets combined
-        2) a data catalogue of all the calibrated trends that were averaged
+        2) a catalogue of the homogenized trends
+        3) a data catalogue of all the calibrated trends that were averaged
     """
 
     log.info("Recalibrating with longterm trends within data group and region...")
     # get catalogue with longerm datasets in same unit as calibration dataset (mwe)
-    data_catalogue_trends = convert_datasets_to_longterm_trends_in_unit_mwe(
+    data_catalogue_trends_homogenized = convert_datasets_to_longterm_trends_in_unit_mwe(
         data_catalogue_trends, year_type=year_type,
         seasonal_calibration_dataset=seasonal_calibration_dataset,
         method_to_extract_trends=method_to_extract_trends,
@@ -440,13 +444,13 @@ def _run_region_trends_for_one_source(
     # now treat case where trends are outside annual combined timeseries
     annual_combined_full_ext = extend_annual_timeseries_if_outside_trends_period(
         annual_timeseries=annual_combined_dataset,
-        data_catalogue_trends=data_catalogue_trends,
+        data_catalogue_trends=data_catalogue_trends_homogenized,
         timeseries_for_extension=annual_backup_dataset.convert_timeseries_to_annual_trends(year_type=year_type))
 
     # recalibrate
     catalogue_calibrated_series = calibrate_timeseries_with_trends_catalogue(
-        data_catalogue_trends, annual_combined_full_ext)
+        data_catalogue_trends_homogenized, annual_combined_full_ext)
     # we dont remove trends as these are calibrated series with trends
     trend_combined, _ = catalogue_calibrated_series.average_timeseries_in_catalogue(remove_trend=False,
                                                                                     out_data_group=data_group)
-    return trend_combined, catalogue_calibrated_series
+    return trend_combined, data_catalogue_trends_homogenized, catalogue_calibrated_series

@@ -407,59 +407,58 @@ def prepare_seasonal_calibration_dataset(region_config: RegionRunConfig,
     return season_calibration_dataset
 
 
-def extend_annual_timeseries_if_outside_trends_period(annual_timeseries: Timeseries,
-                                                      data_catalogue_trends: DataCatalogue,
-                                                      timeseries_for_extension: Timeseries) -> Timeseries:
+def extend_annual_timeseries_if_shorter_than_time_window(
+        annual_timeseries: Timeseries,
+        timeseries_for_extension: Timeseries,
+        desired_time_window: Tuple[float, float]) -> Timeseries:
     """
-    Extends an annual timeseries with another annual timeseries in case the given trends span longer
-    than the annual dataset.
+    Extends an annual timeseries with another annual timeseries in case the given desired time window spans longer
+    than the annual dataset. Also fills data daps within 'annual_timeseries' with data from 'timeseries_for_extension'.
     Assumes that 'annual_timeseries' and 'timeseries_for_extension' both follow the same annual grid.
 
     Parameters
     ----------
     annual_timeseries : Timeseries
         annual timeseries to be extended
-    data_catalogue_trends : DataCatalogue
-        trends timeseries te be used as a measure of the span the annual timeseries should have
     timeseries_for_extension : Timeseries
         timeseries to be used to extend annual_timeseries
+    desired_time_window : Tuple[float, float]
+        A tuple with the length of the desired timeseries in the form of [min_start_date, max_end_date]
 
     Returns
     -------
     Timeseries
         Extended annual timeseries.
-        If trends are within 'annual_timeseries' this will be the same as 'annual_timeseries'
+        If the desired time window is within 'annual_timeseries' and 'annual_timeseries' does not have any data gaps
+        this will be the same as 'annual_timeseries'
     """
     annual_timeseries_copy = annual_timeseries.copy()
-    for ds in data_catalogue_trends.datasets:
-        if (min(ds.data.start_dates) < min(annual_timeseries_copy.data.start_dates)) \
-                or (max(ds.data.end_dates) > max(annual_timeseries_copy.data.end_dates)) \
-                or not annual_timeseries_copy.data.is_cumulative_valid():  # or the case where the timeseries has a gap
-            log.info("Extension of annual is performed, as the trends are longer than the annual timeseries")
+    if (desired_time_window[0] < min(annual_timeseries_copy.data.start_dates)) \
+            or (desired_time_window[1] > max(annual_timeseries_copy.data.end_dates)) \
+            or not annual_timeseries_copy.data.is_cumulative_valid():  # or the case where the timeseries has a gap
+        log.info("Extension of annual is performed, as the trends are longer than the annual timeseries")
 
-            # Remove trend of timeseries for extension over the common time period
-            catalogue_dfs = [annual_timeseries_copy.data.as_dataframe(), timeseries_for_extension.data.as_dataframe()]
-            start_ref_period = np.max([df.start_dates.min() for df in catalogue_dfs])
-            end_ref_period = np.min([df.end_dates.max() for df in catalogue_dfs])
-            if not start_ref_period < end_ref_period:
-                warnings.warn("Warning when removing trends. No common period detected.")
-            for df in catalogue_dfs:
-                df_sub = df[(df["start_dates"] >= start_ref_period) & (df["end_dates"] <= end_ref_period)]
-                df["changes"] = df["changes"] - df_sub["changes"].mean()  # edit the dataframe
+        # Remove trend of timeseries for extension over the common time period
+        catalogue_dfs = [annual_timeseries_copy.data.as_dataframe(), timeseries_for_extension.data.as_dataframe()]
+        start_ref_period = np.max([df.start_dates.min() for df in catalogue_dfs])
+        end_ref_period = np.min([df.end_dates.max() for df in catalogue_dfs])
+        if not start_ref_period < end_ref_period:
+            warnings.warn("Warning when removing trends. No common period detected.")
+        for df in catalogue_dfs:
+            df_sub = df[(df["start_dates"] >= start_ref_period) & (df["end_dates"] <= end_ref_period)]
+            df["changes"] = df["changes"] - df_sub["changes"].mean()  # edit the dataframe
 
-            # Combine with other timeseries to cover the missing timespan
-            df_merged = pd.merge(catalogue_dfs[0], catalogue_dfs[1],
-                                 on=["start_dates", "end_dates"], how="outer")
-            # Fill Nans in 'annual_timeseries' with values from 'timeseries_for_extension'
-            df_merged.changes_x.fillna(df_merged.changes_y, inplace=True)
-            df_merged.errors_x.fillna(df_merged.errors_y, inplace=True)
-            df_merged = df_merged.sort_values(by="start_dates").reset_index()
-            # now update the annual timeseries object with the extended timeseries
-            annual_timeseries_copy.data.changes = np.array(df_merged["changes_x"])
-            annual_timeseries_copy.data.errors = np.array(df_merged["errors_x"])
-            annual_timeseries_copy.data.start_dates = np.array(df_merged["start_dates"])
-            annual_timeseries_copy.data.end_dates = np.array(df_merged["end_dates"])
-            return annual_timeseries_copy
+        # Combine with other timeseries to cover the missing timespan
+        df_merged = pd.merge(catalogue_dfs[0], catalogue_dfs[1], on=["start_dates", "end_dates"], how="outer")
+        # Fill Nans in 'annual_timeseries' with values from 'timeseries_for_extension'
+        df_merged.changes_x.fillna(df_merged.changes_y, inplace=True)
+        df_merged.errors_x.fillna(df_merged.errors_y, inplace=True)
+        df_merged = df_merged.sort_values(by="start_dates").reset_index()
+        # now update the annual timeseries object with the extended timeseries
+        annual_timeseries_copy.data.changes = np.array(df_merged["changes_x"])
+        annual_timeseries_copy.data.errors = np.array(df_merged["errors_x"])
+        annual_timeseries_copy.data.start_dates = np.array(df_merged["start_dates"])
+        annual_timeseries_copy.data.end_dates = np.array(df_merged["end_dates"])
     return annual_timeseries_copy
 
 

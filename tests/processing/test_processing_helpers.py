@@ -2,6 +2,7 @@ from glambie.processing.processing_helpers import filter_catalogue_with_config_s
 from glambie.processing.processing_helpers import recombine_split_timeseries_in_catalogue
 from glambie.processing.processing_helpers import slice_timeseries_at_gaps
 from glambie.processing.processing_helpers import check_and_handle_gaps_in_timeseries
+from glambie.processing.processing_helpers import extend_annual_timeseries_if_shorter_than_time_window
 from glambie.const.data_groups import GLAMBIE_DATA_GROUPS
 from glambie.data.data_catalogue import DataCatalogue
 from glambie.data.timeseries import TimeseriesData, Timeseries
@@ -111,6 +112,24 @@ def example_catalogue_filled():
 def glambie_config():
     yaml_abspath = os.path.join('tests', 'test_data', 'configs', 'test_config.yaml')
     return GlambieRunConfig.from_yaml(yaml_abspath)
+
+
+@pytest.fixture()
+def example_timeseries_ingested():
+    data = TimeseriesData(start_dates=[2010, 2011, 2012, 2013],
+                          end_dates=[2011, 2012, 2013, 2014],
+                          changes=np.array([1., 2., 3., 4.]),
+                          errors=np.array([1., 2., 3., 4.]),
+                          glacier_area_reference=None,
+                          glacier_area_observed=None,
+                          hydrological_correction_value=None,
+                          remarks=None)
+    ts = Timeseries(rgi_version=6,
+                    unit='m',
+                    data_group=GLAMBIE_DATA_GROUPS['demdiff'],
+                    data=data,
+                    region=REGIONS["iceland"])
+    return ts
 
 
 def test_filter_catalogue_with_config_settings(example_catalogue_1, glambie_config):
@@ -240,3 +259,27 @@ def test_recombine_split_timeseries(example_catalogue_filled):
                           example_catalogue_filled.datasets[1].data.start_dates)
     assert np.array_equal(recombined_catalogue.datasets[0].data.end_dates,
                           example_catalogue_filled.datasets[1].data.end_dates)
+
+
+def test_extend_annual_timeseries_if_shorter_than_time_window(example_catalogue_filled):
+    example_timeseries_ingested = example_catalogue_filled.datasets[1]
+
+    # make timeseries for extension
+    timeseries_for_extension = example_timeseries_ingested.copy()
+    timeseries_for_extension.data.start_dates = np.append(timeseries_for_extension.data.start_dates, [2013, 2014])
+    timeseries_for_extension.data.end_dates = np.append(timeseries_for_extension.data.end_dates, [2014, 2015])
+    timeseries_for_extension.data.changes = np.append(timeseries_for_extension.data.changes, [1., 2.])
+    timeseries_for_extension.data.errors = np.append(timeseries_for_extension.data.errors, [1., 2.])
+    timeseries_for_extension.data.glacier_area_reference = None
+    timeseries_for_extension.data.glacier_area_observed = None
+
+    # extend timeseries with desired timeseries
+    desired_time_window = [2010, 2015]
+    extended_timeseries = extend_annual_timeseries_if_shorter_than_time_window(
+        annual_timeseries=example_timeseries_ingested,
+        timeseries_for_extension=timeseries_for_extension,
+        desired_time_window=desired_time_window)
+
+    assert extended_timeseries.data.min_start_date == desired_time_window[0]
+    assert extended_timeseries.data.max_end_date == desired_time_window[1]
+    assert np.array_equal(extended_timeseries.data.start_dates, timeseries_for_extension.data.start_dates)

@@ -249,7 +249,8 @@ class DataCatalogue():
             return None, None
 
     def average_timeseries_in_catalogue(self, remove_trend: bool = True, add_trend_after_averaging: bool = False,
-                                        out_data_group: GlambieDataGroup = GLAMBIE_DATA_GROUPS["consensus"]) \
+                                        out_data_group: GlambieDataGroup = GLAMBIE_DATA_GROUPS["consensus"],
+                                        out_user_group: str = "consensus") \
             -> Tuple[Timeseries, DataCatalogue]:
         """
         Calculates a simple average of all timeseries within the catalogue, with the option to remove trends
@@ -264,8 +265,11 @@ class DataCatalogue():
             this flag is only active when remove_trend is set to True.
             by default False
         out_data_group : GlambieDataGroup, optional
-            data group to be assigned to combined output Timeseries metadata,
+            data group to be assigned to combined output Timeseries metadata
             by default GLAMBIE_DATA_GROUPS["consensus"]
+        out_user_group : str, optional
+            user group to be assigned to combined output Timeseries metadata
+            by default 'consensus'
 
 
         Returns
@@ -351,7 +355,7 @@ class DataCatalogue():
         reference_dataset_for_metadata = self.datasets[0]  # use this as a reference for filling metadata
 
         return Timeseries(region=reference_dataset_for_metadata.region, data_group=out_data_group,
-                          data=ts_data, unit=reference_dataset_for_metadata.unit,
+                          data=ts_data, unit=reference_dataset_for_metadata.unit, user_group=out_user_group,
                           area_change_applied=reference_dataset_for_metadata.area_change_applied), data_catalogue_out
 
     def __len__(self) -> int:

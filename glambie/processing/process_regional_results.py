@@ -16,7 +16,7 @@ from glambie.processing.processing_helpers import (
     convert_datasets_to_longterm_trends_in_unit_mwe, convert_datasets_to_monthly_grid)
 from glambie.processing.processing_helpers import convert_datasets_to_unit_gt
 from glambie.processing.processing_helpers import convert_datasets_to_unit_mwe
-from glambie.processing.processing_helpers import extend_annual_timeseries_if_outside_trends_period
+from glambie.processing.processing_helpers import extend_annual_timeseries_if_shorter_than_time_window
 from glambie.processing.processing_helpers import filter_catalogue_with_config_settings
 from glambie.processing.processing_helpers import get_reduced_catalogue_to_date_window
 from glambie.processing.processing_helpers import prepare_seasonal_calibration_dataset
@@ -55,9 +55,16 @@ def run_one_region(glambie_run_config: GlambieRunConfig,
         region_name=region_config.region_name)
 
     # get seasonal calibration dataset and convert to monthly grid
-    season_calibration_dataset = prepare_seasonal_calibration_dataset(region_config, data_catalogue)
-    # TODO: add annual backup dataset to config?
-    annual_backup_dataset = season_calibration_dataset.copy()
+    seasonal_calibration_dataset = prepare_seasonal_calibration_dataset(region_config, data_catalogue)
+
+    annual_backup_dataset = _prepare_consensus_variability_for_one_region(
+        glambie_run_config=glambie_run_config, region_config=region_config, data_catalogue=data_catalogue,
+        seasonal_calibration_dataset=seasonal_calibration_dataset, year_type=region_config.year_type,
+        method_to_correct_seasonally=glambie_run_config.seasonal_correction_method,
+        backup_dataset=seasonal_calibration_dataset,
+        desired_time_span=[glambie_run_config.start_year, glambie_run_config.end_year])
+
+    # season_calibration_dataset.copy()
 
     result_datasets = []
     for data_group in glambie_run_config.datagroups_to_calculate:
@@ -84,7 +91,7 @@ def run_one_region(glambie_run_config: GlambieRunConfig,
             trend_combined = _run_region_timeseries_for_one_source(
                 data_catalogue_annual=data_catalogue_annual,
                 data_catalogue_trends=data_catalogue_trends,
-                seasonal_calibration_dataset=season_calibration_dataset,
+                seasonal_calibration_dataset=seasonal_calibration_dataset,
                 annual_backup_dataset=annual_backup_dataset,
                 year_type=region_config.year_type,
                 method_to_extract_trends=glambie_run_config.method_to_extract_trends,
@@ -106,6 +113,87 @@ def run_one_region(glambie_run_config: GlambieRunConfig,
 
     result_catalogue = DataCatalogue.from_list(result_datasets, base_path=data_catalogue.base_path)
     return result_catalogue
+
+
+def _prepare_consensus_variability_for_one_region(
+        glambie_run_config: GlambieRunConfig,
+        region_config: RegionRunConfig,
+        data_catalogue: DataCatalogue,
+        seasonal_calibration_dataset: Timeseries,
+        year_type: YearType,
+        method_to_correct_seasonally: SeasonalCorrectionMethod,
+        backup_dataset: Timeseries,
+        desired_time_span: Tuple[float, float]) -> Timeseries:
+    """
+    Prepares a consensus varibility dataset for a region, which can be used as an annual backup dataset
+    in case there is no annual data within a data group
+
+    Parameters
+    ----------
+    glambie_run_config : GlambieRunConfig
+        config object for the run
+    region_config : RegionRunConfig
+        run config for a particular region
+    data_catalogue : DataCatalogue
+        data catalogue with input datasets
+    seasonal_calibration_dataset : Timeseries
+        Seasonal calibration dataset at ~ monthly resolution to be used to homogenize data
+    year_type : YearType
+        type of year to be used, e.g calendar or glaciological
+    method_to_correct_seasonally: SeasonalCorrectionMethod
+        method as to how long-term trends are correct when they don't start in the desired season, i.e. don't follow
+        the desired annual grid defined with 'year_type'
+    backup_dataset : Timeseries
+        the backup timeseries to be used to fill missing data for achieving the desired time span
+    desired_time_span : Tuple[float, float]
+        the desired span of the output dataset in the format [min_start_date, max_end_date]
+        the dates are expected in decimal years format (float), e.g. 2012.75.
+
+    Returns
+    -------
+    Timeseries
+        a combined annual timeseries spanning the 'desired_time_span'
+    """
+
+    log.info('Starting to process consensus variability for region=%s', region_config.region_name)
+
+    result_datasets = []
+    for data_group in glambie_run_config.datagroups_to_calculate:
+        data_catalogue_annual, _ = filter_catalogue_with_config_settings(
+            data_group=data_group, region_config=region_config, data_catalogue=data_catalogue)
+        if len(data_catalogue_annual.datasets) != 0:
+            # read data in catalogue
+            data_catalogue_annual.load_all_data()
+            data_catalogue_annual = set_unneeded_columns_to_nan(data_catalogue_annual)
+            # remove GRACE gap from annual catalogue so that the variability isn't impacted by the lower resolution gap
+            if data_group == GLAMBIE_DATA_GROUPS["gravimetry"]:
+                data_catalogue_annual = get_reduced_catalogue_to_date_window(
+                    data_catalogue=data_catalogue_annual, start_date=GraceGap.START_DATE.value,
+                    end_date=GraceGap.END_DATE.value, date_window_is_gap=True)
+            data_catalogue_annual, split_dataset_names_annual = check_and_handle_gaps_in_timeseries(
+                data_catalogue_annual)
+            data_catalogue_annual = convert_datasets_to_monthly_grid(data_catalogue_annual)
+
+            annual_combined, _, _ = _run_region_variability_for_one_source(
+                data_catalogue_annual=data_catalogue_annual, seasonal_calibration_dataset=seasonal_calibration_dataset,
+                year_type=year_type, method_to_correct_seasonally=method_to_correct_seasonally,
+                data_group=data_group, dataset_names_where_split_at_gap=split_dataset_names_annual)
+
+            result_datasets.append(annual_combined)
+
+    # get combined regional results combining the individual data group results
+    result_catalogue = DataCatalogue.from_list(result_datasets, base_path=data_catalogue.base_path)
+    consensus_annual = combine_within_one_region(result_catalogue, output_path_handler=None)
+
+    # now deal with cases where the consensus does not cover all of the desired period
+    # we will fall back on a backup dataset
+    backup_dataset = backup_dataset.convert_timeseries_to_annual_trends(year_type=year_type)
+    consensus_annual_full_ext = extend_annual_timeseries_if_shorter_than_time_window(
+        annual_timeseries=consensus_annual,
+        timeseries_for_extension=backup_dataset,
+        desired_time_window=desired_time_span)
+
+    return consensus_annual_full_ext
 
 
 def combine_within_one_region(catalogue_data_group_results: DataCatalogue,
@@ -442,10 +530,10 @@ def _run_region_trends_for_one_source(
         output_trend_date_range=min_max_time_window_for_longterm_trends)
 
     # now treat case where trends are outside annual combined timeseries
-    annual_combined_full_ext = extend_annual_timeseries_if_outside_trends_period(
+    annual_combined_full_ext = extend_annual_timeseries_if_shorter_than_time_window(
         annual_timeseries=annual_combined_dataset,
-        data_catalogue_trends=data_catalogue_trends_homogenized,
-        timeseries_for_extension=annual_backup_dataset.convert_timeseries_to_annual_trends(year_type=year_type))
+        timeseries_for_extension=annual_backup_dataset.convert_timeseries_to_annual_trends(year_type=year_type),
+        desired_time_window=data_catalogue_trends_homogenized.get_time_span_of_datasets())
 
     # recalibrate
     catalogue_calibrated_series = calibrate_timeseries_with_trends_catalogue(

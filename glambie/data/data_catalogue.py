@@ -227,6 +227,27 @@ class DataCatalogue():
         else:
             return True
 
+    def get_time_span_of_datasets(self) -> Tuple[float, float]:
+        """
+        Returns the time window covered by all datasets within the catalogue
+
+        Returns
+        -------
+        Tuple[float, float]
+            minimum and maximum dates of all datasets combined in catalogue
+            in the form of [min_start_date, max_end_date]
+        """
+        if len(self.datasets) > 0:
+            min_dates = []
+            max_dates = []
+
+            for ds in self.datasets:
+                min_dates.append(ds.data.min_start_date)
+                max_dates.append(ds.data.max_end_date)
+            return np.min(min_dates), np.max(max_dates)
+        else:
+            return None, None
+
     def average_timeseries_in_catalogue(self, remove_trend: bool = True, add_trend_after_averaging: bool = False,
                                         out_data_group: GlambieDataGroup = GLAMBIE_DATA_GROUPS["consensus"]) \
             -> Tuple[Timeseries, DataCatalogue]:

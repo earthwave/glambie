@@ -114,24 +114,6 @@ def glambie_config():
     return GlambieRunConfig.from_yaml(yaml_abspath)
 
 
-@pytest.fixture()
-def example_timeseries_ingested():
-    data = TimeseriesData(start_dates=[2010, 2011, 2012, 2013],
-                          end_dates=[2011, 2012, 2013, 2014],
-                          changes=np.array([1., 2., 3., 4.]),
-                          errors=np.array([1., 2., 3., 4.]),
-                          glacier_area_reference=None,
-                          glacier_area_observed=None,
-                          hydrological_correction_value=None,
-                          remarks=None)
-    ts = Timeseries(rgi_version=6,
-                    unit='m',
-                    data_group=GLAMBIE_DATA_GROUPS['demdiff'],
-                    data=data,
-                    region=REGIONS["iceland"])
-    return ts
-
-
 def test_filter_catalogue_with_config_settings(example_catalogue_1, glambie_config):
     data_group = GLAMBIE_DATA_GROUPS["altimetry"]
     data_catalogue = example_catalogue_1

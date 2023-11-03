@@ -65,8 +65,6 @@ def run_one_region(glambie_run_config: GlambieRunConfig,
         backup_dataset=seasonal_calibration_dataset,
         desired_time_span=[glambie_run_config.start_year, glambie_run_config.end_year])
 
-    # season_calibration_dataset.copy()
-
     result_datasets = []
     for data_group in glambie_run_config.datagroups_to_calculate:
         log.info('Starting to process region=%s datagroup=%s', region_config.region_name, data_group.name)

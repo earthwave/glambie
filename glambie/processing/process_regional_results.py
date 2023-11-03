@@ -1,5 +1,6 @@
 import logging
 from typing import Tuple
+import numpy as np
 
 from glambie.config.config_classes import GlambieRunConfig, RegionRunConfig
 from glambie.const.constants import ExtractTrendsMethod, GraceGap, YearType, SeasonalCorrectionMethod
@@ -192,6 +193,9 @@ def _prepare_consensus_variability_for_one_region(
         annual_timeseries=consensus_annual,
         timeseries_for_extension=backup_dataset,
         desired_time_window=desired_time_span)
+
+    # now we set all uncertainties to 0 so that they are not doublecounted when combined with the consensus
+    consensus_annual_full_ext.data.errors = np.zeros(len(consensus_annual_full_ext.data.errors))
 
     return consensus_annual_full_ext
 

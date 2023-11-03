@@ -447,6 +447,7 @@ def extend_annual_timeseries_if_shorter_than_time_window(
         for df in catalogue_dfs:
             df_sub = df[(df["start_dates"] >= start_ref_period) & (df["end_dates"] <= end_ref_period)]
             df["changes"] = df["changes"] - df_sub["changes"].mean()  # edit the dataframe
+            df["errors"] = df["errors"] - df_sub["errors"].mean()  # do the same with errors
 
         # Combine with other timeseries to cover the missing timespan
         df_merged = pd.merge(catalogue_dfs[0], catalogue_dfs[1], on=["start_dates", "end_dates"], how="outer")

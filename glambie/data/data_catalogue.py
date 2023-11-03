@@ -296,7 +296,7 @@ class DataCatalogue():
 
         # remove trend / calculate beta instead of B
         if remove_trend:
-            means_over_period = []  # keep track of the means for adding back in case add_trend_after_averaging=True
+            change_means_over_period = []  # keep track for adding back in case add_trend_after_averaging=True
             start_ref_period = np.max([df.start_dates.min() for df in catalogue_dfs])
             end_ref_period = np.min([df.end_dates.max() for df in catalogue_dfs])
 
@@ -306,7 +306,10 @@ class DataCatalogue():
                 df_sub = df[(df["start_dates"] >= start_ref_period) & (df["end_dates"] <= end_ref_period)]
                 df["changes"] = df["changes"] - df_sub["changes"].mean()
                 data_catalogue_out.datasets[idx].data.changes = np.array(df["changes"])
-                means_over_period.append(df_sub["changes"].mean())
+                change_means_over_period.append(df_sub["changes"].mean())
+                if add_trend_after_averaging and remove_trend:
+                    df["errors"] = df["errors"] - df_sub["errors"].mean()
+
         # join all catalogues by start and end dates
         # the resulting dataframe has a set of columns with repeating prefixes
         df = reduce(lambda left, right: left.merge(right, how="outer", on=["start_dates", "end_dates"]), catalogue_dfs)
@@ -341,7 +344,7 @@ class DataCatalogue():
 
         if add_trend_after_averaging and remove_trend:
             # add mean changes back which have been removed over the common period
-            df_mean_annual["changes"] = df_mean_annual["changes"] + np.mean(means_over_period)
+            df_mean_annual["changes"] = df_mean_annual["changes"] + np.mean(change_means_over_period)
 
         # make Timeseries object with combined solution
         ts_data = TimeseriesData(start_dates=np.array(df_mean_annual["start_dates"]),

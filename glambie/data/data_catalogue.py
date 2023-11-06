@@ -307,8 +307,6 @@ class DataCatalogue():
                 df["changes"] = df["changes"] - df_sub["changes"].mean()
                 data_catalogue_out.datasets[idx].data.changes = np.array(df["changes"])
                 change_means_over_period.append(df_sub["changes"].mean())
-                if add_trend_after_averaging and remove_trend:
-                    df["errors"] = df["errors"] - df_sub["errors"].mean()
 
         # join all catalogues by start and end dates
         # the resulting dataframe has a set of columns with repeating prefixes

@@ -179,7 +179,7 @@ def convert_datasets_to_annual_trends(data_catalogue: DataCatalogue,
         method as to how annual trends are corrected when they don't start in the desired season, i.e. don't follow
         the desired annual grid defined with 'year_type'
     seasonal_calibration_dataset: Timeseries, by default None
-        Timeseries dataset for seasonal calibration if trends are at annual resolution. Will be ignore if seasonal
+        Timeseries dataset for seasonal calibration if trends are at annual resolution. Will be ignored if seasonal
         correction method is not set to SeasonalCorrectionMethod.SEASONAL_HOMOGENIZATION
 
     Returns
@@ -436,18 +436,17 @@ def extend_annual_timeseries_if_shorter_than_time_window(
     if (desired_time_window[0] < min(annual_timeseries_copy.data.start_dates)) \
             or (desired_time_window[1] > max(annual_timeseries_copy.data.end_dates)) \
             or not annual_timeseries_copy.data.is_cumulative_valid():  # or the case where the timeseries has a gap
-        log.info("Extension of annual is performed, as the trends are longer than the annual timeseries")
+        log.info("The trends are longer than the annual timeseries. Extension of annual will be performed.")
 
         # Remove trend of timeseries for extension over the common time period
         catalogue_dfs = [annual_timeseries_copy.data.as_dataframe(), timeseries_for_extension.data.as_dataframe()]
         start_ref_period = np.max([df.start_dates.min() for df in catalogue_dfs])
         end_ref_period = np.min([df.end_dates.max() for df in catalogue_dfs])
         if not start_ref_period < end_ref_period:
-            warnings.warn("Warning when removing trends. No common period detected.")
+            warnings.warn("No common period detected when removing trends.")
         for df in catalogue_dfs:
             df_sub = df[(df["start_dates"] >= start_ref_period) & (df["end_dates"] <= end_ref_period)]
             df["changes"] = df["changes"] - df_sub["changes"].mean()  # edit the dataframe
-            df["errors"] = df["errors"] - df_sub["errors"].mean()  # do the same with errors
 
         # Combine with other timeseries to cover the missing timespan
         df_merged = pd.merge(catalogue_dfs[0], catalogue_dfs[1], on=["start_dates", "end_dates"], how="outer")

@@ -523,7 +523,7 @@ def _run_region_trends_for_one_source(
     """
 
     log.info("Recalibrating with longterm trends within data group and region...")
-    # get catalogue with longerm datasets in same unit as calibration dataset (mwe)
+    # get catalogue with longterm datasets in same unit as calibration dataset (mwe)
     data_catalogue_trends_homogenized = convert_datasets_to_longterm_trends_in_unit_mwe(
         data_catalogue_trends, year_type=year_type,
         seasonal_calibration_dataset=seasonal_calibration_dataset,
@@ -540,7 +540,9 @@ def _run_region_trends_for_one_source(
     # recalibrate
     catalogue_calibrated_series = calibrate_timeseries_with_trends_catalogue(
         data_catalogue_trends_homogenized, annual_combined_full_ext)
-    # we dont remove trends as these are calibrated series with trends
+    # now combine the calibrated timeseries
+    # the trends are not removed when combining, because the dfferences in periods are already reflected
+    # with the annual variability dataset
     trend_combined, _ = catalogue_calibrated_series.average_timeseries_in_catalogue(remove_trend=False,
                                                                                     out_data_group=data_group)
     return trend_combined, data_catalogue_trends_homogenized, catalogue_calibrated_series

@@ -17,12 +17,12 @@ region_run_settings:
     - 
   gravimetry:
     exclude_annual_datasets :
-    - Sasgen_AWIarc_RL01.1
+    - Sasgen_AWIarc_RL01_2
     - Wouters
     - Harig_Group
     - Jacob_2012_dmdt
     exclude_trend_datasets :
-    - Sasgen_AWIarc_RL01.1
+    - Sasgen_AWIarc_RL01_2
     - Wouters
     - Harig_Group
     - Jacob_2012_dmdt

@@ -1,5 +1,5 @@
 google-cloud-storage==2.14.0
-numpy==1.26.2
+numpy==1.26.3
 pandas==2.1.4
 matplotlib==3.8.2
 scipy==1.11.4

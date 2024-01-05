@@ -227,8 +227,30 @@ class DataCatalogue():
         else:
             return True
 
+    def get_time_span_of_datasets(self) -> Tuple[float, float]:
+        """
+        Returns the time window covered by all datasets within the catalogue
+
+        Returns
+        -------
+        Tuple[float, float]
+            minimum and maximum dates of all datasets combined in catalogue
+            in the form of [min_start_date, max_end_date]
+        """
+        if len(self.datasets) > 0:
+            min_dates = []
+            max_dates = []
+
+            for ds in self.datasets:
+                min_dates.append(ds.data.min_start_date)
+                max_dates.append(ds.data.max_end_date)
+            return np.min(min_dates), np.max(max_dates)
+        else:
+            return None, None
+
     def average_timeseries_in_catalogue(self, remove_trend: bool = True, add_trend_after_averaging: bool = False,
-                                        out_data_group: GlambieDataGroup = GLAMBIE_DATA_GROUPS["consensus"]) \
+                                        out_data_group: GlambieDataGroup = GLAMBIE_DATA_GROUPS["consensus"],
+                                        out_user_group: str = "consensus") \
             -> Tuple[Timeseries, DataCatalogue]:
         """
         Calculates a simple average of all timeseries within the catalogue, with the option to remove trends
@@ -243,8 +265,11 @@ class DataCatalogue():
             this flag is only active when remove_trend is set to True.
             by default False
         out_data_group : GlambieDataGroup, optional
-            data group to be assigned to combined output Timeseries metadata,
+            data group to be assigned to combined output Timeseries metadata
             by default GLAMBIE_DATA_GROUPS["consensus"]
+        out_user_group : str, optional
+            user group to be assigned to combined output Timeseries metadata
+            by default 'consensus'
 
 
         Returns
@@ -271,7 +296,7 @@ class DataCatalogue():
 
         # remove trend / calculate beta instead of B
         if remove_trend:
-            means_over_period = []  # keep track of the means for adding back in case add_trend_after_averaging=True
+            change_means_over_period = []  # keep track for adding back in case add_trend_after_averaging=True
             start_ref_period = np.max([df.start_dates.min() for df in catalogue_dfs])
             end_ref_period = np.min([df.end_dates.max() for df in catalogue_dfs])
 
@@ -281,7 +306,8 @@ class DataCatalogue():
                 df_sub = df[(df["start_dates"] >= start_ref_period) & (df["end_dates"] <= end_ref_period)]
                 df["changes"] = df["changes"] - df_sub["changes"].mean()
                 data_catalogue_out.datasets[idx].data.changes = np.array(df["changes"])
-                means_over_period.append(df_sub["changes"].mean())
+                change_means_over_period.append(df_sub["changes"].mean())
+
         # join all catalogues by start and end dates
         # the resulting dataframe has a set of columns with repeating prefixes
         df = reduce(lambda left, right: left.merge(right, how="outer", on=["start_dates", "end_dates"]), catalogue_dfs)
@@ -316,7 +342,7 @@ class DataCatalogue():
 
         if add_trend_after_averaging and remove_trend:
             # add mean changes back which have been removed over the common period
-            df_mean_annual["changes"] = df_mean_annual["changes"] + np.mean(means_over_period)
+            df_mean_annual["changes"] = df_mean_annual["changes"] + np.mean(change_means_over_period)
 
         # make Timeseries object with combined solution
         ts_data = TimeseriesData(start_dates=np.array(df_mean_annual["start_dates"]),
@@ -330,7 +356,7 @@ class DataCatalogue():
         reference_dataset_for_metadata = self.datasets[0]  # use this as a reference for filling metadata
 
         return Timeseries(region=reference_dataset_for_metadata.region, data_group=out_data_group,
-                          data=ts_data, unit=reference_dataset_for_metadata.unit,
+                          data=ts_data, unit=reference_dataset_for_metadata.unit, user_group=out_user_group,
                           area_change_applied=reference_dataset_for_metadata.area_change_applied), data_catalogue_out
 
     def __len__(self) -> int:

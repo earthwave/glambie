@@ -17,6 +17,8 @@ region_run_settings:
     - 
   gravimetry:
     exclude_annual_datasets :
+    - Sasgen_AWIarc_RL01_2
+    - Wouters
     - Jacob_2012_dmdt
     - Wouters
     - Sasgen_AWIarc_RL01_2

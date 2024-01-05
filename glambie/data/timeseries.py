@@ -377,7 +377,7 @@ class Timeseries():
                 # First remove area uncertainty
                 # area_unc is calculated as a % of the total area. % can be defined individually per region.
                 area_unc = glacier_area * self.region.area_uncertainty_percentage
-                errors_area_unc_removed = (  # inverting the formula from glambie ATBD
+                errors_area_unc_removed = np.abs(  # inverting the formula from glambie ATBD
                     object_copy.data.changes * np.abs(
                         object_copy.data.errors**2 * glacier_area**2
                         - np.abs(object_copy.data.changes)**2 * area_unc**2)**0.5) / (

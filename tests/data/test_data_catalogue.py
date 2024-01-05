@@ -207,3 +207,12 @@ def test_average_timeseries_in_catalogue_example_with_trends_removed(example_cat
                               result_timeseries_trend_removed.data.changes)
     assert np.allclose(result_timeseries_trend_removed_added_after_averaging.data.changes,
                        result_timeseries.data.changes)
+
+
+def test_get_time_span_of_datasets(example_catalogue_small):
+    example_catalogue_small.load_all_data()
+    time_span = example_catalogue_small.get_time_span_of_datasets()
+    # make sure all datasets are within the span
+    for ds in example_catalogue_small.datasets:
+        assert ds.data.min_start_date >= time_span[0]
+        assert ds.data.max_end_date <= time_span[1]

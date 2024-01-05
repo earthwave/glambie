@@ -86,6 +86,14 @@ def run_global_results(glambie_run_config: GlambieRunConfig,
             region=REGIONS["global"], data_group=GLAMBIE_DATA_GROUPS["consensus"], csv_file_name="global_gt.csv")
         global_timeseries_gt.save_data_as_csv(csv_output_file)
 
+        # save out regional results homogenized to calendar year (in mwe and in gt)
+        for results in zip(regional_results_catalogue_homogenized.datasets,
+                           regional_results_catalogue_homogenized_gt.datasets):
+            for result in results:
+                result.save_data_as_csv(output_path_handler.get_csv_output_file_path(
+                    region=result.region, data_group=GLAMBIE_DATA_GROUPS["consensus"],
+                    csv_file_name=f"consensus_calendar_year_{result.unit.lower()}_{result.region.name}.csv"))
+
     return global_timeseries_mwe
 
 

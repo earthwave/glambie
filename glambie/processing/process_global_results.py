@@ -10,8 +10,7 @@ from glambie.processing.processing_helpers import get_reduced_catalogue_to_date_
 from glambie.const.data_groups import GLAMBIE_DATA_GROUPS
 from glambie.plot.processing_plots import plot_combination_of_regions_to_global
 import numpy as np
-from functools import reduce
-
+import pandas as pd
 
 log = logging.getLogger(__name__)
 
@@ -167,16 +166,21 @@ def _combine_regional_results_into_global(regional_results_catalogue: DataCatalo
             df["errors"] = (df["errors"] * ds.region.rgi6_area)  # apply weighted mean error propagation
         df["errors"] = df["errors"]**2  # square errors for error propagation
 
-    # join all catalogues by start and end dates. The resulting dataframe has a set of columns with repeating prefixes
-    df = reduce(lambda left, right: left.merge(right, how="outer", on=["start_dates", "end_dates"]), catalogue_dfs)
-    df = df.sort_values(by="start_dates")
-    start_dates, end_dates = np.array(df["start_dates"]), np.array(df["end_dates"])
-    # calculate mean changes
-    mean_changes = np.array(df[df.columns.intersection(
-        df.filter(regex=("changes*")).columns.to_list())].sum(axis=1))
+    # join all catalogues by start and end dates
+    # the resulting dataframe has a set of columns with repeating prefixes
+    df_merged_all = pd.concat([x.set_index(['start_dates', 'end_dates']) for x in catalogue_dfs],
+                              axis=1, keys=range(len(catalogue_dfs)))
+    df_merged_all.columns = df_merged_all.columns.map('{0[1]}_{0[0]}'.format)
+    df_merged_all = df_merged_all.sort_values(by="start_dates")
+    df_merged_all = df_merged_all.reset_index()
+    start_dates, end_dates = np.array(df_merged_all["start_dates"]), np.array(df_merged_all["end_dates"])
+
+    # calculate sum of changes
+    mean_changes = np.array(df_merged_all[df_merged_all.columns.intersection(
+        df_merged_all.filter(regex=("changes*")).columns.to_list())].sum(axis=1))
     # apply sum and square root to (squared) errors
-    mean_uncertainties = np.sqrt(np.array(df[df.columns.intersection(
-        df.filter(regex=("errors*")).columns.to_list())].sum(axis=1)))
+    mean_uncertainties = np.sqrt(np.array(df_merged_all[df_merged_all.columns.intersection(
+        df_merged_all.filter(regex=("errors*")).columns.to_list())].sum(axis=1)))
 
     if regional_results_catalogue.datasets[0].unit.lower() == "mwe":
         # divide results in mwe my total_area

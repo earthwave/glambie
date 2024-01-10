@@ -54,7 +54,7 @@ def run_global_results(glambie_run_config: GlambieRunConfig,
     regional_results_catalogue_homogenized_gt = convert_datasets_to_unit_gt(regional_results_catalogue_homogenized)
     global_timeseries_gt = _combine_regional_results_into_global(regional_results_catalogue_homogenized_gt)
 
-    # plot
+    # plot and save to csv
     if output_path_handler is not None:
         # 1 in mwe
         plot_output_file = output_path_handler.get_plot_output_file_path(

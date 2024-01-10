@@ -309,25 +309,25 @@ class DataCatalogue():
 
         # join all catalogues by start and end dates
         # the resulting dataframe has a set of columns with repeating prefixes
-        df_merged_all = pd.concat([x.set_index(['start_dates', 'end_dates']) for x in catalogue_dfs],
-                                  axis=1, keys=range(len(catalogue_dfs)))
-        df_merged_all.columns = df_merged_all.columns.map('{0[1]}_{0[0]}'.format)
-        df_merged_all = df_merged_all.sort_values(by="start_dates")
-        df_merged_all = df_merged_all.reset_index()
-        start_dates, end_dates = np.array(df_merged_all["start_dates"]), np.array(df_merged_all["end_dates"])
-        mean_changes = np.array(df_merged_all[df_merged_all.columns.intersection(
-            df_merged_all.filter(regex=("changes_*")).columns.to_list())].mean(axis=1))
+        df_merged = pd.concat([x.set_index(['start_dates', 'end_dates']) for x in catalogue_dfs],
+                              axis=1, keys=range(len(catalogue_dfs)))
+        df_merged.columns = df_merged.columns.map('{0[1]}_{0[0]}'.format)
+        df_merged = df_merged.sort_values(by="start_dates")
+        df_merged = df_merged.reset_index()
+        start_dates, end_dates = np.array(df_merged["start_dates"]), np.array(df_merged["end_dates"])
+        mean_changes = np.array(df_merged[df_merged.columns.intersection(
+            df_merged.filter(regex=("changes_*")).columns.to_list())].mean(axis=1))
 
         # UNCERTAINTIES -- more information is in GlaMBIE Assessment Algorithm document
         # 1 ) propagate observational uncertainties
-        sigma_obs_uncertainty = ((df_merged_all.filter(regex=("errors*"))**2).sum(axis=1))**0.5
+        sigma_obs_uncertainty = ((df_merged.filter(regex=("errors*"))**2).sum(axis=1))**0.5
         # divide by 1/n
-        sigma_obs_uncertainty = (1 / df_merged_all.filter(regex=("errors*")).count(axis=1)) * sigma_obs_uncertainty
+        sigma_obs_uncertainty = (1 / df_merged.filter(regex=("errors*")).count(axis=1)) * sigma_obs_uncertainty
 
         # 2) variability of change between sources
-        column_names = df_merged_all.columns.intersection(df_merged_all.filter(regex=("changes*")).columns.to_list())
+        column_names = df_merged.columns.intersection(df_merged.filter(regex=("changes*")).columns.to_list())
         # calculate standard deviation of all differences from annual mean: TODO: what to do if rate is removed?
-        df_diff_from_mean = df_merged_all[column_names].subtract(mean_changes, axis=0)
+        df_diff_from_mean = df_merged[column_names].subtract(mean_changes, axis=0)
         arr_diff_from_mean = df_diff_from_mean[df_diff_from_mean != 0].values.flatten()
         arr_diff_from_mean = arr_diff_from_mean[~pd.isnull(arr_diff_from_mean)]  # remove nans
         stdev_differences = np.std(arr_diff_from_mean) if len(arr_diff_from_mean) > 0 else 0

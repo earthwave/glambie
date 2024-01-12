@@ -234,7 +234,7 @@ def combine_within_one_region(catalogue_data_group_results: DataCatalogue,
         # save csv
         combined_ts.save_data_as_csv(output_path_handler.get_csv_output_file_path(
             region=combined_ts.region, data_group=GLAMBIE_DATA_GROUPS["consensus"],
-            csv_file_name=f"consensus_mwe_{combined_ts.region.name}.csv"))
+            csv_file_name=f"consensus_hydrological_year_mwe_{combined_ts.region.name}.csv"))
     return combined_ts
 
 
@@ -278,7 +278,7 @@ def convert_and_save_one_region_to_gigatonnes(
         # save csv
         combined_region_timeseries_gt.save_data_as_csv(output_path_handler.get_csv_output_file_path(
             region=combined_region_timeseries_gt.region, data_group=GLAMBIE_DATA_GROUPS["consensus"],
-            csv_file_name=f"consensus_gt_{combined_region_timeseries_gt.region.name}.csv"))
+            csv_file_name=f"consensus_hydrological_year_gt_{combined_region_timeseries_gt.region.name}.csv"))
 
     return catalogue_data_group_results_gt, combined_region_timeseries_gt
 

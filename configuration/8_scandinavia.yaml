@@ -20,6 +20,8 @@ region_run_settings:
     - Sasgen_AWIarc_RL01_2
     - Wouters
     - Jacob_2012_dmdt
+    - Wouters
+    - Sasgen_AWIarc_RL01_2
     exclude_trend_datasets :
     - Sasgen_AWIarc_RL01_2
     - Wouters

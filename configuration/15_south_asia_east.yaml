@@ -4,10 +4,8 @@ region_name: south_asia_east
 year_type: glaciological # glaciological or calendar
 
 seasonal_correction_dataset:
-  user_group: Huss_monthly
-  data_group: combined
-  # user_group: UZH_GlaciolSineWave
-  # data_group: glaciological
+  user_group: UZH_GlaciolSineWave
+  data_group: glaciological
 
 region_run_settings:
   altimetry:

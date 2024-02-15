@@ -1,6 +1,6 @@
 google-cloud-storage==2.14.0
 numpy==1.26.4
 pandas==2.2.0
-matplotlib==3.8.2
+matplotlib==3.8.3
 scipy==1.12.0
 pyyaml==6.0.1

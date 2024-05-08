@@ -831,7 +831,8 @@ class Timeseries():
                         delta_balance_end = abs(
                             df_filtered_year_cum_initial_dates.changes.iloc[-1]
                             - df_filtered_year_cum_new_dates.changes.iloc[-1])
-                        error_temp = 0.5 * (delta_balance_start + delta_balance_end)
+                        error_temp = constants.SEASONAL_CORRECTION_ERROR_RATIO \
+                            * (delta_balance_start + delta_balance_end)
 
                         # 2. combine errors assuming random error propagation
                         new_error = (error**2 + error_temp**2)**0.5

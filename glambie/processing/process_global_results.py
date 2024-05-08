@@ -46,7 +46,7 @@ def run_global_results(glambie_run_config: GlambieRunConfig,
     regional_results_catalogue_homogenized = get_reduced_catalogue_to_date_window(
         data_catalogue=regional_results_catalogue_homogenized,
         start_date=glambie_run_config.start_year,
-        end_date=glambie_run_config.end_year)
+        end_date=glambie_run_config.end_year + 1)  # plus one to include until the end of the year, and not start
 
     global_timeseries_mwe = _combine_regional_results_into_global(regional_results_catalogue_homogenized)
 

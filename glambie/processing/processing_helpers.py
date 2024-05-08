@@ -83,12 +83,12 @@ def filter_catalogue_with_config_settings(data_group: GlambieDataGroup,
     additional_trend_datasets = get_additional_combined_datasets(
         data_catalogue=data_catalogue_original, data_group=data_group,
         region_config=region_config, type_of_information="trend")
-    # combined solution should have an asterix so that they are recognized in the plots
+    # combined solution should have a symbol so that they are recognized in the plots
     for ds in additional_annual_datasets:
-        ds.user_group = ds.user_group + "_*"
+        ds.user_group = ds.user_group + "_#"
     for ds in additional_trend_datasets:
         if ds not in additional_annual_datasets:
-            ds.user_group = ds.user_group + "_*"
+            ds.user_group = ds.user_group + "_#"
 
     datasets_annual.extend(additional_annual_datasets)
     datasets_trend.extend(additional_trend_datasets)

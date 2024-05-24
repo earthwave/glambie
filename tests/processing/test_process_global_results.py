@@ -52,9 +52,13 @@ def test_combine_regional_results_into_global_in_mwe(example_catalogue):
     combined_result = _combine_regional_results_into_global(regional_results_catalogue=example_catalogue)
     dataset1 = example_catalogue.datasets[0]
     dataset2 = example_catalogue.datasets[1]
-    expected_result = (dataset1.data.changes * dataset1.region.rgi6_area
-                       + dataset2.data.changes * dataset2.region.rgi6_area) / (
-                           dataset1.region.rgi6_area + dataset2.region.rgi6_area)
+    adjusted_areas_1 = [dataset1.region.get_adjusted_area(start_dates, end_dates) for start_dates, end_dates
+                        in zip(dataset1.data.start_dates, dataset1.data.end_dates)]
+    adjusted_areas_2 = [dataset2.region.get_adjusted_area(start_dates, end_dates) for start_dates, end_dates
+                        in zip(dataset2.data.start_dates, dataset2.data.end_dates)]
+    expected_result = (dataset1.data.changes * adjusted_areas_1
+                       + dataset2.data.changes * adjusted_areas_2) / (
+                           np.array(adjusted_areas_1) + np.array(adjusted_areas_2))
     assert np.array_equal(expected_result, combined_result.data.changes)
 
 
@@ -62,10 +66,13 @@ def test_combine_regional_results_into_global_in_mwe_errors(example_catalogue):
     combined_result = _combine_regional_results_into_global(regional_results_catalogue=example_catalogue)
     dataset1 = example_catalogue.datasets[0]
     dataset2 = example_catalogue.datasets[1]
-    total_area = dataset1.region.rgi6_area + dataset2.region.rgi6_area
+    adjusted_areas_1 = np.array([dataset1.region.get_adjusted_area(start_dates, end_dates) for start_dates, end_dates
+                                 in zip(dataset1.data.start_dates, dataset1.data.end_dates)])
+    adjusted_areas_2 = np.array([dataset2.region.get_adjusted_area(start_dates, end_dates) for start_dates, end_dates
+                                 in zip(dataset2.data.start_dates, dataset2.data.end_dates)])
     # rules of weighted mean error propagation
-    expected_errors = np.sqrt((dataset1.data.errors**2 * dataset1.region.rgi6_area**2)
-                              + (dataset2.data.errors**2 * dataset2.region.rgi6_area**2)) / total_area
+    expected_errors = np.sqrt((dataset1.data.errors**2 * adjusted_areas_1**2)
+                              + (dataset2.data.errors**2 * adjusted_areas_2**2)) / (adjusted_areas_1 + adjusted_areas_2)
     assert np.array_equal(expected_errors, combined_result.data.errors)
 
 

@@ -46,7 +46,7 @@ def run_global_results(glambie_run_config: GlambieRunConfig,
     regional_results_catalogue_homogenized = get_reduced_catalogue_to_date_window(
         data_catalogue=regional_results_catalogue_homogenized,
         start_date=glambie_run_config.start_year,
-        end_date=glambie_run_config.end_year)
+        end_date=glambie_run_config.end_year + 1)  # plus one to include until the end of the year, and not start
 
     global_timeseries_mwe = _combine_regional_results_into_global(regional_results_catalogue_homogenized)
 
@@ -156,14 +156,22 @@ def _combine_regional_results_into_global(regional_results_catalogue: DataCatalo
     assert regional_results_catalogue.datasets[0].unit == "mwe" or \
         regional_results_catalogue.datasets[0].unit.lower() == "gt"
 
+    if regional_results_catalogue.datasets[0].unit == "mwe":
+        for ds in regional_results_catalogue.datasets:
+            assert ds.area_change_applied
+
     # merge all dataframes
     catalogue_dfs = [ds.data.as_dataframe() for ds in regional_results_catalogue.datasets]
 
     for df, ds in zip(catalogue_dfs, regional_results_catalogue.datasets):
         if regional_results_catalogue.datasets[0].unit.lower() == "mwe":
+            # make list of adjusted areas
+            adjusted_areas = [ds.region.get_adjusted_area(start_date, end_date)
+                              for start_date, end_date in zip(df["start_dates"], df["end_dates"])]
             # multiply changes and errors with area for each region
-            df["changes"] = (df["changes"] * ds.region.rgi6_area)
-            df["errors"] = (df["errors"] * ds.region.rgi6_area)  # apply weighted mean error propagation
+            df["changes"] = (df["changes"] * adjusted_areas)
+            df["errors"] = (df["errors"] * adjusted_areas)  # apply weighted mean error propagation
+            df["areas"] = adjusted_areas
         df["errors"] = df["errors"]**2  # square errors for error propagation
 
     # join all catalogues by start and end dates
@@ -178,13 +186,16 @@ def _combine_regional_results_into_global(regional_results_catalogue: DataCatalo
     # calculate sum of changes
     mean_changes = np.array(df_merged_all[df_merged_all.columns.intersection(
         df_merged_all.filter(regex=("changes*")).columns.to_list())].sum(axis=1))
+    # calculate sum of areas
+    total_area = np.array(df_merged_all[df_merged_all.columns.intersection(
+        df_merged_all.filter(regex=("areas*")).columns.to_list())].sum(axis=1))
     # apply sum and square root to (squared) errors
     mean_uncertainties = np.sqrt(np.array(df_merged_all[df_merged_all.columns.intersection(
         df_merged_all.filter(regex=("errors*")).columns.to_list())].sum(axis=1)))
 
     if regional_results_catalogue.datasets[0].unit.lower() == "mwe":
         # divide results in mwe my total_area
-        total_area = np.sum([ds.region.rgi6_area for ds in regional_results_catalogue.datasets])
+        # total_area = np.sum([ds.region.rgi6_area for ds in regional_results_catalogue.datasets])
         mean_changes = mean_changes / total_area
         mean_uncertainties = mean_uncertainties / total_area
 

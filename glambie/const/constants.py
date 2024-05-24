@@ -6,6 +6,8 @@ from enum import Enum
 DENSITY_OF_WATER_KG_PER_M3 = 997
 DENSITY_OF_ICE_KG_PER_M3 = 850  # Huss et al. (2013)
 OCEAN_AREA_IN_KM2 = 3.625e8  # Cogley et al. (2012)
+# Ratio of relative error for seasonal correction. for more info see the GlaMBIE Assessment Algorithm doc
+SEASONAL_CORRECTION_ERROR_RATIO = 0.1
 
 
 class YearType(Enum):

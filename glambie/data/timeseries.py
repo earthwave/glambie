@@ -367,12 +367,7 @@ class Timeseries():
                 return object_copy
             elif str.lower(self.unit) == "gt":
                 # get area
-                if rgi_area_version == 6:
-                    glacier_area = self.region.rgi6_area
-                elif rgi_area_version == 7:
-                    glacier_area = self.region.rgi7_area
-                else:
-                    raise NotImplementedError("Version '{}' of RGI is not implemented yet.".format(rgi_area_version))
+                glacier_area = getattr(self.region, "rgi{}_area".format(str(rgi_area_version)))
                 # convert uncertainties
                 # First remove area uncertainty
                 # area_unc is calculated as a % of the total area. % can be defined individually per region.
@@ -426,12 +421,7 @@ class Timeseries():
             raise AssertionError("Cannot convert dataset to Gt. Area change needs to be removed first.")
 
         # get area
-        if rgi_area_version == 6:
-            glacier_area = self.region.rgi6_area
-        elif rgi_area_version == 7:
-            glacier_area = self.region.rgi7_area
-        else:
-            raise NotImplementedError("Version '{}' of RGI is not implemented yet.".format(rgi_area_version))
+        glacier_area = getattr(self.region, "rgi{}_area".format(str(rgi_area_version)))
 
         object_copy = self.copy()
         object_copy.unit = "Gt"
@@ -495,22 +485,16 @@ class Timeseries():
             raise AssertionError("Area change is not applied to current dataset. Cannot be removed.")
 
         # get area
-        if rgi_area_version == 6:
-            glacier_area = self.region.rgi6_area
-        elif rgi_area_version == 7:
-            glacier_area = self.region.rgi7_area
+        glacier_area = getattr(self.region, "rgi{}_area".format(str(rgi_area_version)))
 
         object_copy = self.copy()
         # conversion with area change
-        area_change_reference_year = self.region.area_change_reference_year
-        area_change = self.region.area_change
         adjusted_changes = []
         adjusted_areas = []
 
         df = self.data.as_dataframe()
         for start_date, end_date, change in zip(df["start_dates"], df["end_dates"], df["changes"]):
-            t_i = (start_date + end_date) / 2
-            adjusted_area = glacier_area + (t_i - area_change_reference_year) * (area_change / 100) * glacier_area
+            adjusted_area = self.region.get_adjusted_area(start_date, end_date, rgi_area_version=rgi_area_version)
             if apply_area_change:
                 adjusted_changes.append(glacier_area / adjusted_area * change)
             else:  # remove change
@@ -831,7 +815,8 @@ class Timeseries():
                         delta_balance_end = abs(
                             df_filtered_year_cum_initial_dates.changes.iloc[-1]
                             - df_filtered_year_cum_new_dates.changes.iloc[-1])
-                        error_temp = 0.5 * (delta_balance_start + delta_balance_end)
+                        error_temp = constants.SEASONAL_CORRECTION_ERROR_RATIO \
+                            * (delta_balance_start + delta_balance_end)
 
                         # 2. combine errors assuming random error propagation
                         new_error = (error**2 + error_temp**2)**0.5

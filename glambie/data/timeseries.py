@@ -313,6 +313,7 @@ class Timeseries():
             absolute file path where CSV should be saved
         """
         df_data = self.data.as_dataframe()
+        df_data.dropna(how='all', axis=1, inplace=True)  # drop empty columns
         df_data.to_csv(csv_outpath, index=False)
 
     def convert_timeseries_to_unit_mwe(self, density_of_water: float = constants.DENSITY_OF_WATER_KG_PER_M3,

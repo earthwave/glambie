@@ -46,8 +46,10 @@ def test_save_as_csv(tmp_path, example_timeseries_ingested):
     example_timeseries_ingested.save_data_as_csv(out_csv_path)
     assert os.path.exists(out_csv_path)
     df = pd.read_csv(out_csv_path)
+    # remove all columns without data
+    expected_df = example_timeseries_ingested.data.as_dataframe().dropna(how='all', axis=1)
     # check data read from CSV is same as TimeseriesData
-    pd.testing.assert_frame_equal(df, example_timeseries_ingested.data.as_dataframe(), check_dtype=False)
+    pd.testing.assert_frame_equal(df, expected_df, check_dtype=False)
 
 
 def test_data_ingestion(example_timeseries_ingested):

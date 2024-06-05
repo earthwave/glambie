@@ -221,7 +221,7 @@ REGIONS = {
     'antarctic_and_subantarctic': RGIRegion(
         rgi_id=19,
         name='antarctic_and_subantarctic',
-        long_name='Antarctic and Subantarctic Islands', short_name='ANT',
+        long_name='Antarctic & Subantarctic', short_name='ANT',
         rgi5_area=132867, rgi6_area=132867, rgi7_area=None,
         area_uncertainty_percentage=0.05,
         area_change=-0.27,

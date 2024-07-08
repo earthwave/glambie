@@ -331,10 +331,10 @@ class DataCatalogue():
         arr_diff_from_mean = df_diff_from_mean[df_diff_from_mean != 0].values.flatten()
         arr_diff_from_mean = arr_diff_from_mean[~pd.isnull(arr_diff_from_mean)]  # remove nans
         stdev_differences = np.std(arr_diff_from_mean) if len(arr_diff_from_mean) > 0 else 0
-        # divide stdev_differences by N = number of different observations
+        # divide stdev_differences by sqrt(N = number of different observations)
         # df_diff_from_mean.count(axis=1) this will give us the number of values that are not NaN per row
-        # times 1.96 as we calculate sigma-2 uncertainties (95%)
-        sigma_variability_uncertainty = 1.96 * np.array(stdev_differences / df_diff_from_mean.count(axis=1))
+        # times 1.96 as we calculate sigma-2 uncertainties (95%), and standard deviation is sigma-1
+        sigma_variability_uncertainty = 1.96 * np.array(stdev_differences / np.sqrt(df_diff_from_mean.count(axis=1)))
 
         # Combine two uncertainty sources assuming they are independent
         uncertainties = (sigma_obs_uncertainty**2 + sigma_variability_uncertainty**2)**0.5

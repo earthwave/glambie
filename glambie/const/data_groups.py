@@ -16,6 +16,6 @@ GLAMBIE_DATA_GROUPS = {
     'glaciological': GlambieDataGroup(name='glaciological', long_name='Glaciological'),
     'combined': GlambieDataGroup(name='combined', long_name='Combination of methods'),
     'demdiff_and_glaciological': GlambieDataGroup(name='demdiff_and_glaciological',
-                                                  long_name='DEM Diff. & Glaciol.'),
+                                                  long_name='DEM diff. & glaciol.'),
     'consensus': GlambieDataGroup(name='consensus', long_name='Consensus of a combination of data sets')
 }

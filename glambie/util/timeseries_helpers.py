@@ -187,7 +187,7 @@ def moving_average(dx: float, x: np.array, y: np.array = None, clip: bool = Fals
         n = len(x)
 
         ry = np.empty(n,)
-        ry.fill(np.NAN)
+        ry.fill(np.nan)
 
         for i in range(n):
             ok = np.logical_and(
@@ -200,7 +200,7 @@ def moving_average(dx: float, x: np.array, y: np.array = None, clip: bool = Fals
                 x < np.min(x) + dx / 2 - 1,
                 x > np.max(x) - dx / 2 + 1)
             if ok.any():
-                ry[ok] = np.NAN
+                ry[ok] = np.nan
         return ry
     else:
         result = np.cumsum(x, dtype=x.dtype)
@@ -329,7 +329,7 @@ def combine_timeseries_imbie(t_array: list[np.ndarray],
         (len(t_array_combined), np.max(solution_indices) + 1),
         dtype=t_array_combined.dtype
     )
-    full_resampled_data.fill(np.NAN)  # initially all values to NaN
+    full_resampled_data.fill(np.nan)  # initially all values to NaN
     full_resampled_data[:, 0] = t_array_combined  # fill in time domain
 
     #  RESAMPLE ALL SOLUTIONS TO MONTHLY AND SUM UP SOLUTIONS in y_array_combined
@@ -382,7 +382,7 @@ def combine_timeseries_imbie(t_array: list[np.ndarray],
     valid_indices = (solutions_per_timestep == 0)
     # set those locations to NaNs
     if valid_indices.any():
-        y_array_combined[valid_indices] = np.NAN
+        y_array_combined[valid_indices] = np.nan
 
     # PERFORM ADDITIONAL OPTIONAL EDITS ON RESULT
     if verbose:  # optionally plot output

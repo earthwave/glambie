@@ -102,9 +102,10 @@ def run_one_region(glambie_run_config: GlambieRunConfig,
             # apply area change
             trend_combined = trend_combined.apply_or_remove_area_change(rgi_area_version=6, apply_area_change=True)
             # save out with area change applied
-            trend_combined.save_data_as_csv(output_path_handler.get_csv_output_file_path(
-                region=trend_combined.region, data_group=data_group,
-                csv_file_name=f"{data_group.name}_final_with_area_change.csv"))
+            if output_path_handler is not None:
+                trend_combined.save_data_as_csv(output_path_handler.get_csv_output_file_path(
+                    region=trend_combined.region, data_group=data_group,
+                    csv_file_name=f"{data_group.name}_final_with_area_change.csv"))
             result_datasets.append(trend_combined)
         else:
             log.info('Skipping to process region=%s datagroup=%s as no data found.',

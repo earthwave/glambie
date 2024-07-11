@@ -49,9 +49,9 @@ def filter_catalogue_with_config_settings(data_group: GlambieDataGroup,
             data_group=data_group.name, region_name=region_config.region_name)
     else:
         data_catalogue_demdiff = data_catalogue.get_filtered_catalogue(
-            data_group=GLAMBIE_DATA_GROUPS["demdiff"].name)
+            data_group=GLAMBIE_DATA_GROUPS["demdiff"].name, region_name=region_config.region_name)
         data_catalogue_glaciological = data_catalogue.get_filtered_catalogue(
-            data_group=GLAMBIE_DATA_GROUPS["glaciological"].name)
+            data_group=GLAMBIE_DATA_GROUPS["glaciological"].name, region_name=region_config.region_name)
         # concatenate demdiff and glaciological into one
         data_catalogue = DataCatalogue.from_list(data_catalogue_demdiff.datasets
                                                  + data_catalogue_glaciological.datasets,

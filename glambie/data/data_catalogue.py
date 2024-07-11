@@ -226,9 +226,39 @@ class DataCatalogue():
         else:
             return True
 
+    def get_common_period_of_datasets(self) -> Tuple[np.array, np.array]:
+        """
+        Calculates arrays of the common period in all datasets of the catalogue
+        also considering gaps within the timeseries.
+        Note that all datasets should be at the same time resolution, e.g. annual for this operation.
+
+        For example the two datasets ds_1 and ds_2:
+        ds_1.start_dates = [2001, 2002, 2003, 2004]
+        ds_1.end_dates = [2002, 2003, 2004, 2005]
+        ds_2.start_dates = [2002, 2003, 2005]
+        ds_2.end_dates = [2003, 2004, 2006]
+
+        Would result in the following common period:
+        >>> common_start_dates = [2002, 2003]
+        >>> common_end_dates = [2003, 2004]
+
+        Returns
+        -------
+        Tuple[np.array, np.array]
+            common_start_dates, common_end_dates
+        """
+        if len(self.datasets) > 0:
+            # combine all datasets to calculate the common period
+            dataset_start_dates = [ds.data.as_dataframe()['start_dates'] for ds in self.datasets]
+            dataset_end_dates = [ds.data.as_dataframe()['end_dates'] for ds in self.datasets]
+            return np.sort(np.array(list(set.intersection(*[set(dates) for dates in dataset_start_dates])))), \
+                np.sort(np.array(list(set.intersection(*[set(dates) for dates in dataset_end_dates]))))
+        else:
+            return np.array([]), np.array([])
+
     def get_time_span_of_datasets(self) -> Tuple[float, float]:
         """
-        Returns the time window covered by all datasets within the catalogue
+        Returns the maximum time window covered by datasets within the catalogue
 
         Returns
         -------
@@ -296,13 +326,15 @@ class DataCatalogue():
         # remove trend / calculate beta instead of B
         if remove_trend:
             change_means_over_period = []  # keep track for adding back in case add_trend_after_averaging=True
-            start_ref_period = np.max([df.start_dates.min() for df in catalogue_dfs])
-            end_ref_period = np.min([df.end_dates.max() for df in catalogue_dfs])
 
-            if not start_ref_period < end_ref_period:
+            # get common period of all datasets in catalogue
+            common_start_dates, common_end_dates = self.get_common_period_of_datasets()
+
+            if len(common_start_dates) == 0:
                 warnings.warn("Warning when removing trends. No common period detected.")
             for idx, df in enumerate(catalogue_dfs):
-                df_sub = df[(df["start_dates"] >= start_ref_period) & (df["end_dates"] <= end_ref_period)]
+                # remove anything outside the common start and end dates
+                df_sub = df[(df["start_dates"].isin(common_start_dates)) & (df["end_dates"].isin(common_end_dates))]
                 df["changes"] = df["changes"] - df_sub["changes"].mean()
                 data_catalogue_out.datasets[idx].data.changes = np.array(df["changes"])
                 change_means_over_period.append(df_sub["changes"].mean())
@@ -331,10 +363,10 @@ class DataCatalogue():
         arr_diff_from_mean = df_diff_from_mean[df_diff_from_mean != 0].values.flatten()
         arr_diff_from_mean = arr_diff_from_mean[~pd.isnull(arr_diff_from_mean)]  # remove nans
         stdev_differences = np.std(arr_diff_from_mean) if len(arr_diff_from_mean) > 0 else 0
-        # divide stdev_differences by N = number of different observations
+        # divide stdev_differences by sqrt(N = number of different observations)
         # df_diff_from_mean.count(axis=1) this will give us the number of values that are not NaN per row
-        # times 1.96 as we calculate sigma-2 uncertainties (95%)
-        sigma_variability_uncertainty = 1.96 * np.array(stdev_differences / df_diff_from_mean.count(axis=1))
+        # times 1.96 as we calculate sigma-2 uncertainties (95%), and standard deviation is sigma-1
+        sigma_variability_uncertainty = 1.96 * np.array(stdev_differences / np.sqrt(df_diff_from_mean.count(axis=1)))
 
         # Combine two uncertainty sources assuming they are independent
         uncertainties = (sigma_obs_uncertainty**2 + sigma_variability_uncertainty**2)**0.5

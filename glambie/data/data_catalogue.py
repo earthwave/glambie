@@ -249,13 +249,10 @@ class DataCatalogue():
         """
         if len(self.datasets) > 0:
             # combine all datasets to calculate the common period
-            catalogue_dfs = [ds.data.as_dataframe() for ds in self.datasets]
-            df_merged = pd.concat([x.set_index(['start_dates', 'end_dates']) for x in catalogue_dfs],
-                                  axis=1, keys=range(len(catalogue_dfs)))
-            df_merged.columns = df_merged.columns.map('{0[1]}_{0[0]}'.format)
-            df_merged = df_merged.sort_values(by="start_dates").reset_index()
-            df_common_period = df_merged[~df_merged.filter(regex=("changes_*")).isna().any(axis=1)]
-            return np.array(df_common_period["start_dates"]), np.array(df_common_period["end_dates"])
+            dataset_start_dates = [ds.data.as_dataframe()['start_dates'] for ds in self.datasets]
+            dataset_end_dates = [ds.data.as_dataframe()['end_dates'] for ds in self.datasets]
+            return np.sort(np.array(list(set.intersection(*[set(dates) for dates in dataset_start_dates])))), \
+                np.sort(np.array(list(set.intersection(*[set(dates) for dates in dataset_end_dates]))))
         else:
             return np.array([]), np.array([])
 
@@ -332,9 +329,6 @@ class DataCatalogue():
 
             # get common period of all datasets in catalogue
             common_start_dates, common_end_dates = self.get_common_period_of_datasets()
-
-            # start_ref_period = np.max([df.start_dates.min() for df in catalogue_dfs])
-            # end_ref_period = np.min([df.end_dates.max() for df in catalogue_dfs])
 
             if len(common_start_dates) == 0:
                 warnings.warn("Warning when removing trends. No common period detected.")

@@ -2,6 +2,7 @@ import os
 from unittest.mock import patch
 
 from glambie.data.data_catalogue import DataCatalogue
+from glambie.data.timeseries import TimeseriesData
 import pytest
 import copy
 import numpy as np
@@ -216,3 +217,36 @@ def test_get_time_span_of_datasets(example_catalogue_small):
     for ds in example_catalogue_small.datasets:
         assert ds.data.min_start_date >= time_span[0]
         assert ds.data.max_end_date <= time_span[1]
+
+
+def test_get_common_period_of_datasets_one_dataset(example_catalogue_small):
+    example_catalogue_small.load_all_data()
+    common_start_dates, common_end_dates = example_catalogue_small.get_common_period_of_datasets()
+    # we only have one dataset within the catalogue so this should equal start and end dates of the dataset
+    dataset_data = example_catalogue_small.datasets[0].data
+    assert np.array_equal(dataset_data.start_dates, common_start_dates)
+    assert np.array_equal(dataset_data.end_dates, common_end_dates)
+
+
+def test_get_common_period_of_datasets_with_gaps(example_catalogue_small):
+    example_catalogue_small.load_all_data()
+    # let's add a dataset with a time gap
+    ds_with_gaps = example_catalogue_small.datasets[0].copy()
+    data = ds_with_gaps.data
+    ds_with_gaps.data = TimeseriesData(start_dates=[*data.start_dates[:2], data.start_dates[3]],
+                                       end_dates=[*data.end_dates[:2], data.end_dates[3]],
+                                       changes=[*data.changes[:2], data.changes[3]],
+                                       errors=[*data.errors[:2], data.errors[3]],
+                                       glacier_area_reference=None, glacier_area_observed=None,
+                                       hydrological_correction_value=None, remarks=None)
+
+    catalogue = DataCatalogue.from_list([example_catalogue_small.datasets[0], ds_with_gaps])
+
+    # now check if we get back expected values when one dataset has a gap
+    common_start_dates, common_end_dates = catalogue.get_common_period_of_datasets()
+    expected_start_dates = example_catalogue_small.datasets[0].data.start_dates
+    expected_start_dates = [*expected_start_dates[:2], expected_start_dates[3]]
+    expected_end_dates = example_catalogue_small.datasets[0].data.end_dates
+    expected_end_dates = [*expected_end_dates[:2], expected_end_dates[3]]
+    assert np.array_equal(common_start_dates, expected_start_dates)
+    assert np.array_equal(common_end_dates, expected_end_dates)

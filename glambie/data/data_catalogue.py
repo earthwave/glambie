@@ -226,9 +226,42 @@ class DataCatalogue():
         else:
             return True
 
+    def get_common_period_of_datasets(self) -> Tuple[np.array, np.array]:
+        """
+        Calculates arrays of the common period in all datasets of the catalogue
+        also considering gaps within the timeseries.
+        Note that all datasets should be at the same time resolution, e.g. annual for this operation.
+
+        For example the two datasets ds_1 and ds_2:
+        ds_1.start_dates = [2001, 2002, 2003, 2004]
+        ds_1.end_dates = [2002, 2003, 2004, 2005]
+        ds_2.start_dates = [2002, 2003, 2005]
+        ds_2.end_dates = [2003, 2004, 2006]
+
+        Would result in the following common period:
+        >>> common_start_dates = [2002, 2003]
+        >>> common_end_dates = [2003, 2004]
+
+        Returns
+        -------
+        Tuple[np.array, np.array]
+            common_start_dates, common_end_dates
+        """
+        if len(self.datasets) > 0:
+            # combine all datasets to calculate the common period
+            catalogue_dfs = [ds.data.as_dataframe() for ds in self.datasets]
+            df_merged = pd.concat([x.set_index(['start_dates', 'end_dates']) for x in catalogue_dfs],
+                                  axis=1, keys=range(len(catalogue_dfs)))
+            df_merged.columns = df_merged.columns.map('{0[1]}_{0[0]}'.format)
+            df_merged = df_merged.sort_values(by="start_dates").reset_index()
+            df_common_period = df_merged[~df_merged.filter(regex=("changes_*")).isna().any(axis=1)]
+            return np.array(df_common_period["start_dates"]), np.array(df_common_period["end_dates"])
+        else:
+            return np.array([]), np.array([])
+
     def get_time_span_of_datasets(self) -> Tuple[float, float]:
         """
-        Returns the time window covered by all datasets within the catalogue
+        Returns the maximum time window covered by datasets within the catalogue
 
         Returns
         -------
@@ -296,13 +329,18 @@ class DataCatalogue():
         # remove trend / calculate beta instead of B
         if remove_trend:
             change_means_over_period = []  # keep track for adding back in case add_trend_after_averaging=True
-            start_ref_period = np.max([df.start_dates.min() for df in catalogue_dfs])
-            end_ref_period = np.min([df.end_dates.max() for df in catalogue_dfs])
 
-            if not start_ref_period < end_ref_period:
+            # get common period of all datasets in catalogue
+            common_start_dates, common_end_dates = self.get_common_period_of_datasets()
+
+            # start_ref_period = np.max([df.start_dates.min() for df in catalogue_dfs])
+            # end_ref_period = np.min([df.end_dates.max() for df in catalogue_dfs])
+
+            if len(common_start_dates) == 0:
                 warnings.warn("Warning when removing trends. No common period detected.")
             for idx, df in enumerate(catalogue_dfs):
-                df_sub = df[(df["start_dates"] >= start_ref_period) & (df["end_dates"] <= end_ref_period)]
+                # remove anything outside the common start and end dates
+                df_sub = df[(df["start_dates"].isin(common_start_dates)) & (df["end_dates"].isin(common_end_dates))]
                 df["changes"] = df["changes"] - df_sub["changes"].mean()
                 data_catalogue_out.datasets[idx].data.changes = np.array(df["changes"])
                 change_means_over_period.append(df_sub["changes"].mean())

@@ -27,6 +27,7 @@ setup(
     author_email='info@earthwave.co.uk',
     url='https://github.com/earthwave/glambie',
     python_requires=">=3.9",
+    license='MIT',
     packages=find_packages(),
     # note requirements listed ininstall_requires should be the *minimum required*
     # in order to allow pip to resolve multiple installed packages properly.

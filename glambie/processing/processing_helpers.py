@@ -443,7 +443,7 @@ def extend_annual_timeseries_if_shorter_than_time_window(
         start_ref_period = np.max([df.start_dates.min() for df in catalogue_dfs])
         end_ref_period = np.min([df.end_dates.max() for df in catalogue_dfs])
         if not start_ref_period < end_ref_period:
-            warnings.warn("No common period detected when removing trends.")
+            warnings.warn("No common period detected when removing trends.", stacklevel=2)
         for df in catalogue_dfs:
             df_sub = df[(df["start_dates"] >= start_ref_period) & (df["end_dates"] <= end_ref_period)]
             df["changes"] = df["changes"] - df_sub["changes"].mean()  # edit the dataframe

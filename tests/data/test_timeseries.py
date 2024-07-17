@@ -13,7 +13,7 @@ from glambie.util.mass_height_conversions import meters_to_meters_water_equivale
 from glambie.util.mass_height_conversions import meters_water_equivalent_to_gigatonnes
 
 
-@pytest.fixture()
+@pytest.fixture
 def example_timeseries():
     ts = Timeseries(rgi_version=6,
                     unit='m',
@@ -23,7 +23,7 @@ def example_timeseries():
     return ts
 
 
-@pytest.fixture()
+@pytest.fixture
 def example_timeseries_ingested():
     data = TimeseriesData(start_dates=[2010.1, 2010.2],
                           end_dates=[2010.2, 2010.3],

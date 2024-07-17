@@ -240,7 +240,8 @@ def timeseries_as_months(fractional_year_array: np.array, downsample_to_month: b
 
     if contains_duplicates(monthly_array):
         warnings.warn("The rounded dates contain duplicates. "
-                      "To avoid this, use the function with data at lower temporal resolution than monthly.")
+                      "To avoid this, use the function with data at lower temporal resolution than monthly.",
+                      stacklevel=2)
 
     return monthly_array
 
@@ -623,11 +624,11 @@ def get_average_trends_over_new_time_periods(start_dates, end_dates, changes, ne
     # check if in monthly grid
     if not np.isin(np.array(new_start_dates), np.array(start_dates)).all():
         warnings.warn("New start dates should be values in timeseries start_dates."
-                      "Result may be invalid.")
+                      "Result may be invalid.", stacklevel=2)
 
     if not np.isin(np.array(new_end_dates), np.array(end_dates)).all():
         warnings.warn("New end dates should be values in timeseries end_dates."
-                      "Result may be invalid.")
+                      "Result may be invalid.", stacklevel=2)
 
     timeseries_df = pd.DataFrame({"start_dates": start_dates, "end_dates": end_dates, "changes": changes})
     annual_changes = []

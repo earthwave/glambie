@@ -69,7 +69,8 @@ def calibrate_timeseries_with_trends(trends: pd.DataFrame, calibration_timeserie
             warnings.warn("Trend is outside calibration timeseries (fully or partly) and will be ignored. "
                           "trend_start={} , trend_end={}, calibration_series_start={}, calibration_series_end={}"
                           .format(longterm_trend["start_dates"], longterm_trend["end_dates"],
-                                  min(calibration_timeseries["start_dates"]), max(calibration_timeseries["end_dates"])))
+                                  min(calibration_timeseries["start_dates"]), max(calibration_timeseries["end_dates"])),
+                          stacklevel=2)
 
     return np.array(calibrated_timeseries_list), np.array(distance_matrix_list)
 

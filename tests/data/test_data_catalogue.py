@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 
 
-@pytest.fixture()
+@pytest.fixture
 def example_catalogue():
     return DataCatalogue.from_dict({"base_path": ["tests", "test_data", "datastore"],
                                     "datasets": [
@@ -36,7 +36,7 @@ def example_catalogue():
         }]})
 
 
-@pytest.fixture()
+@pytest.fixture
 def example_catalogue_small():
     return DataCatalogue.from_dict({"base_path": ["tests", "test_data", "datastore"],
                                     "datasets": [

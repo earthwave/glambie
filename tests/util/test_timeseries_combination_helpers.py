@@ -7,27 +7,27 @@ from glambie.util.timeseries_combination_helpers import calibrate_timeseries_wit
 from glambie.util.timeseries_combination_helpers import combine_calibrated_timeseries
 
 
-@pytest.fixture()
+@pytest.fixture
 def example_trends():
     return pd.DataFrame({"start_dates": [2000, 2002],
                          "end_dates": [2002, 2005],
                          "changes": [3, 8]})
 
 
-@pytest.fixture()
+@pytest.fixture
 def example_calibration_timeseries():
     return pd.DataFrame({"start_dates": [2000, 2001, 2002, 2003, 2004],
                          "end_dates": [2001, 2002, 2003, 2004, 2005],
                          "changes": [1., 2., 3., 2., 1.]})
 
 
-@pytest.fixture()
+@pytest.fixture
 def example_calibrated_series():
     return np.array([[1., 2., 3., 2., 1.],
                     [1.66666667, 2.66666667, 3.66666667, 2.66666667, 1.66666667]])
 
 
-@pytest.fixture()
+@pytest.fixture
 def example_distance_matrix():
     return np.array([[1., 1., 2., 3., 4.],
                      [3., 2., 1., 1., 1.]])

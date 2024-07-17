@@ -15,7 +15,7 @@ from glambie.data.data_catalogue import DataCatalogue
 from glambie.processing.output_helpers import OutputPathHandler
 
 
-@pytest.fixture()
+@pytest.fixture
 def example_catalogue():
     data1 = TimeseriesData(start_dates=[2010, 2011],
                            end_dates=[2011, 2012],

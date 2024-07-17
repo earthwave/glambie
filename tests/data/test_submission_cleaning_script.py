@@ -11,19 +11,19 @@ from glambie.data.submission_cleaning_script import check_glambie_submission_for
 from glambie.data.submission_cleaning_script import download_csv_files_from_bucket
 
 
-@pytest.fixture()
+@pytest.fixture
 def test_inputs_path():
     return os.path.dirname(os.path.abspath(__file__)).replace('/data', '/test_data')
 
 
-@pytest.fixture()
+@pytest.fixture
 def example_file_check_dataframe():
     return pd.DataFrame.from_dict({'local_filepath': ['dummy'],
                                    'date_check_satisfied': np.nan,
                                    'nodata_check_satisfied': np.nan})
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_client() -> MagicMock(Client):
     """
     Create a mock google.cloud.storage.Client instance, to be used for testing download_csv_files_from_bucket

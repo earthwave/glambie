@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 
-@pytest.fixture()
+@pytest.fixture
 def timeseries_data_example1():
     return TimeseriesData(start_dates=[2010, 2011],
                           end_dates=[2011, 2012],
@@ -17,7 +17,7 @@ def timeseries_data_example1():
                           remarks=np.array(['thunder', 'lightning']))
 
 
-@pytest.fixture()
+@pytest.fixture
 def timeseries_data_example2():
     return TimeseriesData(start_dates=[2012, 2013],
                           end_dates=[2013, 2014],

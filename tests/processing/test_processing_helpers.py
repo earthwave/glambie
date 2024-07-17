@@ -14,7 +14,7 @@ import pandas as pd
 import numpy as np
 
 
-@pytest.fixture()
+@pytest.fixture
 def example_catalogue_1():
     return DataCatalogue.from_dict({"base_path": ["tests", "test_data", "datastore"],
                                     "datasets": [
@@ -34,7 +34,7 @@ def example_catalogue_1():
         }]})
 
 
-@pytest.fixture()
+@pytest.fixture
 def example_catalogue_2():
     return DataCatalogue.from_dict({"base_path": ["tests", "test_data", "datastore"],
                                     "datasets": [
@@ -75,7 +75,7 @@ def example_catalogue_2():
         }]})
 
 
-@pytest.fixture()
+@pytest.fixture
 def example_catalogue_filled():
     data1 = TimeseriesData(start_dates=[2010, 2011, 2012],
                            end_dates=[2011, 2012, 2018],
@@ -108,7 +108,7 @@ def example_catalogue_filled():
     return DataCatalogue.from_list([ts1, ts2])
 
 
-@pytest.fixture()
+@pytest.fixture
 def glambie_config():
     yaml_abspath = os.path.join('tests', 'test_data', 'configs', 'test_config.yaml')
     return GlambieRunConfig.from_yaml(yaml_abspath)

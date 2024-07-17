@@ -6,7 +6,7 @@ from glambie.const.data_groups import GLAMBIE_DATA_GROUPS
 import pytest
 
 
-@pytest.fixture()
+@pytest.fixture
 def path_helper(tmp_path: os.PathLike):
     return OutputPathHandler(tmp_path)
 

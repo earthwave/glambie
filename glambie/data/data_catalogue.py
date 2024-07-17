@@ -331,7 +331,7 @@ class DataCatalogue():
             common_start_dates, common_end_dates = self.get_common_period_of_datasets()
 
             if len(common_start_dates) == 0:
-                warnings.warn("Warning when removing trends. No common period detected.")
+                warnings.warn("Warning when removing trends. No common period detected.", stacklevel=2)
             for idx, df in enumerate(catalogue_dfs):
                 # remove anything outside the common start and end dates
                 df_sub = df[(df["start_dates"].isin(common_start_dates)) & (df["end_dates"].isin(common_end_dates))]

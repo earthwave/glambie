@@ -10,3 +10,11 @@ updates:
       timezone: "Europe/London"
     reviewers:
       - "earthwave/engineering"
+  - package-ecosystem: "pip"
+    directory: "/.github"
+    schedule:
+      interval: "weekly"
+      time: "02:00"
+      timezone: "Europe/London"
+    reviewers:
+      - "earthwave/engineering"

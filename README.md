@@ -83,7 +83,7 @@ pytest
 ```
 
 Note that you will still need to complete the `gcloud auth` steps described in the previous section
-to use data from the GLaMBIE Submission System.
+to use data from the GLaMBIE Submission System. 
 
 Pushing directly to main is prohibited. If you wish your work to be included, first push a separate branch to
 the repository and then open a Pull Request. All branches that have not received a commit for more than 30 days

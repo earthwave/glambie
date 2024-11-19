@@ -120,3 +120,5 @@ This should happen every few years for a well-maintained package.
 * The Build number should change whenever a bug is fixed or a small tweak is made to the package.
 
 Note that the file `full_version.txt` should *not* exist in the repository, as it is automatically generated during deployment.
+
+New releases are assigned a DOI via Zenodo.

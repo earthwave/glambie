@@ -10,7 +10,7 @@ python -m glambie path/to/config.yaml -d -q
 import argparse
 from glambie.processing.main import run_glambie_assessment
 from glambie.config.config_classes import GlambieRunConfig
-from glambie.monitoring.logging import setup_logging
+from glambie.monitoring.logger import setup_logging
 from glambie.processing.path_handling import get_output_path_handler_with_timestamped_subfolder
 import logging
 

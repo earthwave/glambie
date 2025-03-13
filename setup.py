@@ -26,7 +26,7 @@ setup(
     author='Earthwave Ltd',
     author_email='info@earthwave.co.uk',
     url='https://github.com/earthwave/glambie',
-    python_requires=">=3.9",
+    python_requires=">=3.11",
     license='MIT',
     packages=find_packages(),
     # note requirements listed ininstall_requires should be the *minimum required*

@@ -27,7 +27,7 @@ jobs:
         # TODO: swap this out for a better base container.
         run: |
           apt-get update
-          apt-get install -y python3.9 git
+          apt-get install -y python3.11 git
     
       - uses: actions/checkout@v3
         with:

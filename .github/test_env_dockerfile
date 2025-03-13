@@ -14,7 +14,7 @@ ENV GOOGLE_APPLICATION_CREDENTIALS /home/glambie/GLAMBIE_GCP_CREDENTIALS.json
 
 # create the conda environment. Note that you have to specify a particular version here
 # or the CI chain will struggle to find the python exe.
-RUN conda create --name test_env python=3.9.7
+RUN conda create --name test_env python=3.11
 # install things that are better installed by conda than by pip
 RUN conda install -c conda-forge --name test_env gh=2.12.1
 # install google cloud keyring backend

@@ -23,7 +23,7 @@ import pandas as pd
 from pathlib import Path
 from typing import Tuple
 
-from glambie.monitoring.logging import setup_logging
+from glambie.monitoring.logger import setup_logging
 from glambie.util.date_helpers import datetime_dates_to_fractional_years
 from glambie.util.timeseries_helpers import interpolate_change_per_day_to_fill_gaps
 

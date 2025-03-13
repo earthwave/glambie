@@ -5,13 +5,13 @@ Public repository for the [Glacier Mass Balance Intercomparison Exercise (GlaMBI
 
 ## Installation
 To start with, please ensure that you have some form of [Anaconda](https://www.anaconda.com/products/distribution)
-installed (for Python 3.9). Earthwave prefers to use 
+installed (for Python 3.11). Earthwave prefers to use 
 [Miniconda](https://repo.anaconda.com/miniconda/Miniconda3-py39_4.12.0-Linux-x86_64.sh) on Linux.
 
 Next, create a new conda environment:
 
 ```
-conda create --name glambie python=3.9.7
+conda create --name glambie python=3.11
 conda activate glambie
 ```
 

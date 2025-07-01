@@ -100,7 +100,7 @@ def run_one_region(glambie_run_config: GlambieRunConfig,
                 output_path_handler=output_path_handler,
                 min_max_time_window_for_longterm_trends=[glambie_run_config.start_year, glambie_run_config.end_year])
             # apply area change
-            trend_combined = trend_combined.apply_or_remove_area_change(rgi_area_version=6, apply_area_change=True)
+            trend_combined = trend_combined.apply_or_remove_area_change(rgi_area_version=7, apply_area_change=True)
             # save out with area change applied
             if output_path_handler is not None:
                 trend_combined.save_data_as_csv(output_path_handler.get_csv_output_file_path(

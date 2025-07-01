@@ -191,7 +191,7 @@ def _combine_regional_results_into_global(regional_results_catalogue: DataCatalo
         df_merged_all.filter(regex=("areas*")).columns.to_list())].sum(axis=1))
     # apply sum and square root to (squared) errors
     mean_uncertainties = np.sqrt(np.array(df_merged_all[df_merged_all.columns.intersection(
-        df_merged_all.filter(regex=("errors*")).columns.to_list())].sum(axis=1)))
+        df_merged_all.filter(regex=("errors*")).columns.to_list())].sum(axis=1)).astype(np.float64))
 
     if regional_results_catalogue.datasets[0].unit.lower() == "mwe":
         # divide results in mwe my total_area

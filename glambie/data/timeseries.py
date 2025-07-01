@@ -318,7 +318,7 @@ class Timeseries():
 
     def convert_timeseries_to_unit_mwe(self, density_of_water: float = constants.DENSITY_OF_WATER_KG_PER_M3,
                                        density_of_ice: float = constants.DENSITY_OF_ICE_KG_PER_M3,
-                                       rgi_area_version: int = 6) -> Timeseries:
+                                       rgi_area_version: int = 7) -> Timeseries:
         """
         Converts a Timeseries object to the unit of meters water equivalent.
         Errors are calculated using different density uncertainties depending on time resolution of timeseries.
@@ -390,7 +390,7 @@ class Timeseries():
                     "Conversion to mwe not implemented yet for Timeseries with unit '{}'".format(self.unit))
 
     def convert_timeseries_to_unit_gt(self, density_of_water: float = constants.DENSITY_OF_WATER_KG_PER_M3,
-                                      rgi_area_version=6) -> Timeseries:
+                                      rgi_area_version=7) -> Timeseries:
         """
         Converts a Timeseries object to the unit of Gigatonnes.
         Returns a copy of itself with the converted glacier changes.
@@ -451,7 +451,7 @@ class Timeseries():
             raise NotImplementedError(
                 "Conversion to Gt not implemented yet for Timeseries with unit '{}'".format(self.unit))
 
-    def apply_or_remove_area_change(self, rgi_area_version: int = 6, apply_area_change: bool = True) -> Timeseries:
+    def apply_or_remove_area_change(self, rgi_area_version: int = 7, apply_area_change: bool = True) -> Timeseries:
         """
         Applies or removes a changing area to observed changes.
         Returns a copy of itself with the converted timeseries.

@@ -26,7 +26,7 @@ class RGIRegion():
         end_date : float
             end date of time period to be considered
         rgi_area_version : int, optional
-            version of RGI area, currently implemented are 5, 6 and 7, by default 6
+            version of RGI area, currently implemented are 5, 6 and 7, by default 7
 
         Returns
         -------

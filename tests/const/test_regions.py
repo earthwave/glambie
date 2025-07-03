@@ -31,7 +31,7 @@ def test_get_adjusted_area(rgi):
 
     # add two years to reference year and adjust area
     adjusted_area_2_years = region.get_adjusted_area(start_date=region.area_change_reference_year,
-                                                     end_date=region.area_change_reference_year + 2, 
+                                                     end_date=region.area_change_reference_year + 2,
                                                      rgi_area_version=rgi)
     assert adjusted_area_2_years < expected_result  # area should now have gotten smaller
     expected_value = expected_result + 1 * (region.area_change / 100) * expected_result  # calcualate expected value
@@ -39,7 +39,7 @@ def test_get_adjusted_area(rgi):
 
     # reference year +4 years is expected to have double of the change than +2 years (as adjustement is assumed linear)
     adjusted_area_4_years = region.get_adjusted_area(start_date=region.area_change_reference_year,
-                                                     end_date=region.area_change_reference_year + 4, 
+                                                     end_date=region.area_change_reference_year + 4,
                                                      rgi_area_version=rgi)
     np.testing.assert_almost_equal(2 * (adjusted_area_2_years - expected_result),
                                    (adjusted_area_4_years - expected_result))

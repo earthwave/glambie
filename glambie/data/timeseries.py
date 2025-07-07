@@ -96,21 +96,32 @@ class TimeseriesData():
         return len(self.dates)
 
     def as_dataframe(self):
+        length = len(self.changes)
         return pd.DataFrame({
             'start_dates': self.start_dates,
             'end_dates': self.end_dates,
             'changes': self.changes,
             'errors': self.errors,
-            'glacier_area_reference': self.glacier_area_reference,
-            'glacier_area_observed': self.glacier_area_observed,
+            'glacier_area_reference': (
+                self.glacier_area_reference
+                if self.glacier_area_reference is not None
+                else [None] * length
+            ),
+            'glacier_area_observed': (
+                self.glacier_area_observed
+                if self.glacier_area_observed is not None
+                else [None] * length
+            ),
             'hydrological_correction_value': (
                 self.hydrological_correction_value
                 if self.hydrological_correction_value is not None
-                else np.full(len(self.changes), None)),
+                else [None] * length
+            ),
             'remarks': (
                 self.remarks
-                if self.remarks is not None
-                else np.full(len(self.changes), None)),
+                if self.remarks is not None and len(self.remarks) == length
+                else [None] * length
+            ),
         })
 
     def as_cumulative_timeseries(self) -> pd.DataFrame:

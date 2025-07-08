@@ -181,7 +181,7 @@ def _prepare_consensus_variability_for_one_region(
                 data_catalogue_annual=data_catalogue_annual, seasonal_calibration_dataset=seasonal_calibration_dataset,
                 year_type=year_type, method_to_correct_seasonally=method_to_correct_seasonally,
                 data_group=data_group, dataset_names_where_split_at_gap=split_dataset_names_annual,
-                rgi_area_version= glambie_run_config.region_area_version)
+                rgi_area_version=glambie_run_config.region_area_version)
 
             result_datasets.append(annual_combined)
 
@@ -505,7 +505,7 @@ def _run_region_trends_for_one_source(
         method_to_correct_seasonally: SeasonalCorrectionMethod,
         data_group: GlambieDataGroup,
         min_max_time_window_for_longterm_trends: Tuple[float, float] = None,
-        rgi_region_area: int =7) -> Tuple[
+        rgi_region_area: int = 7) -> Tuple[
             Timeseries, DataCatalogue, DataCatalogue]:
     """
     Runs the combination algorithm for all trend datasets for one Glambie Data Group within a region

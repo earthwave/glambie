@@ -56,7 +56,8 @@ def run_one_region(glambie_run_config: GlambieRunConfig,
         region_name=region_config.region_name)
 
     # get seasonal calibration dataset and convert to monthly grid
-    seasonal_calibration_dataset = prepare_seasonal_calibration_dataset(region_config, data_catalogue)
+    seasonal_calibration_dataset = prepare_seasonal_calibration_dataset(region_config, data_catalogue,
+                                                                        glambie_run_config.region_area_version)
 
     annual_backup_dataset = _prepare_consensus_variability_for_one_region(
         glambie_run_config=glambie_run_config, region_config=region_config, data_catalogue=data_catalogue,
@@ -98,9 +99,11 @@ def run_one_region(glambie_run_config: GlambieRunConfig,
                 region=REGIONS[region_config.region_name],
                 data_group=data_group,
                 output_path_handler=output_path_handler,
-                min_max_time_window_for_longterm_trends=[glambie_run_config.start_year, glambie_run_config.end_year])
+                min_max_time_window_for_longterm_trends=[glambie_run_config.start_year, glambie_run_config.end_year],
+                rgi_area_version=glambie_run_config.region_area_version)
             # apply area change
-            trend_combined = trend_combined.apply_or_remove_area_change(rgi_area_version=7, apply_area_change=True)
+            trend_combined = trend_combined.apply_or_remove_area_change(glambie_run_config.region_area_version,
+                                                                        apply_area_change=True)
             # save out with area change applied
             if output_path_handler is not None:
                 trend_combined.save_data_as_csv(output_path_handler.get_csv_output_file_path(
@@ -177,7 +180,8 @@ def _prepare_consensus_variability_for_one_region(
             annual_combined, _, _ = _run_region_variability_for_one_source(
                 data_catalogue_annual=data_catalogue_annual, seasonal_calibration_dataset=seasonal_calibration_dataset,
                 year_type=year_type, method_to_correct_seasonally=method_to_correct_seasonally,
-                data_group=data_group, dataset_names_where_split_at_gap=split_dataset_names_annual)
+                data_group=data_group, dataset_names_where_split_at_gap=split_dataset_names_annual,
+                rgi_area_version= glambie_run_config.region_area_version)
 
             result_datasets.append(annual_combined)
 
@@ -242,7 +246,8 @@ def combine_within_one_region(catalogue_data_group_results: DataCatalogue,
 def convert_and_save_one_region_to_gigatonnes(
         catalogue_data_group_results: DataCatalogue,
         combined_region_timeseries: Timeseries,
-        output_path_handler: OutputPathHandler) -> Tuple[DataCatalogue, Timeseries]:
+        output_path_handler: OutputPathHandler,
+        rgi_area_version: int) -> Tuple[DataCatalogue, Timeseries]:
     """
     Converts regional results to gigatonnes and saves out plots and csvs (depending on the output path handler settings)
 
@@ -254,6 +259,8 @@ def convert_and_save_one_region_to_gigatonnes(
         input time series of regional consensus from different sources, to be converted to Gigatonnes
     output_path_handler : OutputPathHandler
         object to handle output path. If set to None, no plots / other data will be saved
+    rgi_area_version : int
+        version of RGI area to use for area adjustment
 
     Returns
     -------
@@ -261,9 +268,13 @@ def convert_and_save_one_region_to_gigatonnes(
         Unit converted data catalogue and region timeseries (in Gigatonnes)
     """
     # convert to gigatonnes
-    combined_region_timeseries_gt = combined_region_timeseries.apply_or_remove_area_change(apply_area_change=False)
-    combined_region_timeseries_gt = combined_region_timeseries_gt.convert_timeseries_to_unit_gt()
-    catalogue_data_group_results_gt = convert_datasets_to_unit_gt(catalogue_data_group_results)
+    combined_region_timeseries_gt = combined_region_timeseries.apply_or_remove_area_change(
+        rgi_area_version=rgi_area_version,
+        apply_area_change=False)
+    combined_region_timeseries_gt = combined_region_timeseries_gt.convert_timeseries_to_unit_gt(
+        rgi_area_version=rgi_area_version)
+    catalogue_data_group_results_gt = convert_datasets_to_unit_gt(catalogue_data_group_results,
+                                                                  rgi_area_version=rgi_area_version)
 
     if output_path_handler is not None:
         output_path = output_path_handler.get_plot_output_file_path(
@@ -295,6 +306,7 @@ def _run_region_timeseries_for_one_source(
         region: RGIRegion,
         data_group: GlambieDataGroup,
         output_path_handler: OutputPathHandler,
+        rgi_area_version: int,
         min_max_time_window_for_longterm_trends: Tuple[float, float] = None) -> Timeseries:
     """
     Runs the glambie algorithm for all datasets for one Glambie Data Group within a region
@@ -323,11 +335,14 @@ def _run_region_timeseries_for_one_source(
         Glambie Data Group which is calculated
     output_path_handler : OutputPathHandler
         object to handle output path. If set to None, no plots / other data will be saved
+    rgi_area_version : int
+        version of RGI area to use for area adjustment
     min_max_time_window_for_longterm_trends : Tuple[float, float], optional
         if specified, the time series are filtered by the time window before the longterm trend is extracted,
         meaning that the resulting longterm trends are within the minimum and maximum of the time window.
         Note that existing longterm trends are removed if they are outside the time window.
         The dates are expected in decimal years format (float), e.g. 2012.75.
+
 
     Returns
     -------
@@ -360,7 +375,8 @@ def _run_region_timeseries_for_one_source(
         _run_region_variability_for_one_source(
             data_catalogue_annual=data_catalogue_annual, seasonal_calibration_dataset=seasonal_calibration_dataset,
             year_type=year_type, method_to_correct_seasonally=method_to_correct_seasonally,
-            data_group=data_group, dataset_names_where_split_at_gap=split_dataset_names_annual)
+            data_group=data_group, dataset_names_where_split_at_gap=split_dataset_names_annual,
+            rgi_area_version=rgi_area_version)
 
     # 2) LONGTERM TRENDS
     log.info("Using the following trend datasets for %s, %s : %s",
@@ -415,7 +431,8 @@ def _run_region_timeseries_for_one_source(
             data_catalogue_calibrated_series=catalogue_calibrated_series,
             timeseries_trend_combined=trend_combined,
             min_date=min_max_time_window_for_longterm_trends[0] - 1,
-            max_date=min_max_time_window_for_longterm_trends[1] + 1)
+            max_date=min_max_time_window_for_longterm_trends[1] + 1,
+            rgi_area_version=rgi_area_version)
     return trend_combined
 
 
@@ -425,7 +442,8 @@ def _run_region_variability_for_one_source(
         year_type: YearType,
         method_to_correct_seasonally: SeasonalCorrectionMethod,
         data_group: GlambieDataGroup,
-        dataset_names_where_split_at_gap: list) -> Tuple[Timeseries, DataCatalogue]:
+        dataset_names_where_split_at_gap: list,
+        rgi_area_version: int) -> Tuple[Timeseries, DataCatalogue]:
     """
     Runs the combination of annual variability datasets for one Glambie Data Group within a region
 
@@ -446,6 +464,8 @@ def _run_region_variability_for_one_source(
     dataset_names_where_split_at_gap : list
         list of dataset names where the annual trends were split out at a data gap
         this is so that the annual trends that were split at a data gap can be recombined
+    rgi_area_version : int
+        version of RGI area to use for area adjustment
 
     Returns
     -------
@@ -458,9 +478,10 @@ def _run_region_variability_for_one_source(
     # convert to annual trends
     data_catalogue_annual_homogenized = convert_datasets_to_annual_trends(
         data_catalogue_annual, year_type=year_type, method_to_correct_seasonally=method_to_correct_seasonally,
-        seasonal_calibration_dataset=seasonal_calibration_dataset)
+        seasonal_calibration_dataset=seasonal_calibration_dataset, rgi_area_version=rgi_area_version)
     # convert to mwe
-    data_catalogue_annual_homogenized = convert_datasets_to_unit_mwe(data_catalogue_annual_homogenized)
+    data_catalogue_annual_homogenized = convert_datasets_to_unit_mwe(data_catalogue_annual_homogenized,
+                                                                     rgi_area_version=rgi_area_version)
 
     # calculate combined annual timeseries
     # first need to recombine timeseries in cases where we split them due to gaps
@@ -483,7 +504,8 @@ def _run_region_trends_for_one_source(
         method_to_extract_trends: ExtractTrendsMethod,
         method_to_correct_seasonally: SeasonalCorrectionMethod,
         data_group: GlambieDataGroup,
-        min_max_time_window_for_longterm_trends: Tuple[float, float] = None) -> Tuple[
+        min_max_time_window_for_longterm_trends: Tuple[float, float] = None,
+        rgi_region_area: int =7) -> Tuple[
             Timeseries, DataCatalogue, DataCatalogue]:
     """
     Runs the combination algorithm for all trend datasets for one Glambie Data Group within a region
@@ -514,6 +536,8 @@ def _run_region_trends_for_one_source(
         Note that existing longterm trends are removed if they are outside the time window.
         The dates are expected in decimal years format (float), e.g. 2012.75.
         by default None
+    rgi_region_area : int, optional
+        version of RGI area to use for area adjustment, by default 7
 
     Returns
     -------
@@ -530,7 +554,8 @@ def _run_region_trends_for_one_source(
         seasonal_calibration_dataset=seasonal_calibration_dataset,
         method_to_extract_trends=method_to_extract_trends,
         method_to_correct_seasonally=method_to_correct_seasonally,
-        output_trend_date_range=min_max_time_window_for_longterm_trends)
+        output_trend_date_range=min_max_time_window_for_longterm_trends,
+        rgi_area_version=rgi_region_area)
 
     # now treat case where trends are outside annual combined timeseries
     annual_combined_full_ext = extend_annual_timeseries_if_shorter_than_time_window(

@@ -6,6 +6,7 @@ catalogue_path: glambie_submission_system
 
 start_year: 2000
 end_year: 2025
+region_area_version: 7
 
 datagroups_to_calculate:
   - altimetry

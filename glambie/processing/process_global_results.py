@@ -48,11 +48,14 @@ def run_global_results(glambie_run_config: GlambieRunConfig,
         start_date=glambie_run_config.start_year,
         end_date=glambie_run_config.end_year + 1)  # plus one to include until the end of the year, and not start
 
-    global_timeseries_mwe = _combine_regional_results_into_global(regional_results_catalogue_homogenized)
+    global_timeseries_mwe = _combine_regional_results_into_global(regional_results_catalogue_homogenized,
+                                                                  glambie_run_config.region_area_version)
 
     # now convert to gigatonnes
-    regional_results_catalogue_homogenized_gt = convert_datasets_to_unit_gt(regional_results_catalogue_homogenized)
-    global_timeseries_gt = _combine_regional_results_into_global(regional_results_catalogue_homogenized_gt)
+    regional_results_catalogue_homogenized_gt = convert_datasets_to_unit_gt(regional_results_catalogue_homogenized,
+                                                                            glambie_run_config.region_area_version)
+    global_timeseries_gt = _combine_regional_results_into_global(regional_results_catalogue_homogenized_gt,
+                                                                 glambie_run_config.region_area_version)
 
     # plot and save to csv
     if output_path_handler is not None:
@@ -127,7 +130,8 @@ def _homogenize_regional_results_to_calendar_year(glambie_run_config: GlambieRun
         # step 1: get seasonal calibration dataset
         data_catalogue = original_data_catalogue.get_filtered_catalogue(
             region_name=region_config.region_name)
-        seasonal_calibration_dataset = prepare_seasonal_calibration_dataset(region_config, data_catalogue)
+        seasonal_calibration_dataset = prepare_seasonal_calibration_dataset(region_config, data_catalogue,
+                                                                            glambie_run_config.region_area_version)
         # step 2: homogenize to calendar year
         data_set = regional_results_catalogue.get_filtered_catalogue(region_name=region_config.region_name).datasets[0]
         homogenized_regional_results.append(data_set.shift_timeseries_to_annual_grid_with_seasonal_homogenization(
@@ -137,7 +141,8 @@ def _homogenize_regional_results_to_calendar_year(glambie_run_config: GlambieRun
     return result_catalogue
 
 
-def _combine_regional_results_into_global(regional_results_catalogue: DataCatalogue) -> Timeseries:
+def _combine_regional_results_into_global(regional_results_catalogue: DataCatalogue,
+                                          rgi_area_version: int) -> Timeseries:
     """
     Combines all regional results into one global timeseries.
     Assumes that timeseries are all in same grid and resolution temporally (e.g. calendar year) and of unit mwe or Gt.
@@ -146,6 +151,8 @@ def _combine_regional_results_into_global(regional_results_catalogue: DataCatalo
     ----------
     regional_results_catalogue : DataCatalogue
         regional results (homogenized to the same year)
+        rgi_area_version : int
+            version of RGI area to use for area adjustment
 
     Returns
     -------
@@ -166,7 +173,7 @@ def _combine_regional_results_into_global(regional_results_catalogue: DataCatalo
     for df, ds in zip(catalogue_dfs, regional_results_catalogue.datasets):
         if regional_results_catalogue.datasets[0].unit.lower() == "mwe":
             # make list of adjusted areas
-            adjusted_areas = [ds.region.get_adjusted_area(start_date, end_date)
+            adjusted_areas = [ds.region.get_adjusted_area(start_date, end_date, rgi_area_version=rgi_area_version)
                               for start_date, end_date in zip(df["start_dates"], df["end_dates"])]
             # multiply changes and errors with area for each region
             df["changes"] = (df["changes"] * adjusted_areas)

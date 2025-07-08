@@ -15,7 +15,7 @@ class RGIRegion():
     area_change_reference_year: int  # reference year of the change rate, i.e. the year when the RGI area was correct
     glaciological_year_start: float  # decimal of when the glaciological year starts, e.g. 0.75 would be October
 
-    def get_adjusted_area(self, start_date: float, end_date: float, rgi_area_version: int = 7) -> float:
+    def get_adjusted_area(self, start_date: float, end_date: float, rgi_area_version: int) -> float:
         """
         Calculates the area of a region adjusted with the area change to the given time period
 
@@ -26,7 +26,7 @@ class RGIRegion():
         end_date : float
             end date of time period to be considered
         rgi_area_version : int, optional
-            version of RGI area, currently implemented are 5, 6 and 7, by default 7
+            version of RGI area, currently implemented are 5, 6 and 7
 
         Returns
         -------

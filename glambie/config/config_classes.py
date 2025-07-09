@@ -81,7 +81,7 @@ class GlambieRunConfig(Config):
     regions: list[RegionRunConfig]
     start_year: float
     end_year: float
-    region_area_version: int
+    rgi_area_version: int
     method_to_extract_trends: str
     seasonal_correction_method: str
 

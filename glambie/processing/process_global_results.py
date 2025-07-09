@@ -49,13 +49,13 @@ def run_global_results(glambie_run_config: GlambieRunConfig,
         end_date=glambie_run_config.end_year + 1)  # plus one to include until the end of the year, and not start
 
     global_timeseries_mwe = _combine_regional_results_into_global(regional_results_catalogue_homogenized,
-                                                                  glambie_run_config.region_area_version)
+                                                                  glambie_run_config.rgi_area_version)
 
     # now convert to gigatonnes
     regional_results_catalogue_homogenized_gt = convert_datasets_to_unit_gt(regional_results_catalogue_homogenized,
-                                                                            glambie_run_config.region_area_version)
+                                                                            glambie_run_config.rgi_area_version)
     global_timeseries_gt = _combine_regional_results_into_global(regional_results_catalogue_homogenized_gt,
-                                                                 glambie_run_config.region_area_version)
+                                                                 glambie_run_config.rgi_area_version)
 
     # plot and save to csv
     if output_path_handler is not None:

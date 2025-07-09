@@ -151,7 +151,7 @@ def test_convert_timeseries_to_unit_mwe_from_m(example_timeseries_ingested):
     density_of_water = 997
     density_of_ice = 850
     converted_timeseries = example_timeseries_ingested.convert_timeseries_to_unit_mwe(
-        density_of_water=density_of_water, density_of_ice=density_of_ice)
+        rgi_area_version=7, density_of_water=density_of_water, density_of_ice=density_of_ice)
     assert converted_timeseries.unit == "mwe"
     assert example_timeseries_ingested.unit == "m"
     assert not np.array_equal(converted_timeseries.data.changes, example_timeseries_ingested.data.changes)
@@ -187,7 +187,7 @@ def test_convert_timeseries_to_unit_mwe_from_gt_and_back(example_timeseries_inge
 
 def test_convert_timeseries_to_unit_mwe_no_conversion_when_already_in_mwe(example_timeseries_ingested):
     example_timeseries_ingested.unit = "mwe"
-    converted_timeseries = example_timeseries_ingested.convert_timeseries_to_unit_mwe()
+    converted_timeseries = example_timeseries_ingested.convert_timeseries_to_unit_mwe(rgi_area_version=7)
     assert np.array_equal(converted_timeseries.data.changes, example_timeseries_ingested.data.changes)
 
 
@@ -195,7 +195,7 @@ def test_convert_timeseries_to_unit_test_uncertainties(example_timeseries_ingest
     density_of_water = 997
     density_of_ice = 850
     converted_timeseries = example_timeseries_ingested.convert_timeseries_to_unit_mwe(
-        density_of_water=density_of_water, density_of_ice=density_of_ice)
+        rgi_area_version=7, density_of_water=density_of_water, density_of_ice=density_of_ice)
     assert not np.array_equal(converted_timeseries.data.errors, example_timeseries_ingested.data.errors)
     #
     df = example_timeseries_ingested.data.as_dataframe()
@@ -212,7 +212,7 @@ def test_convert_timeseries_to_unit_test_uncertainties(example_timeseries_ingest
 def test_convert_timeseries_to_unit_gt_no_area_change_rate(example_timeseries_ingested):
     example_timeseries_ingested.unit = "mwe"
     example_timeseries_ingested.region = REGIONS["iceland"]
-    converted_timeseries = example_timeseries_ingested.convert_timeseries_to_unit_gt()
+    converted_timeseries = example_timeseries_ingested.convert_timeseries_to_unit_gt(rgi_area_version=7)
     assert str.lower(converted_timeseries.unit) == "gt"
     assert example_timeseries_ingested.unit == "mwe"
     assert not np.array_equal(converted_timeseries.data.changes, example_timeseries_ingested.data.changes)
@@ -459,7 +459,7 @@ def test_raises_assertion_error_when_converting_to_gt_with_area_change_applied(e
     timeseries_area_change = example_timeseries_ingested.apply_or_remove_area_change(
         rgi_area_version=7, apply_area_change=True)
     with pytest.raises(AssertionError):
-        timeseries_area_change.convert_timeseries_to_unit_gt()
+        timeseries_area_change.convert_timeseries_to_unit_gt(rgi_area_version=7)
 
 
 def test_reduce_to_date_window(example_timeseries_ingested):

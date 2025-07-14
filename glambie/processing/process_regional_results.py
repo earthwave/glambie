@@ -57,7 +57,7 @@ def run_one_region(glambie_run_config: GlambieRunConfig,
 
     # get seasonal calibration dataset and convert to monthly grid
     seasonal_calibration_dataset = prepare_seasonal_calibration_dataset(region_config, data_catalogue,
-                                                                        glambie_run_config.region_area_version)
+                                                                        glambie_run_config.rgi_area_version)
 
     annual_backup_dataset = _prepare_consensus_variability_for_one_region(
         glambie_run_config=glambie_run_config, region_config=region_config, data_catalogue=data_catalogue,
@@ -100,9 +100,9 @@ def run_one_region(glambie_run_config: GlambieRunConfig,
                 data_group=data_group,
                 output_path_handler=output_path_handler,
                 min_max_time_window_for_longterm_trends=[glambie_run_config.start_year, glambie_run_config.end_year],
-                rgi_area_version=glambie_run_config.region_area_version)
+                rgi_area_version=glambie_run_config.rgi_area_version)
             # apply area change
-            trend_combined = trend_combined.apply_or_remove_area_change(glambie_run_config.region_area_version,
+            trend_combined = trend_combined.apply_or_remove_area_change(glambie_run_config.rgi_area_version,
                                                                         apply_area_change=True)
             # save out with area change applied
             if output_path_handler is not None:
@@ -181,7 +181,7 @@ def _prepare_consensus_variability_for_one_region(
                 data_catalogue_annual=data_catalogue_annual, seasonal_calibration_dataset=seasonal_calibration_dataset,
                 year_type=year_type, method_to_correct_seasonally=method_to_correct_seasonally,
                 data_group=data_group, dataset_names_where_split_at_gap=split_dataset_names_annual,
-                rgi_area_version=glambie_run_config.region_area_version)
+                rgi_area_version=glambie_run_config.rgi_area_version)
 
             result_datasets.append(annual_combined)
 

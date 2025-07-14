@@ -131,7 +131,7 @@ def _homogenize_regional_results_to_calendar_year(glambie_run_config: GlambieRun
         data_catalogue = original_data_catalogue.get_filtered_catalogue(
             region_name=region_config.region_name)
         seasonal_calibration_dataset = prepare_seasonal_calibration_dataset(region_config, data_catalogue,
-                                                                            glambie_run_config.region_area_version)
+                                                                            glambie_run_config.rgi_area_version)
         # step 2: homogenize to calendar year
         data_set = regional_results_catalogue.get_filtered_catalogue(region_name=region_config.region_name).datasets[0]
         homogenized_regional_results.append(data_set.shift_timeseries_to_annual_grid_with_seasonal_homogenization(

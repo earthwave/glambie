@@ -83,7 +83,7 @@ def _run_regional_results(glambie_run_config: GlambieRunConfig,
                 catalogue_data_group_results=results_one_region,
                 combined_region_timeseries=combined_results_mwe,
                 output_path_handler=output_path_handler,
-                rgi_area_version=glambie_run_config.region_area_version)
+                rgi_area_version=glambie_run_config.rgi_area_version)
             combined_regional_results_gt.append(combined_results_gt)
 
     catalogue_combined_regional_results_mwe = DataCatalogue.from_list(

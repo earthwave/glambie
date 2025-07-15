@@ -386,7 +386,8 @@ def _run_region_timeseries_for_one_source(
         data_catalogue_trends=data_catalogue_trends, seasonal_calibration_dataset=seasonal_calibration_dataset,
         annual_backup_dataset=annual_backup_dataset, annual_combined_dataset=annual_combined, year_type=year_type,
         method_to_extract_trends=method_to_extract_trends, method_to_correct_seasonally=method_to_correct_seasonally,
-        data_group=data_group, min_max_time_window_for_longterm_trends=min_max_time_window_for_longterm_trends)
+        data_group=data_group, min_max_time_window_for_longterm_trends=min_max_time_window_for_longterm_trends,
+        rgi_area_version=rgi_area_version)
 
     # 3) Save and plot
     if output_path_handler is not None:
@@ -504,8 +505,8 @@ def _run_region_trends_for_one_source(
         method_to_extract_trends: ExtractTrendsMethod,
         method_to_correct_seasonally: SeasonalCorrectionMethod,
         data_group: GlambieDataGroup,
-        min_max_time_window_for_longterm_trends: Tuple[float, float] = None,
-        rgi_region_area: int = 7) -> Tuple[
+        rgi_area_version: int,
+        min_max_time_window_for_longterm_trends: Tuple[float, float] = None) -> Tuple[
             Timeseries, DataCatalogue, DataCatalogue]:
     """
     Runs the combination algorithm for all trend datasets for one Glambie Data Group within a region
@@ -530,14 +531,15 @@ def _run_region_trends_for_one_source(
         method as to how long-term trends are correct when they don't start in the desired season, i.e. don't follow
         the desired annual grid defined with 'year_type'    data_group : GlambieDataGroup
         _description_
+    rgi_area_version : int
+        version of RGI area to use for area adjustment
     min_max_time_window_for_longterm_trends : Tuple[float, float], optional
         if specified, the time series are filtered by the time window before the longterm trend is extracted,
         meaning that the resulting longterm trends are within the minimum and maximum of the time window.
         Note that existing longterm trends are removed if they are outside the time window.
         The dates are expected in decimal years format (float), e.g. 2012.75.
         by default None
-    rgi_region_area : int, optional
-        version of RGI area to use for area adjustment, by default 7
+
 
     Returns
     -------
@@ -555,7 +557,7 @@ def _run_region_trends_for_one_source(
         method_to_extract_trends=method_to_extract_trends,
         method_to_correct_seasonally=method_to_correct_seasonally,
         output_trend_date_range=min_max_time_window_for_longterm_trends,
-        rgi_area_version=rgi_region_area)
+        rgi_area_version=rgi_area_version)
 
     # now treat case where trends are outside annual combined timeseries
     annual_combined_full_ext = extend_annual_timeseries_if_shorter_than_time_window(

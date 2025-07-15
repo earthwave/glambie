@@ -386,8 +386,8 @@ def _run_region_timeseries_for_one_source(
         data_catalogue_trends=data_catalogue_trends, seasonal_calibration_dataset=seasonal_calibration_dataset,
         annual_backup_dataset=annual_backup_dataset, annual_combined_dataset=annual_combined, year_type=year_type,
         method_to_extract_trends=method_to_extract_trends, method_to_correct_seasonally=method_to_correct_seasonally,
-        data_group=data_group, min_max_time_window_for_longterm_trends=min_max_time_window_for_longterm_trends,
-        rgi_area_version=rgi_area_version)
+        data_group=data_group, rgi_area_version=rgi_area_version,
+        min_max_time_window_for_longterm_trends=min_max_time_window_for_longterm_trends)
 
     # 3) Save and plot
     if output_path_handler is not None:

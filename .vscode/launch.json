@@ -1,0 +1,13 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "run glambie",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "glambie",
+            "console": "integratedTerminal",
+            "args": ["configuration/0_parent_config.yaml"]
+        }
+    ]
+}

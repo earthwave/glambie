@@ -6,6 +6,7 @@ catalogue_path: tests/test_data/datastore/meta2.json
 
 start_year: 2000
 end_year: 2022
+rgi_area_version: 7
 
 datagroups_to_calculate:
   - altimetry

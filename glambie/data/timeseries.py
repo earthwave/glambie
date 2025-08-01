@@ -96,21 +96,32 @@ class TimeseriesData():
         return len(self.dates)
 
     def as_dataframe(self):
+        length = len(self.changes)
         return pd.DataFrame({
             'start_dates': self.start_dates,
             'end_dates': self.end_dates,
             'changes': self.changes,
             'errors': self.errors,
-            'glacier_area_reference': self.glacier_area_reference,
-            'glacier_area_observed': self.glacier_area_observed,
+            'glacier_area_reference': (
+                self.glacier_area_reference
+                if self.glacier_area_reference is not None
+                else [None] * length
+            ),
+            'glacier_area_observed': (
+                self.glacier_area_observed
+                if self.glacier_area_observed is not None
+                else [None] * length
+            ),
             'hydrological_correction_value': (
                 self.hydrological_correction_value
                 if self.hydrological_correction_value is not None
-                else np.full(len(self.changes), None)),
+                else [None] * length
+            ),
             'remarks': (
                 self.remarks
-                if self.remarks is not None
-                else np.full(len(self.changes), None)),
+                if self.remarks is not None and len(self.remarks) == length
+                else [None] * length
+            ),
         })
 
     def as_cumulative_timeseries(self) -> pd.DataFrame:
@@ -316,9 +327,9 @@ class Timeseries():
         df_data.dropna(how='all', axis=1, inplace=True)  # drop empty columns
         df_data.to_csv(csv_outpath, index=False)
 
-    def convert_timeseries_to_unit_mwe(self, density_of_water: float = constants.DENSITY_OF_WATER_KG_PER_M3,
-                                       density_of_ice: float = constants.DENSITY_OF_ICE_KG_PER_M3,
-                                       rgi_area_version: int = 6) -> Timeseries:
+    def convert_timeseries_to_unit_mwe(self, rgi_area_version: int,
+                                       density_of_water: float = constants.DENSITY_OF_WATER_KG_PER_M3,
+                                       density_of_ice: float = constants.DENSITY_OF_ICE_KG_PER_M3) -> Timeseries:
         """
         Converts a Timeseries object to the unit of meters water equivalent.
         Errors are calculated using different density uncertainties depending on time resolution of timeseries.
@@ -326,14 +337,15 @@ class Timeseries():
 
         Parameters
         ----------
+        rgi_area_version: int
+            The version of RGI glacier masks to be used to determine the glacier area within the region,
+            Only used when converting from gigatonnes to mwe
+            Current options are 6 or 7
         density_of_water: float, optional
             The density of water in Gt per m3, by default constants.DENSITY_OF_WATER_KG_PER_M3
         density_of_ice : float, optional
             The density of ice in Gt per m3, by default constants.DENSITY_OF_ICE_KG_PER_M3
-        rgi_area_version: int, optional
-            The version of RGI glacier masks to be used to determine the glacier area within the region,
-            Only used when converting from gigatonnes to mwe
-            Current options are 6 or 7, by default 6
+
 
         Returns
         -------
@@ -389,19 +401,18 @@ class Timeseries():
                 raise NotImplementedError(
                     "Conversion to mwe not implemented yet for Timeseries with unit '{}'".format(self.unit))
 
-    def convert_timeseries_to_unit_gt(self, density_of_water: float = constants.DENSITY_OF_WATER_KG_PER_M3,
-                                      rgi_area_version=6) -> Timeseries:
+    def convert_timeseries_to_unit_gt(self, rgi_area_version: int,
+                                      density_of_water: float = constants.DENSITY_OF_WATER_KG_PER_M3) -> Timeseries:
         """
         Converts a Timeseries object to the unit of Gigatonnes.
         Returns a copy of itself with the converted glacier changes.
-
         Parameters
         ----------
+        rgi_area_version: int
+            The version of RGI glacier masks to be used to determine the glacier area within the region,
+            Current options are 6 or 7
         density_of_water: float, optional
             The density of water in Gt per m3, by default constants.DENSITY_OF_WATER_KG_PER_M3
-        rgi_area_version: int, optional
-            The version of RGI glacier masks to be used to determine the glacier area within the region,
-            Current options are 6 or 7, by default 6
 
         Returns
         -------
@@ -451,15 +462,15 @@ class Timeseries():
             raise NotImplementedError(
                 "Conversion to Gt not implemented yet for Timeseries with unit '{}'".format(self.unit))
 
-    def apply_or_remove_area_change(self, rgi_area_version: int = 6, apply_area_change: bool = True) -> Timeseries:
+    def apply_or_remove_area_change(self, rgi_area_version: int, apply_area_change: bool = True) -> Timeseries:
         """
         Applies or removes a changing area to observed changes.
         Returns a copy of itself with the converted timeseries.
 
         Parameters
         ----------
-        rgi_area_version : int, optional
-            version of RGI used for area change, by default 6
+        rgi_area_version : int
+            version of RGI used for area change
         apply_area_change : bool, optional
             Describes if the area change should be applied or removed
             If set to False, the area change is removed rather than applied, by default True

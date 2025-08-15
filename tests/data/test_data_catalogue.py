@@ -128,7 +128,7 @@ def test_data_catalogue_from_submission_system():
             'glacier_area_observed': [6],
             'remarks': ['are we the baddies']
         })
-        catalogue = DataCatalogue.from_glambie_submission_system()
+        catalogue = DataCatalogue.from_glambie_submission_system("glambie2-sumbissions")
     assert len(catalogue.datasets) == 2
     assert catalogue.datasets_are_same_unit()
     assert catalogue.datasets[1].additional_metadata['lead_author_date_of_birth'] == 'May 18th 1889'

@@ -1,5 +1,8 @@
 # config yaml file for all regions
 ---
+# Option to run for Glambie 1 or 2. This drives which google bucket data is sourced from.
+glambie_version: 2
+
 result_base_path: glambie/output_plots/processing
 region_config_base_path: configuration
 catalogue_path: glambie_submission_system

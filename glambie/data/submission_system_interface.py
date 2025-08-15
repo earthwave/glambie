@@ -21,8 +21,6 @@ from glambie.const.regions import RGIRegion
 
 _storage_client = None
 
-_SUBMISSIONS_BUCKET_URI = 'gs://glambie-submissions'
-
 # The design of the DataCatalogue and Timeseries classes implicitly assumes that data is always present on disk,
 # which is not the case. This is a design flaw, but rather than redesigning those classes we're simply going to add a
 # "fake basepath" to indicate that the data has actually come from the submission system instead,
@@ -63,7 +61,8 @@ def _download_blob(blob_uri: str) -> Union[pd.DataFrame, dict]:
             raise NotImplementedError(f'download logic for blob uri {blob_uri} not implemented.')
 
 
-def fetch_timeseries_dataframe(user_group: str, region: RGIRegion, data_group: GlambieDataGroup) -> pd.DataFrame:
+def fetch_timeseries_dataframe(
+        user_group: str, region: RGIRegion, data_group: GlambieDataGroup, glambie_bucket_name: str) -> pd.DataFrame:
     """
     Download a particular timeseries from the submission system.
 
@@ -88,10 +87,10 @@ def fetch_timeseries_dataframe(user_group: str, region: RGIRegion, data_group: G
          data_group.name.lower().replace("demdiff", "dem_differencing"),
          user_group.replace(" ", "_").lower()]) + '.csv'
 
-    return _download_blob(_SUBMISSIONS_BUCKET_URI + '/' + csv_name_in_bucket)
+    return _download_blob("gs://" + glambie_bucket_name + '/' + csv_name_in_bucket)
 
 
-def fetch_all_submission_metadata() -> List[dict]:
+def fetch_all_submission_metadata(glambie_bucket_name: str) -> List[dict]:
     """
     Download the metadata for all submissions provided to GlaMBIE.
 
@@ -105,8 +104,9 @@ def fetch_all_submission_metadata() -> List[dict]:
         The field values provided for each submission are repeated for each individual Timeseries.
     """
     _instantiate_storage_client_if_needed()
+    glambie_bucket_uri = "gs://" + glambie_bucket_name
     # note that here, a "dataset" is a single csv file.
-    datasets = _download_blob(_SUBMISSIONS_BUCKET_URI + '/meta.json')['datasets']
+    datasets = _download_blob(glambie_bucket_uri + '/meta.json')['datasets']
 
     # load the other submission metadata.
     # to save effort, download each submission metadata file only once,
@@ -115,7 +115,7 @@ def fetch_all_submission_metadata() -> List[dict]:
     for dataset in datasets:
         if dataset['submission_metadata_filename'] not in submission_metadata_buffer:
             submission_metadata_buffer[dataset['submission_metadata_filename']] = _download_blob(
-                _SUBMISSIONS_BUCKET_URI + '/' + dataset['submission_metadata_filename'])
+                glambie_bucket_uri + '/' + dataset['submission_metadata_filename'])
         dataset.update(submission_metadata_buffer[dataset['submission_metadata_filename']])
         # submission_metadata_filename no longer matters, so we can remove it.
         del dataset['submission_metadata_filename']
@@ -130,7 +130,11 @@ def fetch_all_submission_metadata() -> List[dict]:
 
 
 def download_dataset_information_file_to_disk(
-        user_group: str, data_group: GlambieDataGroup, target_directory: Optional[str] = '.') -> None:
+        user_group: str,
+        data_group: GlambieDataGroup,
+        glambie_bucket_name,
+        target_directory: Optional[str] = '.'
+) -> None:
     """
     Download a dataset information file from the submission system.
 
@@ -156,4 +160,4 @@ def download_dataset_information_file_to_disk(
         f"Cannot download dataset information file to directory {target_directory} because it does not exist."
     with open(os.path.join(target_directory, dataset_information_filename), 'wb') as fh:
         _storage_client.download_blob_to_file(
-            _SUBMISSIONS_BUCKET_URI + '/' + dataset_information_filename, fh)
+            "gs://" + glambie_bucket_name + '/' + dataset_information_filename, fh)

@@ -1,5 +1,5 @@
 """
-Script that can be used to make local copies of data in the glambie-submissions google bucket, check these files for any
+Script that can be used to make local copies of data in the glambie2-submissions google bucket, check these files for any
 formatting inconsistencies (with respect to the glambie standard), and then edit the local copies to correct these
 problems. After applying a set of edits, depending on which issues are present in each dataset, you can then upload the
 edited versions of files back to the bucket, as well as a zip archive of the original versions of these files.
@@ -21,19 +21,19 @@ from google.cloud.storage import Client
 import numpy as np
 import pandas as pd
 from pathlib import Path
-from typing import Tuple
+from typing import Literal, Tuple
 
 from glambie.monitoring.logger import setup_logging
 from glambie.util.date_helpers import datetime_dates_to_fractional_years
 from glambie.util.timeseries_helpers import interpolate_change_per_day_to_fill_gaps
+from glambie.util.version_helpers import get_glambie_bucket_name
 
-DATA_TRANSFER_BUCKET_NAME = "glambie-submissions"
 MAX_ALLOWED_ELEVATION_CHANGE_M = 100
 MAX_ALLOWED_ELEVATION_CHANGE_GT = 10000
 log = logging.getLogger(__name__)
 
 
-def download_csv_files_from_bucket(storage_client: Client, local_data_directory_path: str,
+def download_csv_files_from_bucket(storage_client: Client, local_data_directory_path: str, glambie_bucket_name: str,
                                    region_prefix: str = None) -> list[str]:
     """
     Function to download glambie .csv files from the google bucket to a local folder, where they can be checked and
@@ -55,7 +55,7 @@ def download_csv_files_from_bucket(storage_client: Client, local_data_directory_
     list[str]
         List of files that have been downloaded to the local directory.
     """
-    list_of_blobs_in_bucket = storage_client.list_blobs(DATA_TRANSFER_BUCKET_NAME, prefix=region_prefix)
+    list_of_blobs_in_bucket = storage_client.list_blobs(glambie_bucket_name, prefix=region_prefix)
     downloaded_files = []
 
     for blob in list_of_blobs_in_bucket:
@@ -70,7 +70,8 @@ def download_csv_files_from_bucket(storage_client: Client, local_data_directory_
     return downloaded_files
 
 
-def upload_edited_csv_files_to_bucket(storage_client: Client, files_to_upload: list[str], local_path: str):
+def upload_edited_csv_files_to_bucket(
+        storage_client: Client, files_to_upload: list[str], local_path: str, glambie_bucket_name: str):
     """
     After editing local copies of the submitted csv files, replace the original versions in the bucket with the
     edited local versions. Also upload an archive folder containing original copies of all edited files
@@ -90,7 +91,7 @@ def upload_edited_csv_files_to_bucket(storage_client: Client, files_to_upload: l
         If archive folder has not yet been created
     """
     for file in files_to_upload:
-        bucket = storage_client.get_bucket(DATA_TRANSFER_BUCKET_NAME)
+        bucket = storage_client.get_bucket(glambie_bucket_name)
         blob = bucket.blob(os.path.basename(file))
         blob.upload_from_filename(file)
         log.info('Edited version of %s uploaded to bucket', os.path.basename(file))
@@ -457,12 +458,14 @@ def apply_csv_file_corrections(file_check_info: pd.DataFrame, directory_path: st
     return file_check_info
 
 
-def main(upload: bool = False):
+def main(upload: bool = False, glambie_version: Literal[1, 2] = 2):
 
     local_path = '/path/to/local/folder'
     storage_client = Client()
+    glambie_bucket_name = get_glambie_bucket_name(glambie_version)
     # If you want to download files for a specific region, set the region_prefix and supply here
-    downloaded_files = download_csv_files_from_bucket(storage_client, local_path, region_prefix=None)
+    downloaded_files = download_csv_files_from_bucket(
+        storage_client, local_path, glambie_bucket_name, region_prefix=None)
     file_check_results_dataframe = generate_results_dataframe(downloaded_files, local_path)
     record_of_edits_dataframe = apply_csv_file_corrections(file_check_results_dataframe, local_path)
 
@@ -471,7 +474,8 @@ def main(upload: bool = False):
     # Final step that needs to be implemented here is to upload the edited files into the bucket, after copying the
     # original version of the file into an archive folder
     if upload:
-        upload_edited_csv_files_to_bucket(storage_client, record_of_edits_dataframe.local_filepath.to_list())
+        upload_edited_csv_files_to_bucket(
+            storage_client, record_of_edits_dataframe.local_filepath.to_list(), local_path, glambie_bucket_name)
 
 
 if __name__ == "__main__":
@@ -479,4 +483,4 @@ if __name__ == "__main__":
     # setup logging
     setup_logging(log_file_path='/data/ox1/working/glambie/submission_cleaning_log.log')
 
-    main(upload=False)
+    main(upload=False, glambie_version=2)

@@ -25,7 +25,7 @@ class DataCatalogue():
         self._datasets = datasets
 
     @staticmethod
-    def from_glambie_submission_system() -> DataCatalogue:
+    def from_glambie_submission_system(glambie_bucket_name: str) -> DataCatalogue:
         """
         Loads a catalogue from the GlaMBIE submission system.
 
@@ -61,7 +61,7 @@ class DataCatalogue():
 
             # we need to load the data anyway to get the unit, so may as well keep it loaded.
             data = fetch_timeseries_dataframe(
-                datasets[-1].user_group, datasets[-1].region, datasets[-1].data_group)
+                datasets[-1].user_group, datasets[-1].region, datasets[-1].data_group, glambie_bucket_name)
             datasets[-1].unit = data['unit'].iloc[0]
             datasets[-1].data = TimeseriesData(
                 start_dates=np.array(data['start_date_fractional']),

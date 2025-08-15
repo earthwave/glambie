@@ -163,6 +163,7 @@ def convert_datasets_to_monthly_grid(data_catalogue: DataCatalogue) -> DataCatal
 def convert_datasets_to_annual_trends(data_catalogue: DataCatalogue,
                                       year_type: YearType,
                                       method_to_correct_seasonally: SeasonalCorrectionMethod,
+                                      rgi_area_version: int,
                                       seasonal_calibration_dataset: Timeseries = None) -> DataCatalogue:
     """
     Convert all datasets in data catalogue to annual trends.
@@ -181,6 +182,8 @@ def convert_datasets_to_annual_trends(data_catalogue: DataCatalogue,
     seasonal_calibration_dataset: Timeseries, by default None
         Timeseries dataset for seasonal calibration if trends are at annual resolution. Will be ignored if seasonal
         correction method is not set to SeasonalCorrectionMethod.SEASONAL_HOMOGENIZATION
+    rgi_area_version : int
+        version of RGI area to use for area adjustment
 
     Returns
     -------
@@ -191,7 +194,7 @@ def convert_datasets_to_annual_trends(data_catalogue: DataCatalogue,
     datasets = []
     for ds in data_catalogue.datasets:
         if ds.data.max_temporal_resolution == ds.data.min_temporal_resolution == 1:
-            ds = ds.convert_timeseries_to_unit_mwe()
+            ds = ds.convert_timeseries_to_unit_mwe(rgi_area_version=rgi_area_version)
 
             # apply seasonal correction depending on settings given
             ds = apply_seasonal_correction_to_dataset(dataset_to_correct=ds,
@@ -211,6 +214,7 @@ def convert_datasets_to_longterm_trends_in_unit_mwe(
         data_catalogue: DataCatalogue, year_type: YearType,
         method_to_extract_trends: ExtractTrendsMethod,
         method_to_correct_seasonally: SeasonalCorrectionMethod,
+        rgi_area_version: int,
         seasonal_calibration_dataset: Timeseries = None,
         output_trend_date_range: Tuple[float, float] = None) -> DataCatalogue:
     """
@@ -229,6 +233,8 @@ def convert_datasets_to_longterm_trends_in_unit_mwe(
     method_to_correct_seasonally: SeasonalCorrectionMethod
         method as to how long-term trends are correct when they don't start in the desired season, i.e. don't follow
         the desired annual grid defined with 'year_type'
+    rgi_area_version : int
+        version of RGI area to use for area adjustment
     seasonal_calibration_dataset: Timeseries, by default None
         Timeseries dataset for seasonal calibration if trends are at lower resolution than 1 year.
         Will be ignore if seasonal correction method is not set to SeasonalCorrectionMethod.SEASONAL_HOMOGENIZATION
@@ -237,6 +243,7 @@ def convert_datasets_to_longterm_trends_in_unit_mwe(
         meaning that the resulting longterm trends are within the minimum and maximum of the time window.
         Note that existing longterm trends are removed if the are outside the time window.
         The dates are expected in decimal years format (float), e.g. 2012.75.
+
 
     Returns
     -------
@@ -266,7 +273,8 @@ def convert_datasets_to_longterm_trends_in_unit_mwe(
                                                        max_date=ds.data.max_end_date, return_type="arrays")
             ds = ds.reduce_to_date_window(new_start_dates[0], new_end_dates[-1])
             ds = ds.convert_timeseries_to_longterm_trend(
-                method_to_extract_trends=method_to_extract_trends).convert_timeseries_to_unit_mwe()
+                method_to_extract_trends=method_to_extract_trends).convert_timeseries_to_unit_mwe(
+                    rgi_area_version=rgi_area_version)
 
         # if temporal resolution is a year or higher, seaonal correction should be applied
         else:
@@ -277,7 +285,7 @@ def convert_datasets_to_longterm_trends_in_unit_mwe(
 
             # now convert to mwe unit. This needs to be done here and not earlier due to the density uncertainties
             # for different time periods
-            ds = ds.convert_timeseries_to_unit_mwe()
+            ds = ds.convert_timeseries_to_unit_mwe(rgi_area_version=rgi_area_version)
 
             # apply seasonal correction depending on settings given
             ds = apply_seasonal_correction_to_dataset(dataset_to_correct=ds,
@@ -332,7 +340,8 @@ def apply_seasonal_correction_to_dataset(dataset_to_correct: Timeseries,
     return corrected_dataset
 
 
-def convert_datasets_to_unit_mwe(data_catalogue: DataCatalogue) -> DataCatalogue:
+def convert_datasets_to_unit_mwe(data_catalogue: DataCatalogue,
+                                 rgi_area_version: int) -> DataCatalogue:
     """
     Convert all datasets in data catalogue to unit mwe (meter water equivalent)
 
@@ -340,6 +349,8 @@ def convert_datasets_to_unit_mwe(data_catalogue: DataCatalogue) -> DataCatalogue
     ----------
     data_catalogue : DataCatalogue
         data catalogue to be converted
+    rgi_area_version : int
+        version of RGI area to use for area adjustment
 
     Returns
     -------
@@ -348,12 +359,13 @@ def convert_datasets_to_unit_mwe(data_catalogue: DataCatalogue) -> DataCatalogue
     """
     datasets = []
     for ds in data_catalogue.datasets:
-        datasets.append(ds.convert_timeseries_to_unit_mwe())
+        datasets.append(ds.convert_timeseries_to_unit_mwe(rgi_area_version=rgi_area_version))
     catalogue_mwe = DataCatalogue.from_list(datasets, base_path=data_catalogue.base_path)
     return catalogue_mwe
 
 
-def convert_datasets_to_unit_gt(data_catalogue: DataCatalogue) -> DataCatalogue:
+def convert_datasets_to_unit_gt(data_catalogue: DataCatalogue,
+                                rgi_area_version: int) -> DataCatalogue:
     """
     Convert all datasets in data catalogue to unit gt (Gigatonnes)
 
@@ -361,6 +373,8 @@ def convert_datasets_to_unit_gt(data_catalogue: DataCatalogue) -> DataCatalogue:
     ----------
     data_catalogue : DataCatalogue
         data catalogue to be converted
+    rgi_area_version : int
+        version of RGI area to use for area adjustment
 
     Returns
     -------
@@ -370,15 +384,16 @@ def convert_datasets_to_unit_gt(data_catalogue: DataCatalogue) -> DataCatalogue:
     datasets = []
     for ds in data_catalogue.datasets:
         # first remove area change
-        ds = ds.apply_or_remove_area_change(apply_area_change=False)
+        ds = ds.apply_or_remove_area_change(rgi_area_version, apply_area_change=False)
         # then convert to gt with constant area
-        datasets.append(ds.convert_timeseries_to_unit_gt())
+        datasets.append(ds.convert_timeseries_to_unit_gt(rgi_area_version=rgi_area_version))
     catalogue_gt = DataCatalogue.from_list(datasets, base_path=data_catalogue.base_path)
     return catalogue_gt
 
 
 def prepare_seasonal_calibration_dataset(region_config: RegionRunConfig,
-                                         data_catalogue: DataCatalogue) -> Timeseries:
+                                         data_catalogue: DataCatalogue,
+                                         rgi_area_version: int) -> Timeseries:
     """
     Retrieves and prepares the seasonal calibration dataset from a data catalogue.
 
@@ -391,6 +406,8 @@ def prepare_seasonal_calibration_dataset(region_config: RegionRunConfig,
         region config object, containing information on seasonal calibration dataset
     data_catalogue : DataCatalogue
         data catalogue, should contain the seasonal calibration dataset
+    rgi_area_version : int
+        version of RGI area to use for area adjustment
 
     Returns
     -------
@@ -403,7 +420,8 @@ def prepare_seasonal_calibration_dataset(region_config: RegionRunConfig,
         data_group=region_config.seasonal_correction_dataset["data_group"]).datasets[0]
     season_calibration_dataset.load_data()
     season_calibration_dataset = season_calibration_dataset.convert_timeseries_to_monthly_grid()
-    season_calibration_dataset = season_calibration_dataset.convert_timeseries_to_unit_mwe()
+    season_calibration_dataset = season_calibration_dataset.convert_timeseries_to_unit_mwe(
+        rgi_area_version=rgi_area_version)
     return season_calibration_dataset
 
 

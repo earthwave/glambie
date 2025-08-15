@@ -8,6 +8,8 @@ from glambie.processing.path_handling import OutputPathHandler
 from glambie.processing.process_global_results import run_global_results
 from typing import Tuple
 
+from glambie.util.version_helpers import get_glambie_bucket_name
+
 log = logging.getLogger(__name__)
 
 
@@ -23,12 +25,13 @@ def run_glambie_assessment(glambie_run_config: GlambieRunConfig,
     output_path_handler : OutputPathHandler
         Run output handler. If None, no plots/csvs etc. will be saved out.
     """
+    glambie_bucket_name = get_glambie_bucket_name(glambie_run_config.glambie_version)
     # save out configs
     if output_path_handler is not None:
         glambie_run_config.save_to_yaml(output_path_handler.get_config_output_folder_path())
 
     # load catalogue
-    data_catalogue_original = _load_catalogue_and_data(glambie_run_config.catalogue_path)
+    data_catalogue_original = _load_catalogue_and_data(glambie_run_config.catalogue_path, glambie_bucket_name)
 
     # run regional results
     results_catalogue_combined_per_region_mwe, _ = _run_regional_results(
@@ -82,7 +85,8 @@ def _run_regional_results(glambie_run_config: GlambieRunConfig,
             _, combined_results_gt = convert_and_save_one_region_to_gigatonnes(
                 catalogue_data_group_results=results_one_region,
                 combined_region_timeseries=combined_results_mwe,
-                output_path_handler=output_path_handler)
+                output_path_handler=output_path_handler,
+                rgi_area_version=glambie_run_config.rgi_area_version)
             combined_regional_results_gt.append(combined_results_gt)
 
     catalogue_combined_regional_results_mwe = DataCatalogue.from_list(
@@ -93,7 +97,7 @@ def _run_regional_results(glambie_run_config: GlambieRunConfig,
     return catalogue_combined_regional_results_mwe, catalogue_combined_regional_results_gt
 
 
-def _load_catalogue_and_data(data_catalogue_path: str) -> DataCatalogue:
+def _load_catalogue_and_data(data_catalogue_path: str, glambie_bucket_name: str) -> DataCatalogue:
     """
     Loads data catalogue and reads all data from a file path, or the submission system.
 
@@ -109,7 +113,7 @@ def _load_catalogue_and_data(data_catalogue_path: str) -> DataCatalogue:
     """
     # read catalogue
     if data_catalogue_path == SUBMISSION_SYSTEM_BASEPATH_PLACEHOLDER:
-        catalogue = DataCatalogue.from_glambie_submission_system()
+        catalogue = DataCatalogue.from_glambie_submission_system(glambie_bucket_name)
     else:
         catalogue = DataCatalogue.from_json_file(data_catalogue_path)
     catalogue.load_all_data()

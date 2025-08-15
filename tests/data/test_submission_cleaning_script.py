@@ -48,8 +48,8 @@ def test_download_csv_files_from_bucket(tmp_path, mock_client):
 
     test_prefix = 'acs'
     local_data_directory_path = str(tmp_path)  # temp folder for test of download
-    downloaded_files = download_csv_files_from_bucket(mock_client, local_data_directory_path,
-                                                      region_prefix=test_prefix)
+    downloaded_files = download_csv_files_from_bucket(
+        mock_client, local_data_directory_path, "glambie2-submissions", region_prefix=test_prefix)
     # check that download_to_file was called for each blob
     for mock_blob in mock_client.list_blobs():
         assert mock_blob.download_to_file.call_count == 1

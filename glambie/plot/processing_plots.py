@@ -23,15 +23,18 @@ def plot_all_plots_for_region_data_group_processing(output_path_handler: OutputP
                                                     data_catalogue_calibrated_series: DataCatalogue,
                                                     timeseries_trend_combined: Timeseries,
                                                     min_date: float,
-                                                    max_date: float):
+                                                    max_date: float,
+                                                    rgi_area_version: int):
     plot_fp = output_path_handler.get_plot_output_file_path(region=region, data_group=data_group,
                                                             plot_file_name="1_annual_input_data.png")
     # if not all datasets are the same unit they need to be converted to mwe for plotting
     # otherwise the plots are very confusing
     if not data_catalogue_annual_raw.datasets_are_same_unit():  # annual
-        data_catalogue_annual_raw = convert_datasets_to_unit_mwe(data_catalogue_annual_raw)
+        data_catalogue_annual_raw = convert_datasets_to_unit_mwe(data_catalogue_annual_raw,
+                                                                 rgi_area_version=rgi_area_version)
     if not data_catalogue_trends_raw.datasets_are_same_unit():  # trends
-        data_catalogue_trends_raw = convert_datasets_to_unit_mwe(data_catalogue_trends_raw)
+        data_catalogue_trends_raw = convert_datasets_to_unit_mwe(data_catalogue_trends_raw,
+                                                                 rgi_area_version=rgi_area_version)
 
     # clip raw datasets to minimum and maximum, so that the plotting focuses on the desired period
     data_catalogue_annual_raw = get_reduced_catalogue_to_date_window(
@@ -53,7 +56,8 @@ def plot_all_plots_for_region_data_group_processing(output_path_handler: OutputP
                                       output_filepath=plot_fp,
                                       plot_errors=False)
     # Convert to same unit as annual datasets now
-    data_catalogue_annual_raw = convert_datasets_to_unit_mwe(data_catalogue_annual_raw)
+    data_catalogue_annual_raw = convert_datasets_to_unit_mwe(data_catalogue_annual_raw,
+                                                             rgi_area_version=rgi_area_version)
     plot_fp = output_path_handler.get_plot_output_file_path(region=region, data_group=data_group,
                                                             plot_file_name="2_annual_homogenize_data_2.png")
     plot_raw_and_homogenized_input_data_of_data_group(catalogue_raw=data_catalogue_annual_raw,
@@ -90,7 +94,8 @@ def plot_all_plots_for_region_data_group_processing(output_path_handler: OutputP
                                       output_filepath=plot_fp,
                                       plot_errors=False)
     data_catalogue_trends_raw = convert_datasets_to_monthly_grid(data_catalogue_trends_raw)
-    data_catalogue_trends_raw = convert_datasets_to_unit_mwe(data_catalogue_trends_raw)
+    data_catalogue_trends_raw = convert_datasets_to_unit_mwe(data_catalogue_trends_raw,
+                                                             rgi_area_version=rgi_area_version)
     plot_fp = output_path_handler.get_plot_output_file_path(region=region, data_group=data_group,
                                                             plot_file_name="6_trends_homogenize_data.png")
     plot_raw_and_homogenized_input_data_of_data_group(catalogue_raw=data_catalogue_trends_raw,

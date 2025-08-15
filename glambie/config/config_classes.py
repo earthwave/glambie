@@ -2,6 +2,7 @@
 Configuration control dataclasses for GlaMBIE.
 """
 from dataclasses import dataclass
+from typing import Literal
 import yaml
 import logging
 from abc import ABC, abstractclassmethod
@@ -74,6 +75,7 @@ class RegionRunConfig(Config):
 
 @dataclass
 class GlambieRunConfig(Config):
+    glambie_version: Literal[1, 2]
     result_base_path: str
     region_config_base_path: str
     catalogue_path: str
@@ -81,6 +83,7 @@ class GlambieRunConfig(Config):
     regions: list[RegionRunConfig]
     start_year: float
     end_year: float
+    rgi_area_version: int
     method_to_extract_trends: str
     seasonal_correction_method: str
 

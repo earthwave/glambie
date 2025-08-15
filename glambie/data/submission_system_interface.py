@@ -132,7 +132,7 @@ def fetch_all_submission_metadata(glambie_bucket_name: str) -> List[dict]:
 def download_dataset_information_file_to_disk(
         user_group: str,
         data_group: GlambieDataGroup,
-        glambie_bucket_name,
+        glambie_bucket_name: str,
         target_directory: Optional[str] = '.'
 ) -> None:
     """

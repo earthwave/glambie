@@ -84,6 +84,8 @@ def upload_edited_csv_files_to_bucket(
         List containing the names of files that should be uploaded to the GlaMBIE bucket
     local_path : str
         Path to local copies of bucket data.
+    glambie_bucket_name : str
+        Glambie GCP bucket name.
 
     Raises
     ------

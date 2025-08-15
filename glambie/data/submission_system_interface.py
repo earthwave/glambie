@@ -72,6 +72,8 @@ def fetch_timeseries_dataframe(
         The user group for the submission (called "group_name" within the submission system)
     region : RGIRegion
         The RGIRegion for the submission
+    glambie_bucket_name: str
+        Glambie GCP bucket name.
     data_group : GlambieDataGroup
         The GlambieDataGroup for the submission.
         Note that 'demdiff_and_glaciological' and 'consensus' Data Groups never appear in the submission system.

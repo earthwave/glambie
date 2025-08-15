@@ -1,5 +1,5 @@
 """
-Script that can be used to make local copies of data in the glambie2-submissions google bucket, check these files for
+Script that can be used to make local copies of data in the glambie submissions google bucket, check these files for
 any formatting inconsistencies (with respect to the glambie standard), and then edit the local copies to correct these
 problems. After applying a set of edits, depending on which issues are present in each dataset, you can then upload the
 edited versions of files back to the bucket, as well as a zip archive of the original versions of these files.

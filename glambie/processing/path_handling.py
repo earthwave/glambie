@@ -4,7 +4,7 @@ import os
 import datetime
 
 
-class OutputPathHandler():
+class OutputPathHandler:
     """
     Handles paths for Glambie processing intermediate results, plots and other outputs
     """
@@ -36,7 +36,9 @@ class OutputPathHandler():
         str
             output folder path
         """
-        folder_path = os.path.join(self.base_path, f"{str(region.rgi_id)}_{region.name}")
+        folder_path = os.path.join(
+            self.base_path, f"{str(region.rgi_id)}_{region.name}"
+        )
         os.makedirs(folder_path, exist_ok=True)
         return folder_path
 
@@ -54,7 +56,9 @@ class OutputPathHandler():
         os.makedirs(folder_path, exist_ok=True)
         return folder_path
 
-    def get_region_and_data_group_output_folder_path(self, region: RGIRegion, data_group: GlambieDataGroup) -> str:
+    def get_region_and_data_group_output_folder_path(
+        self, region: RGIRegion, data_group: GlambieDataGroup
+    ) -> str:
         """
         Returns requested folder path for saving outputs.
         If a folder dosen't exist it is iteratively created on the fly.
@@ -71,11 +75,15 @@ class OutputPathHandler():
         str
             output folder path
         """
-        folder_path = os.path.join(self.get_region_output_folder_path(region), data_group.name)
+        folder_path = os.path.join(
+            self.get_region_output_folder_path(region), data_group.name
+        )
         os.makedirs(folder_path, exist_ok=True)
         return folder_path
 
-    def get_plot_output_file_path(self, region: RGIRegion, data_group: GlambieDataGroup, plot_file_name: str) -> str:
+    def get_plot_output_file_path(
+        self, region: RGIRegion, data_group: GlambieDataGroup, plot_file_name: str
+    ) -> str:
         """
         Returns requested file path for saving output plot.
         If a folder doesn't exist it is iteratively created on the fly.
@@ -94,15 +102,19 @@ class OutputPathHandler():
         str
             output file path of plot
         """
-        folder_path = os.path.join(self.get_region_output_folder_path(region), data_group.name, "plots")
+        folder_path = os.path.join(
+            self.get_region_output_folder_path(region), data_group.name, "plots"
+        )
         os.makedirs(folder_path, exist_ok=True)
         return os.path.join(folder_path, plot_file_name)
 
-    def get_csv_output_file_path(self,
-                                 region: RGIRegion,
-                                 data_group: GlambieDataGroup,
-                                 csv_file_name: str,
-                                 subfolder: str = "") -> str:
+    def get_csv_output_file_path(
+        self,
+        region: RGIRegion,
+        data_group: GlambieDataGroup,
+        csv_file_name: str,
+        subfolder: str = "",
+    ) -> str:
         """
         Returns requested file path for saving output csv.
         If a folder doesn't exist it is iteratively created on the fly.
@@ -122,12 +134,19 @@ class OutputPathHandler():
         str
             output file path of csv
         """
-        folder_path = os.path.join(self.get_region_output_folder_path(region), data_group.name, "csvs", subfolder)
+        folder_path = os.path.join(
+            self.get_region_output_folder_path(region),
+            data_group.name,
+            "csvs",
+            subfolder,
+        )
         os.makedirs(folder_path, exist_ok=True)
         return os.path.join(folder_path, csv_file_name)
 
 
-def get_output_path_handler_with_timestamped_subfolder(base_output_dir: str) -> OutputPathHandler:
+def get_output_path_handler_with_timestamped_subfolder(
+    base_output_dir: str,
+) -> OutputPathHandler:
     """
     Creates a OutputPathHandler with a timestamped subfolder from the base_output_dir.
 
@@ -145,4 +164,8 @@ def get_output_path_handler_with_timestamped_subfolder(base_output_dir: str) -> 
     OutputPathHandler
         Output Path Handler object
     """
-    return OutputPathHandler(os.path.join(base_output_dir, datetime.datetime.now().strftime('%Y-%m-%d_%H-%M')))
+    return OutputPathHandler(
+        os.path.join(
+            base_output_dir, datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")
+        )
+    )

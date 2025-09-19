@@ -6,7 +6,11 @@ from glambie.const import constants
 from glambie.data.data_catalogue import DataCatalogue
 from glambie.const.data_groups import GLAMBIE_DATA_GROUPS, GlambieDataGroup
 from glambie.data.timeseries import Timeseries
-from glambie.const.constants import ExtractTrendsMethod, YearType, SeasonalCorrectionMethod
+from glambie.const.constants import (
+    ExtractTrendsMethod,
+    YearType,
+    SeasonalCorrectionMethod,
+)
 from glambie.util.date_helpers import get_years
 import numpy as np
 import pandas as pd
@@ -15,9 +19,11 @@ import warnings
 log = logging.getLogger(__name__)
 
 
-def filter_catalogue_with_config_settings(data_group: GlambieDataGroup,
-                                          region_config: RegionRunConfig,
-                                          data_catalogue: DataCatalogue) -> Tuple[DataCatalogue, DataCatalogue]:
+def filter_catalogue_with_config_settings(
+    data_group: GlambieDataGroup,
+    region_config: RegionRunConfig,
+    data_catalogue: DataCatalogue,
+) -> Tuple[DataCatalogue, DataCatalogue]:
     """
     Filters data catalogue by the 'exclude_trend_datasets' and 'exclude_annual_datasets' config settings
 
@@ -46,43 +52,75 @@ def filter_catalogue_with_config_settings(data_group: GlambieDataGroup,
     # 1 filter by data group and region
     if data_group != GLAMBIE_DATA_GROUPS["demdiff_and_glaciological"]:
         data_catalogue = data_catalogue.get_filtered_catalogue(
-            data_group=data_group.name, region_name=region_config.region_name)
+            data_group=data_group.name, region_name=region_config.region_name
+        )
     else:
         data_catalogue_demdiff = data_catalogue.get_filtered_catalogue(
-            data_group=GLAMBIE_DATA_GROUPS["demdiff"].name, region_name=region_config.region_name)
+            data_group=GLAMBIE_DATA_GROUPS["demdiff"].name,
+            region_name=region_config.region_name,
+        )
         data_catalogue_glaciological = data_catalogue.get_filtered_catalogue(
-            data_group=GLAMBIE_DATA_GROUPS["glaciological"].name, region_name=region_config.region_name)
+            data_group=GLAMBIE_DATA_GROUPS["glaciological"].name,
+            region_name=region_config.region_name,
+        )
         # concatenate demdiff and glaciological into one
-        data_catalogue = DataCatalogue.from_list(data_catalogue_demdiff.datasets
-                                                 + data_catalogue_glaciological.datasets,
-                                                 base_path=data_catalogue.base_path)
+        data_catalogue = DataCatalogue.from_list(
+            data_catalogue_demdiff.datasets + data_catalogue_glaciological.datasets,
+            base_path=data_catalogue.base_path,
+        )
     # 2 filter out what has been specified in config for annual datasets
     datasets_annual = data_catalogue.datasets.copy()
-    exclude_annual_datasets = region_config.region_run_settings[data_group.name].get("exclude_annual_datasets", [])
-    log.info('Excluding the following datasets from ANNUAL calculations: datasets=%s', exclude_annual_datasets)
+    exclude_annual_datasets = region_config.region_run_settings[data_group.name].get(
+        "exclude_annual_datasets", []
+    )
+    log.info(
+        "Excluding the following datasets from ANNUAL calculations: datasets=%s",
+        exclude_annual_datasets,
+    )
     for ds in exclude_annual_datasets:
         if ds is not None:
-            datasets_annual = [d for d in datasets_annual if d.user_group.lower() != ds.lower()]
+            datasets_annual = [
+                d for d in datasets_annual if d.user_group.lower() != ds.lower()
+            ]
     if data_group == GLAMBIE_DATA_GROUPS["demdiff_and_glaciological"]:
-        datasets_annual = [d for d in datasets_annual if d.data_group != GLAMBIE_DATA_GROUPS["demdiff"]]
+        datasets_annual = [
+            d for d in datasets_annual if d.data_group != GLAMBIE_DATA_GROUPS["demdiff"]
+        ]
 
     # 3 filter out what has been specified in config for longterm trend datasets
     datasets_trend = data_catalogue.datasets.copy()
-    exclude_trend_datasets = region_config.region_run_settings[data_group.name].get("exclude_trend_datasets", [])
-    log.info('Excluding the following datasets from TREND calculations: datasets=%s', exclude_trend_datasets)
+    exclude_trend_datasets = region_config.region_run_settings[data_group.name].get(
+        "exclude_trend_datasets", []
+    )
+    log.info(
+        "Excluding the following datasets from TREND calculations: datasets=%s",
+        exclude_trend_datasets,
+    )
     for ds in exclude_trend_datasets:
         if ds is not None:
-            datasets_trend = [d for d in datasets_trend if d.user_group.lower() != ds.lower()]
+            datasets_trend = [
+                d for d in datasets_trend if d.user_group.lower() != ds.lower()
+            ]
     if data_group == GLAMBIE_DATA_GROUPS["demdiff_and_glaciological"]:
-        datasets_trend = [d for d in datasets_trend if d.data_group != GLAMBIE_DATA_GROUPS["glaciological"]]
+        datasets_trend = [
+            d
+            for d in datasets_trend
+            if d.data_group != GLAMBIE_DATA_GROUPS["glaciological"]
+        ]
 
     # 4 add additional combined datasets stated in configs to data group
     additional_annual_datasets = get_additional_combined_datasets(
-        data_catalogue=data_catalogue_original, data_group=data_group,
-        region_config=region_config, type_of_information="annual")
+        data_catalogue=data_catalogue_original,
+        data_group=data_group,
+        region_config=region_config,
+        type_of_information="annual",
+    )
     additional_trend_datasets = get_additional_combined_datasets(
-        data_catalogue=data_catalogue_original, data_group=data_group,
-        region_config=region_config, type_of_information="trend")
+        data_catalogue=data_catalogue_original,
+        data_group=data_group,
+        region_config=region_config,
+        type_of_information="trend",
+    )
     # combined solution should have a symbol so that they are recognized in the plots
     for ds in additional_annual_datasets:
         ds.user_group = ds.user_group + "_#"
@@ -92,18 +130,31 @@ def filter_catalogue_with_config_settings(data_group: GlambieDataGroup,
 
     datasets_annual.extend(additional_annual_datasets)
     datasets_trend.extend(additional_trend_datasets)
-    log.info('Including the following combined datasets to ANNUAL calculations: datasets=%s',
-             additional_annual_datasets)
-    log.info('Including the following combined datasets to TREND calculations: datasets=%s', additional_trend_datasets)
+    log.info(
+        "Including the following combined datasets to ANNUAL calculations: datasets=%s",
+        additional_annual_datasets,
+    )
+    log.info(
+        "Including the following combined datasets to TREND calculations: datasets=%s",
+        additional_trend_datasets,
+    )
 
-    data_catalogue_annual = DataCatalogue.from_list(datasets_annual, base_path=data_catalogue.base_path)
-    data_catalogue_trend = DataCatalogue.from_list(datasets_trend, base_path=data_catalogue.base_path)
+    data_catalogue_annual = DataCatalogue.from_list(
+        datasets_annual, base_path=data_catalogue.base_path
+    )
+    data_catalogue_trend = DataCatalogue.from_list(
+        datasets_trend, base_path=data_catalogue.base_path
+    )
 
     return data_catalogue_annual, data_catalogue_trend
 
 
-def get_additional_combined_datasets(data_catalogue: DataCatalogue, data_group: GlambieDataGroup,
-                                     region_config: RegionRunConfig, type_of_information: str) -> list[Timeseries]:
+def get_additional_combined_datasets(
+    data_catalogue: DataCatalogue,
+    data_group: GlambieDataGroup,
+    region_config: RegionRunConfig,
+    type_of_information: str,
+) -> list[Timeseries]:
     """
     Returns a list of combined datasets to be added to a data group using the run config
 
@@ -124,18 +175,30 @@ def get_additional_combined_datasets(data_catalogue: DataCatalogue, data_group: 
         a list of Timeseries of the data source 'combined' which have been identified
     """
     additional_datasets = []
-    if "include_combined_{}_datasets".format(type_of_information) in region_config.region_run_settings[data_group.name]:
-        include_combined_datasets = region_config.region_run_settings[data_group.name].get(
-            "include_combined_{}_datasets".format(type_of_information), [])
-        include_combined_datasets = [x for x in include_combined_datasets if x is not None]
+    if (
+        "include_combined_{}_datasets".format(type_of_information)
+        in region_config.region_run_settings[data_group.name]
+    ):
+        include_combined_datasets = region_config.region_run_settings[
+            data_group.name
+        ].get("include_combined_{}_datasets".format(type_of_information), [])
+        include_combined_datasets = [
+            x for x in include_combined_datasets if x is not None
+        ]
         for ds in include_combined_datasets:
             catalogue_filtered = data_catalogue.get_filtered_catalogue(
-                data_group="combined", region_name=region_config.region_name, user_group=ds)
+                data_group="combined",
+                region_name=region_config.region_name,
+                user_group=ds,
+            )
             if len(catalogue_filtered.datasets) > 0:
                 additional_datasets.append(catalogue_filtered.datasets[0])
             else:
-                log.info("Cannot find and add the following combined dataset to %s datasets: %s",
-                         type_of_information, ds)
+                log.info(
+                    "Cannot find and add the following combined dataset to %s datasets: %s",
+                    type_of_information,
+                    ds,
+                )
     return additional_datasets
 
 
@@ -156,15 +219,19 @@ def convert_datasets_to_monthly_grid(data_catalogue: DataCatalogue) -> DataCatal
     datasets = []
     for ds in data_catalogue.datasets:
         datasets.append(ds.convert_timeseries_to_monthly_grid())
-    catalogue_monthly_grid = DataCatalogue.from_list(datasets, base_path=data_catalogue.base_path)
+    catalogue_monthly_grid = DataCatalogue.from_list(
+        datasets, base_path=data_catalogue.base_path
+    )
     return catalogue_monthly_grid
 
 
-def convert_datasets_to_annual_trends(data_catalogue: DataCatalogue,
-                                      year_type: YearType,
-                                      method_to_correct_seasonally: SeasonalCorrectionMethod,
-                                      rgi_area_version: int,
-                                      seasonal_calibration_dataset: Timeseries = None) -> DataCatalogue:
+def convert_datasets_to_annual_trends(
+    data_catalogue: DataCatalogue,
+    year_type: YearType,
+    method_to_correct_seasonally: SeasonalCorrectionMethod,
+    rgi_area_version: int,
+    seasonal_calibration_dataset: Timeseries = None,
+) -> DataCatalogue:
     """
     Convert all datasets in data catalogue to annual trends.
     If an input dataset within the catalogue is at annual resolution, seasonal homogenization is performed.
@@ -197,26 +264,32 @@ def convert_datasets_to_annual_trends(data_catalogue: DataCatalogue,
             ds = ds.convert_timeseries_to_unit_mwe(rgi_area_version=rgi_area_version)
 
             # apply seasonal correction depending on settings given
-            ds = apply_seasonal_correction_to_dataset(dataset_to_correct=ds,
-                                                      method_to_correct_seasonally=method_to_correct_seasonally,
-                                                      year_type=year_type,
-                                                      seasonal_calibration_dataset=seasonal_calibration_dataset)
+            ds = apply_seasonal_correction_to_dataset(
+                dataset_to_correct=ds,
+                method_to_correct_seasonally=method_to_correct_seasonally,
+                year_type=year_type,
+                seasonal_calibration_dataset=seasonal_calibration_dataset,
+            )
 
             datasets.append(ds)
         else:
             datasets.append(ds.convert_timeseries_to_annual_trends(year_type=year_type))
 
-    catalogue_annual_grid = DataCatalogue.from_list(datasets, base_path=data_catalogue.base_path)
+    catalogue_annual_grid = DataCatalogue.from_list(
+        datasets, base_path=data_catalogue.base_path
+    )
     return catalogue_annual_grid
 
 
 def convert_datasets_to_longterm_trends_in_unit_mwe(
-        data_catalogue: DataCatalogue, year_type: YearType,
-        method_to_extract_trends: ExtractTrendsMethod,
-        method_to_correct_seasonally: SeasonalCorrectionMethod,
-        rgi_area_version: int,
-        seasonal_calibration_dataset: Timeseries = None,
-        output_trend_date_range: Tuple[float, float] = None) -> DataCatalogue:
+    data_catalogue: DataCatalogue,
+    year_type: YearType,
+    method_to_extract_trends: ExtractTrendsMethod,
+    method_to_correct_seasonally: SeasonalCorrectionMethod,
+    rgi_area_version: int,
+    seasonal_calibration_dataset: Timeseries = None,
+    output_trend_date_range: Tuple[float, float] = None,
+) -> DataCatalogue:
     """
     Convert all datasets in data catalogue to longterm trends.
     If dataset in catalogue has a lower resolution than a year, seasonal homogenization is used.
@@ -256,8 +329,10 @@ def convert_datasets_to_longterm_trends_in_unit_mwe(
         temporal_resolution = original_dataset.data.max_temporal_resolution
         # remove any dates outside minimum and maximum
         if output_trend_date_range is not None:
-            ds = original_dataset.reduce_to_date_window(start_date=output_trend_date_range[0],
-                                                        end_date=output_trend_date_range[1])
+            ds = original_dataset.reduce_to_date_window(
+                start_date=output_trend_date_range[0],
+                end_date=output_trend_date_range[1],
+            )
         else:
             ds = original_dataset
 
@@ -269,39 +344,50 @@ def convert_datasets_to_longterm_trends_in_unit_mwe(
                 year_start = 0
             elif year_type == constants.YearType.GLACIOLOGICAL:
                 year_start = ds.region.glaciological_year_start
-            new_start_dates, new_end_dates = get_years(year_start, min_date=ds.data.min_start_date,
-                                                       max_date=ds.data.max_end_date, return_type="arrays")
+            new_start_dates, new_end_dates = get_years(
+                year_start,
+                min_date=ds.data.min_start_date,
+                max_date=ds.data.max_end_date,
+                return_type="arrays",
+            )
             ds = ds.reduce_to_date_window(new_start_dates[0], new_end_dates[-1])
             ds = ds.convert_timeseries_to_longterm_trend(
-                method_to_extract_trends=method_to_extract_trends).convert_timeseries_to_unit_mwe(
-                    rgi_area_version=rgi_area_version)
+                method_to_extract_trends=method_to_extract_trends
+            ).convert_timeseries_to_unit_mwe(rgi_area_version=rgi_area_version)
 
         # if temporal resolution is a year or higher, seaonal correction should be applied
         else:
             # if resolution 1 year, read longterm trend and then apply seasonal correction after
             if temporal_resolution == 1:
                 ds = ds.convert_timeseries_to_longterm_trend(
-                    method_to_extract_trends=ExtractTrendsMethod.START_VS_END)
+                    method_to_extract_trends=ExtractTrendsMethod.START_VS_END
+                )
 
             # now convert to mwe unit. This needs to be done here and not earlier due to the density uncertainties
             # for different time periods
             ds = ds.convert_timeseries_to_unit_mwe(rgi_area_version=rgi_area_version)
 
             # apply seasonal correction depending on settings given
-            ds = apply_seasonal_correction_to_dataset(dataset_to_correct=ds,
-                                                      method_to_correct_seasonally=method_to_correct_seasonally,
-                                                      year_type=year_type,
-                                                      seasonal_calibration_dataset=seasonal_calibration_dataset)
+            ds = apply_seasonal_correction_to_dataset(
+                dataset_to_correct=ds,
+                method_to_correct_seasonally=method_to_correct_seasonally,
+                year_type=year_type,
+                seasonal_calibration_dataset=seasonal_calibration_dataset,
+            )
 
         datasets.append(ds)
-    catalogue_trends = DataCatalogue.from_list(datasets, base_path=data_catalogue.base_path)
+    catalogue_trends = DataCatalogue.from_list(
+        datasets, base_path=data_catalogue.base_path
+    )
     return catalogue_trends
 
 
-def apply_seasonal_correction_to_dataset(dataset_to_correct: Timeseries,
-                                         method_to_correct_seasonally: SeasonalCorrectionMethod,
-                                         year_type: constants.YearType,
-                                         seasonal_calibration_dataset: Timeseries = None) -> Timeseries:
+def apply_seasonal_correction_to_dataset(
+    dataset_to_correct: Timeseries,
+    method_to_correct_seasonally: SeasonalCorrectionMethod,
+    year_type: constants.YearType,
+    seasonal_calibration_dataset: Timeseries = None,
+) -> Timeseries:
     """
     Performs seasonal homogenization to a datasets. i.e. if the input dataset does not follow
 
@@ -329,19 +415,32 @@ def apply_seasonal_correction_to_dataset(dataset_to_correct: Timeseries,
     """
     if method_to_correct_seasonally == SeasonalCorrectionMethod.SEASONAL_HOMOGENIZATION:
         if seasonal_calibration_dataset is None:
-            raise AssertionError("Seasonal calibration dataset is None, cannot perform operation.")
+            raise AssertionError(
+                "Seasonal calibration dataset is None, cannot perform operation."
+            )
         corrected_dataset = dataset_to_correct.shift_timeseries_to_annual_grid_with_seasonal_homogenization(
-            seasonal_calibration_dataset=seasonal_calibration_dataset, year_type=year_type, p_value=0)
+            seasonal_calibration_dataset=seasonal_calibration_dataset,
+            year_type=year_type,
+            p_value=0,
+        )
     elif method_to_correct_seasonally == SeasonalCorrectionMethod.PROPORTIONAL:
-        corrected_dataset = dataset_to_correct.shift_timeseries_to_annual_grid_proportionally(year_type=year_type)
+        corrected_dataset = (
+            dataset_to_correct.shift_timeseries_to_annual_grid_proportionally(
+                year_type=year_type
+            )
+        )
     else:
-        raise NotImplementedError("Seasonal correction method '{}' is not implemented yet."
-                                  .format(method_to_correct_seasonally))
+        raise NotImplementedError(
+            "Seasonal correction method '{}' is not implemented yet.".format(
+                method_to_correct_seasonally
+            )
+        )
     return corrected_dataset
 
 
-def convert_datasets_to_unit_mwe(data_catalogue: DataCatalogue,
-                                 rgi_area_version: int) -> DataCatalogue:
+def convert_datasets_to_unit_mwe(
+    data_catalogue: DataCatalogue, rgi_area_version: int
+) -> DataCatalogue:
     """
     Convert all datasets in data catalogue to unit mwe (meter water equivalent)
 
@@ -359,13 +458,18 @@ def convert_datasets_to_unit_mwe(data_catalogue: DataCatalogue,
     """
     datasets = []
     for ds in data_catalogue.datasets:
-        datasets.append(ds.convert_timeseries_to_unit_mwe(rgi_area_version=rgi_area_version))
-    catalogue_mwe = DataCatalogue.from_list(datasets, base_path=data_catalogue.base_path)
+        datasets.append(
+            ds.convert_timeseries_to_unit_mwe(rgi_area_version=rgi_area_version)
+        )
+    catalogue_mwe = DataCatalogue.from_list(
+        datasets, base_path=data_catalogue.base_path
+    )
     return catalogue_mwe
 
 
-def convert_datasets_to_unit_gt(data_catalogue: DataCatalogue,
-                                rgi_area_version: int) -> DataCatalogue:
+def convert_datasets_to_unit_gt(
+    data_catalogue: DataCatalogue, rgi_area_version: int
+) -> DataCatalogue:
     """
     Convert all datasets in data catalogue to unit gt (Gigatonnes)
 
@@ -386,14 +490,19 @@ def convert_datasets_to_unit_gt(data_catalogue: DataCatalogue,
         # first remove area change
         ds = ds.apply_or_remove_area_change(rgi_area_version, apply_area_change=False)
         # then convert to gt with constant area
-        datasets.append(ds.convert_timeseries_to_unit_gt(rgi_area_version=rgi_area_version))
+        datasets.append(
+            ds.convert_timeseries_to_unit_gt(rgi_area_version=rgi_area_version)
+        )
     catalogue_gt = DataCatalogue.from_list(datasets, base_path=data_catalogue.base_path)
     return catalogue_gt
 
 
-def prepare_seasonal_calibration_dataset(region_config: RegionRunConfig,
-                                         data_catalogue: DataCatalogue,
-                                         rgi_area_version: int) -> Timeseries:
+def prepare_seasonal_calibration_dataset(
+    region_config: RegionRunConfig,
+    data_catalogue: DataCatalogue,
+    rgi_area_version: int,
+    glambie_bucket_name: str,
+) -> Timeseries:
     """
     Retrieves and prepares the seasonal calibration dataset from a data catalogue.
 
@@ -417,18 +526,25 @@ def prepare_seasonal_calibration_dataset(region_config: RegionRunConfig,
     # get seasonal calibration dataset and convert to monthly grid
     season_calibration_dataset = data_catalogue.get_filtered_catalogue(
         user_group=region_config.seasonal_correction_dataset["user_group"],
-        data_group=region_config.seasonal_correction_dataset["data_group"]).datasets[0]
-    season_calibration_dataset.load_data()
-    season_calibration_dataset = season_calibration_dataset.convert_timeseries_to_monthly_grid()
-    season_calibration_dataset = season_calibration_dataset.convert_timeseries_to_unit_mwe(
-        rgi_area_version=rgi_area_version)
+        data_group=region_config.seasonal_correction_dataset["data_group"],
+    ).datasets[0]
+    season_calibration_dataset.load_data(glambie_bucket_name)
+    season_calibration_dataset = (
+        season_calibration_dataset.convert_timeseries_to_monthly_grid()
+    )
+    season_calibration_dataset = (
+        season_calibration_dataset.convert_timeseries_to_unit_mwe(
+            rgi_area_version=rgi_area_version
+        )
+    )
     return season_calibration_dataset
 
 
 def extend_annual_timeseries_if_shorter_than_time_window(
-        annual_timeseries: Timeseries,
-        timeseries_for_extension: Timeseries,
-        desired_time_window: Tuple[float, float]) -> Timeseries:
+    annual_timeseries: Timeseries,
+    timeseries_for_extension: Timeseries,
+    desired_time_window: Tuple[float, float],
+) -> Timeseries:
     """
     Extends an annual timeseries with another annual timeseries in case the given desired time window spans longer
     than the annual dataset. Also fills data daps within 'annual_timeseries' with data from 'timeseries_for_extension'.
@@ -451,23 +567,42 @@ def extend_annual_timeseries_if_shorter_than_time_window(
         this will be the same as 'annual_timeseries'
     """
     annual_timeseries_copy = annual_timeseries.copy()
-    if (desired_time_window[0] < min(annual_timeseries_copy.data.start_dates)) \
-            or (desired_time_window[1] > max(annual_timeseries_copy.data.end_dates)) \
-            or not annual_timeseries_copy.data.is_cumulative_valid():  # or the case where the timeseries has a gap
-        log.info("The trends are longer than the annual timeseries. Extension of annual will be performed.")
+    if (
+        (desired_time_window[0] < min(annual_timeseries_copy.data.start_dates))
+        or (desired_time_window[1] > max(annual_timeseries_copy.data.end_dates))
+        or not annual_timeseries_copy.data.is_cumulative_valid()
+    ):  # or the case where the timeseries has a gap
+        log.info(
+            "The trends are longer than the annual timeseries. Extension of annual will be performed."
+        )
 
         # Remove trend of timeseries for extension over the common time period
-        catalogue_dfs = [annual_timeseries_copy.data.as_dataframe(), timeseries_for_extension.data.as_dataframe()]
+        catalogue_dfs = [
+            annual_timeseries_copy.data.as_dataframe(),
+            timeseries_for_extension.data.as_dataframe(),
+        ]
         start_ref_period = np.max([df.start_dates.min() for df in catalogue_dfs])
         end_ref_period = np.min([df.end_dates.max() for df in catalogue_dfs])
         if not start_ref_period < end_ref_period:
-            warnings.warn("No common period detected when removing trends.", stacklevel=2)
+            warnings.warn(
+                "No common period detected when removing trends.", stacklevel=2
+            )
         for df in catalogue_dfs:
-            df_sub = df[(df["start_dates"] >= start_ref_period) & (df["end_dates"] <= end_ref_period)]
-            df["changes"] = df["changes"] - df_sub["changes"].mean()  # edit the dataframe
+            df_sub = df[
+                (df["start_dates"] >= start_ref_period)
+                & (df["end_dates"] <= end_ref_period)
+            ]
+            df["changes"] = (
+                df["changes"] - df_sub["changes"].mean()
+            )  # edit the dataframe
 
         # Combine with other timeseries to cover the missing timespan
-        df_merged = pd.merge(catalogue_dfs[0], catalogue_dfs[1], on=["start_dates", "end_dates"], how="outer")
+        df_merged = pd.merge(
+            catalogue_dfs[0],
+            catalogue_dfs[1],
+            on=["start_dates", "end_dates"],
+            how="outer",
+        )
         # Fill Nans in 'annual_timeseries' with values from 'timeseries_for_extension'
         df_merged.changes_x.fillna(df_merged.changes_y, inplace=True)
         df_merged.errors_x.fillna(df_merged.errors_y, inplace=True)
@@ -480,7 +615,9 @@ def extend_annual_timeseries_if_shorter_than_time_window(
     return annual_timeseries_copy
 
 
-def check_and_handle_gaps_in_timeseries(data_catalogue: DataCatalogue) -> Tuple[DataCatalogue, list[list]]:
+def check_and_handle_gaps_in_timeseries(
+    data_catalogue: DataCatalogue,
+) -> Tuple[DataCatalogue, list[list]]:
     """
     Checks all datasets in a timeseries if they have a temporal gap, and if so, splits them up into multiple datasets
     without gaps. If no gaps are found, the datasets stay the same.
@@ -503,7 +640,9 @@ def check_and_handle_gaps_in_timeseries(data_catalogue: DataCatalogue) -> Tuple[
     new_datasets = []
     list_of_split_series = []
     for timeseries in data_catalogue.datasets:
-        if not timeseries.data.is_cumulative_valid():  # if invalid convert to handle the gaps
+        if (
+            not timeseries.data.is_cumulative_valid()
+        ):  # if invalid convert to handle the gaps
             # 1 split timeseries dataframe
             df_data = timeseries.data.as_dataframe()
             split_dataframes = slice_timeseries_at_gaps(df_data)
@@ -512,10 +651,14 @@ def check_and_handle_gaps_in_timeseries(data_catalogue: DataCatalogue) -> Tuple[
             for idx, split_timeseries in enumerate(split_dataframes):
                 timeseries_copy = timeseries.copy()
                 # rename user group name to be unique
-                timeseries_copy.user_group = f"{timeseries_copy.user_group }_{str(idx+1)}"
+                timeseries_copy.user_group = (
+                    f"{timeseries_copy.user_group}_{str(idx + 1)}"
+                )
                 timeseries_copy.data.changes = np.array(split_timeseries["changes"])
                 timeseries_copy.data.errors = np.array(split_timeseries["errors"])
-                timeseries_copy.data.start_dates = np.array(split_timeseries["start_dates"])
+                timeseries_copy.data.start_dates = np.array(
+                    split_timeseries["start_dates"]
+                )
                 timeseries_copy.data.end_dates = np.array(split_timeseries["end_dates"])
                 new_datasets.append(timeseries_copy)
                 grouped_timeseries.append(timeseries_copy.user_group)
@@ -523,7 +666,9 @@ def check_and_handle_gaps_in_timeseries(data_catalogue: DataCatalogue) -> Tuple[
         else:  # or else append original
             new_datasets.append(timeseries)
 
-    new_data_catalogue = DataCatalogue.from_list(new_datasets, base_path=data_catalogue.base_path)
+    new_data_catalogue = DataCatalogue.from_list(
+        new_datasets, base_path=data_catalogue.base_path
+    )
     return new_data_catalogue, list_of_split_series
 
 
@@ -550,15 +695,20 @@ def slice_timeseries_at_gaps(df_timeseries: pd.DataFrame) -> list[pd.DataFrame]:
             split_indices.append(idx)
     previous_index = 0
     for split_index in split_indices:
-        split_timeseries_dataframes.append(df_timeseries.iloc[previous_index:split_index + 1].reset_index(drop=True))
+        split_timeseries_dataframes.append(
+            df_timeseries.iloc[previous_index : split_index + 1].reset_index(drop=True)
+        )
         previous_index = split_index + 1
     # plus append last / full split in the end
-    split_timeseries_dataframes.append(df_timeseries.iloc[previous_index:].reset_index(drop=True))
+    split_timeseries_dataframes.append(
+        df_timeseries.iloc[previous_index:].reset_index(drop=True)
+    )
     return split_timeseries_dataframes
 
 
-def recombine_split_timeseries_in_catalogue(data_catalogue: DataCatalogue,
-                                            names_of_split_datasets_in_catalogue: list[list]) -> DataCatalogue:
+def recombine_split_timeseries_in_catalogue(
+    data_catalogue: DataCatalogue, names_of_split_datasets_in_catalogue: list[list]
+) -> DataCatalogue:
     """
     Combines a list of split timeseries back into full timeseries
     Can be used after gaps have been removed
@@ -579,7 +729,10 @@ def recombine_split_timeseries_in_catalogue(data_catalogue: DataCatalogue,
     new_datasets = []
     # split datasets
     for split_ds_list in names_of_split_datasets_in_catalogue:
-        old_datasets = [data_catalogue.get_filtered_catalogue(user_group=s).datasets[0] for s in split_ds_list]
+        old_datasets = [
+            data_catalogue.get_filtered_catalogue(user_group=s).datasets[0]
+            for s in split_ds_list
+        ]
         start_dates = []
         end_dates = []
         changes = []
@@ -589,12 +742,20 @@ def recombine_split_timeseries_in_catalogue(data_catalogue: DataCatalogue,
             end_dates.extend(ds.data.end_dates)
             changes.extend(ds.data.changes)
             errors.extend(ds.data.errors)
-        df = pd.DataFrame({"start_dates": start_dates, "end_dates": end_dates,
-                           "changes": changes, "errors": errors})
+        df = pd.DataFrame(
+            {
+                "start_dates": start_dates,
+                "end_dates": end_dates,
+                "changes": changes,
+                "errors": errors,
+            }
+        )
         df = df.sort_values(by="start_dates")
-        if len(start_dates) != len(np.unique(start_dates)) or len(end_dates) != len(np.unique(end_dates)):
-            error_msg = f'''Issue with combining split datasets, duplicate dates discovered when combining:
-            {split_ds_list}'''
+        if len(start_dates) != len(np.unique(start_dates)) or len(end_dates) != len(
+            np.unique(end_dates)
+        ):
+            error_msg = f"""Issue with combining split datasets, duplicate dates discovered when combining:
+            {split_ds_list}"""
             log.error(error_msg)
             raise ValueError(error_msg)
 
@@ -606,16 +767,22 @@ def recombine_split_timeseries_in_catalogue(data_catalogue: DataCatalogue,
         new_dataset.data.end_dates = np.array(df["end_dates"])
         new_dataset.data.changes = np.array(df["changes"])
         new_dataset.data.errors = np.array(df["errors"])
-        new_dataset.user_group = new_dataset.user_group[:-2]  # remove the underscore and numbering from the name
+        new_dataset.user_group = new_dataset.user_group[
+            :-2
+        ]  # remove the underscore and numbering from the name
         new_datasets.append(new_dataset)
 
     # now add all datasets to list that weren't split
     for dataset in data_catalogue.datasets:
         # check if in flattened list
-        if dataset.user_group not in [j for sub in names_of_split_datasets_in_catalogue for j in sub]:
+        if dataset.user_group not in [
+            j for sub in names_of_split_datasets_in_catalogue for j in sub
+        ]:
             new_datasets.append(dataset)
 
-    new_data_catalogue = DataCatalogue.from_list(new_datasets, base_path=data_catalogue.base_path)
+    new_data_catalogue = DataCatalogue.from_list(
+        new_datasets, base_path=data_catalogue.base_path
+    )
     return new_data_catalogue
 
 
@@ -643,10 +810,12 @@ def set_unneeded_columns_to_nan(data_catalogue: DataCatalogue) -> DataCatalogue:
     return result_catalogue
 
 
-def get_reduced_catalogue_to_date_window(data_catalogue: DataCatalogue,
-                                         start_date: float,
-                                         end_date: float,
-                                         date_window_is_gap: bool = False) -> DataCatalogue:
+def get_reduced_catalogue_to_date_window(
+    data_catalogue: DataCatalogue,
+    start_date: float,
+    end_date: float,
+    date_window_is_gap: bool = False,
+) -> DataCatalogue:
     """
     Reduces all datasets within a data catalogue to desired minimum and maximum dates
 
@@ -671,6 +840,11 @@ def get_reduced_catalogue_to_date_window(data_catalogue: DataCatalogue,
     """
     reduced_datasets = []
     for dataset in data_catalogue.datasets:
-        reduced_datasets.append(dataset.reduce_to_date_window(start_date=start_date, end_date=end_date,
-                                                              date_window_is_gap=date_window_is_gap))
+        reduced_datasets.append(
+            dataset.reduce_to_date_window(
+                start_date=start_date,
+                end_date=end_date,
+                date_window_is_gap=date_window_is_gap,
+            )
+        )
     return DataCatalogue.from_list(reduced_datasets, base_path=data_catalogue.base_path)

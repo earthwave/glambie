@@ -67,9 +67,8 @@ def year2datetime(fractional_year: float) -> datetime.date:
     Converted datetime object
     """
     year = int(fractional_year)
-    year_length = (
-        datetime(year=year + 1, month=1, day=1)
-        - datetime(year=year, month=1, day=1)
+    year_length = datetime(year=year + 1, month=1, day=1) - datetime(
+        year=year, month=1, day=1
     )
     days_within_year = timedelta(days=(fractional_year - year) * (year_length.days))
     day_one_of_year = datetime(year, 1, 1)
@@ -78,18 +77,19 @@ def year2datetime(fractional_year: float) -> datetime.date:
 
 
 def get_year_timedelta(year: int) -> timedelta:
-    '''Returns the length of a year as time delta object
+    """Returns the length of a year as time delta object
     i.e. leap years will have 366 days, other years have 365 days
 
-    '''
-    year_length = (
-        datetime(year=year + 1, month=1, day=1)
-        - datetime(year=year, month=1, day=1)
+    """
+    year_length = datetime(year=year + 1, month=1, day=1) - datetime(
+        year=year, month=1, day=1
     )
     return year_length
 
 
-def get_years(desired_year_start: float, min_date: float, max_date: float, return_type="arrays"):
+def get_years(
+    desired_year_start: float, min_date: float, max_date: float, return_type="arrays"
+):
     """
     Returns start and end dates of years within a timespan (min_date to max_date).
     Only full years within the min_date - max_date time period are included.

@@ -3,7 +3,9 @@ import numpy as np
 import pandas as pd
 
 
-def calibrate_timeseries_with_trends(trends: pd.DataFrame, calibration_timeseries: pd.DataFrame):
+def calibrate_timeseries_with_trends(
+    trends: pd.DataFrame, calibration_timeseries: pd.DataFrame
+):
     """
     This function calibrates a higher resolution calibration timeseries with the trends from a trend DataFrame.
     The 'calibration_timeseries' is adjusted over the common time period, to represent the new trend.
@@ -41,44 +43,74 @@ def calibrate_timeseries_with_trends(trends: pd.DataFrame, calibration_timeserie
     distance_matrix_list = []
     for _, longterm_trend in trends.iterrows():
         # make sure that the longterm trend is within the calibration series
-        if (min(calibration_timeseries["start_dates"]) <= longterm_trend["start_dates"]) \
-                and (max(calibration_timeseries["end_dates"]) >= longterm_trend["end_dates"]):
+        if (
+            min(calibration_timeseries["start_dates"]) <= longterm_trend["start_dates"]
+        ) and (max(calibration_timeseries["end_dates"]) >= longterm_trend["end_dates"]):
             # get slice of the high resolution calibration dataset corresponding to the trend timeperiod
-            calibration_slice = calibration_timeseries[((calibration_timeseries["start_dates"]
-                                                        >= longterm_trend["start_dates"])
-                                                        & (calibration_timeseries["end_dates"]
-                                                           <= longterm_trend["end_dates"]))]
+            calibration_slice = calibration_timeseries[
+                (
+                    (
+                        calibration_timeseries["start_dates"]
+                        >= longterm_trend["start_dates"]
+                    )
+                    & (
+                        calibration_timeseries["end_dates"]
+                        <= longterm_trend["end_dates"]
+                    )
+                )
+            ]
             # average of the high resolution calibratio timeseries over shared period
             avg_calibration_slice = calibration_slice["changes"].mean()
             # resample to same resolution as the calibration timeseries
-            avg_trend = longterm_trend['changes'] / calibration_slice["changes"].shape[0]
+            avg_trend = (
+                longterm_trend["changes"] / calibration_slice["changes"].shape[0]
+            )
             # calculate correction and apply to the calibration timeseries
             correction = avg_trend - avg_calibration_slice
-            calibrated_timeseries_list.append(calibration_timeseries["changes"] + correction)
+            calibrated_timeseries_list.append(
+                calibration_timeseries["changes"] + correction
+            )
 
             # Create distance to observation period of the trend within the time grid of the calibration timeseries
             # note that 1 year is added for the inverse distance calculation,
             # so that it has a value of 1 when it is within the time period
-            temporal_resolution = calibration_timeseries["start_dates"].iloc[1] - \
-                calibration_timeseries["start_dates"].iloc[0]
-            distance_matrix_list.append([get_distance_to_timeperiod(float(year), longterm_trend['start_dates'],
-                                                                    longterm_trend['end_dates'],
-                                                                    resolution=temporal_resolution) + 1.0
-                                        for year in calibration_timeseries["start_dates"]])
+            temporal_resolution = (
+                calibration_timeseries["start_dates"].iloc[1]
+                - calibration_timeseries["start_dates"].iloc[0]
+            )
+            distance_matrix_list.append(
+                [
+                    get_distance_to_timeperiod(
+                        float(year),
+                        longterm_trend["start_dates"],
+                        longterm_trend["end_dates"],
+                        resolution=temporal_resolution,
+                    )
+                    + 1.0
+                    for year in calibration_timeseries["start_dates"]
+                ]
+            )
         else:
-            warnings.warn("Trend is outside calibration timeseries (fully or partly) and will be ignored. "
-                          "trend_start={} , trend_end={}, calibration_series_start={}, calibration_series_end={}"
-                          .format(longterm_trend["start_dates"], longterm_trend["end_dates"],
-                                  min(calibration_timeseries["start_dates"]), max(calibration_timeseries["end_dates"])),
-                          stacklevel=2)
+            warnings.warn(
+                "Trend is outside calibration timeseries (fully or partly) and will be ignored. "
+                "trend_start={} , trend_end={}, calibration_series_start={}, calibration_series_end={}".format(
+                    longterm_trend["start_dates"],
+                    longterm_trend["end_dates"],
+                    min(calibration_timeseries["start_dates"]),
+                    max(calibration_timeseries["end_dates"]),
+                ),
+                stacklevel=2,
+            )
 
     return np.array(calibrated_timeseries_list), np.array(distance_matrix_list)
 
 
-def combine_calibrated_timeseries(calibrated_series: np.array,
-                                  distance_matrix: np.array,
-                                  p_value: int = 2,
-                                  calculate_outside_calibrated_series_period: bool = True):
+def combine_calibrated_timeseries(
+    calibrated_series: np.array,
+    distance_matrix: np.array,
+    p_value: int = 2,
+    calculate_outside_calibrated_series_period: bool = True,
+):
     """
     Combines a set of calibrated time series with inverse distance weights
 
@@ -107,35 +139,50 @@ def combine_calibrated_timeseries(calibrated_series: np.array,
     """
     if p_value > 0:
         # calculate inverse distance weight
-        distance_weight = [(1 / np.array(x))**p_value for x in distance_matrix]
+        distance_weight = [(1 / np.array(x)) ** p_value for x in distance_matrix]
         # convert to percentages
-        distance_weight_perc = np.array(distance_weight) / [sum(x) for x in zip(*distance_weight)]
+        distance_weight_perc = np.array(distance_weight) / [
+            sum(x) for x in zip(*distance_weight)
+        ]
     else:  # when p-value is zero we only use the exact time periods and no weight left and right of time period
         distance_matrix = distance_matrix.copy()
-        distance_matrix[distance_matrix > 1] = 0  # set all distances outside covered time period to 0
+        distance_matrix[distance_matrix > 1] = (
+            0  # set all distances outside covered time period to 0
+        )
         # convert to percentages
-        with warnings.catch_warnings():  # ignore RuntimeWarning: invalid value encountered in true_divide
+        with (
+            warnings.catch_warnings()
+        ):  # ignore RuntimeWarning: invalid value encountered in true_divide
             # we just get nan values when this happens (for periods in the calibration dataset that are not covered
             # with any of the calibrated series datasets), This is exactly the behaviour we want in this case.
             warnings.simplefilter("ignore", category=RuntimeWarning)
-            distance_weight_perc = np.array(distance_matrix) / [sum(x) for x in zip(*distance_matrix)]
+            distance_weight_perc = np.array(distance_matrix) / [
+                sum(x) for x in zip(*distance_matrix)
+            ]
 
             if calculate_outside_calibrated_series_period:
                 # now replace NaNs (at start and end of the series) with closest values, so that we include these values
                 mask = np.isnan(distance_weight_perc)
-                distance_weight_perc[mask] = np.interp(np.flatnonzero(
-                    mask), np.flatnonzero(~mask), distance_weight_perc[~mask])
+                distance_weight_perc[mask] = np.interp(
+                    np.flatnonzero(mask),
+                    np.flatnonzero(~mask),
+                    distance_weight_perc[~mask],
+                )
 
     # apply distance weight
-    weighted_calibrated_series = np.array(calibrated_series) * np.array(distance_weight_perc)
+    weighted_calibrated_series = np.array(calibrated_series) * np.array(
+        distance_weight_perc
+    )
     # return sum of all distance weighted series (= mean timeseries)
     return np.array([sum(x) for x in zip(*weighted_calibrated_series)])
 
 
-def get_distance_to_timeperiod(date: float,
-                               period_start_date: float,
-                               period_end_date: float,
-                               resolution: float = 1 / 12) -> float:
+def get_distance_to_timeperiod(
+    date: float,
+    period_start_date: float,
+    period_end_date: float,
+    resolution: float = 1 / 12,
+) -> float:
     """
     Calculates the distance to a time period in years for distance weighting.
 
@@ -160,7 +207,9 @@ def get_distance_to_timeperiod(date: float,
         Distance to time period in fractional years
     """
     if date >= period_end_date:
-        return date - period_end_date + resolution  # add an extra data point since we are assuming it is a start_date
+        return (
+            date - period_end_date + resolution
+        )  # add an extra data point since we are assuming it is a start_date
     if date < period_start_date:
         return period_start_date - date
     else:

@@ -2,10 +2,13 @@ import pytest
 from glambie.util.version_helpers import get_glambie_bucket_name
 
 
-@pytest.mark.parametrize(("version", "expected_bucket_name"), [
-    (1, "glambie-submissions"),
-    (2, "glambie2-submissions"),
-])
+@pytest.mark.parametrize(
+    ("version", "expected_bucket_name"),
+    [
+        (1, "glambie-submissions"),
+        (2, "glambie2-submissions"),
+    ],
+)
 def test_get_glambie_bucket_name(version, expected_bucket_name):
     assert get_glambie_bucket_name(version) == expected_bucket_name
 

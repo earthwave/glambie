@@ -1,13 +1,21 @@
 """
 Configuration control dataclasses for GlaMBIE.
 """
+
 from dataclasses import dataclass
 from typing import Literal
 import yaml
 import logging
 from abc import ABC, abstractclassmethod
-from glambie.const.constants import ExtractTrendsMethod, YearType, SeasonalCorrectionMethod
-from glambie.config.yaml_helpers import region_run_config_class_representer, year_type_class_representer
+from glambie.const.constants import (
+    ExtractTrendsMethod,
+    YearType,
+    SeasonalCorrectionMethod,
+)
+from glambie.config.yaml_helpers import (
+    region_run_config_class_representer,
+    year_type_class_representer,
+)
 from glambie.const.data_groups import GLAMBIE_DATA_GROUPS, GlambieDataGroup
 import os
 
@@ -22,23 +30,27 @@ class Config(ABC):
     @classmethod
     def _validate_dict(cls, config_dict):
         config_dict_key_set = set(config_dict.keys())
-        reference_dict_key_set = {k for k, v in cls.__dataclass_fields__.items() if v.init}
+        reference_dict_key_set = {
+            k for k, v in cls.__dataclass_fields__.items() if v.init
+        }
 
         if config_dict_key_set != reference_dict_key_set:
-            error_msg = f'The config dictionary is not in the correct format for {cls}. '
+            error_msg = (
+                f"The config dictionary is not in the correct format for {cls}. "
+            )
             unexpected_keys = sorted(config_dict_key_set - reference_dict_key_set)
             if len(unexpected_keys) > 0:
-                error_msg += f'The config dictionary contains the following unexpected keys: {unexpected_keys}. '
+                error_msg += f"The config dictionary contains the following unexpected keys: {unexpected_keys}. "
             missing_keys = sorted(reference_dict_key_set - config_dict_key_set)
             if len(missing_keys) > 0:
-                error_msg += f'The config dictionary is missing the following keys: {missing_keys}. '
+                error_msg += f"The config dictionary is missing the following keys: {missing_keys}. "
             log.error(error_msg)
             raise KeyError(error_msg)
 
     @classmethod
     def from_yaml(cls, yaml_abspath):
         # validate we get expected values
-        with open(yaml_abspath, 'r') as fh:
+        with open(yaml_abspath, "r") as fh:
             config_dict = yaml.safe_load(fh)
             return cls.from_params(**config_dict)
 
@@ -69,7 +81,7 @@ class RegionRunConfig(Config):
     def save_to_yaml(self, out_path):
         yaml.add_representer(RegionRunConfig, region_run_config_class_representer)
         yaml.add_representer(YearType, year_type_class_representer)
-        with open(out_path, 'w') as outfile:
+        with open(out_path, "w") as outfile:
             outfile.write(yaml.dump(self))
 
 
@@ -109,11 +121,15 @@ class GlambieRunConfig(Config):
 
     def _init_method_to_extract_trends(self):
         if not isinstance(self.method_to_extract_trends, ExtractTrendsMethod):
-            self.method_to_extract_trends = ExtractTrendsMethod(self.method_to_extract_trends)
+            self.method_to_extract_trends = ExtractTrendsMethod(
+                self.method_to_extract_trends
+            )
 
     def _init_seasonal_correction_method(self):
         if not isinstance(self.seasonal_correction_method, SeasonalCorrectionMethod):
-            self.seasonal_correction_method = SeasonalCorrectionMethod(self.seasonal_correction_method)
+            self.seasonal_correction_method = SeasonalCorrectionMethod(
+                self.seasonal_correction_method
+            )
 
     def _init_glambie_region_run_settings(self):
         new_regions = []
@@ -121,13 +137,17 @@ class GlambieRunConfig(Config):
             if isinstance(region, RegionRunConfig):  # in case already initiated
                 new_regions.append(region)
             else:
-                if region["enable_this_region"]:  # else we don't include it in the config
-                    config_file_path = os.path.join(self.region_config_base_path, region["config_file_path"])
+                if region[
+                    "enable_this_region"
+                ]:  # else we don't include it in the config
+                    config_file_path = os.path.join(
+                        self.region_config_base_path, region["config_file_path"]
+                    )
                     region_config = RegionRunConfig.from_yaml(config_file_path)
                     # check that region name is the same in both configs, throw error if not
                     if region_config.region_name != region["region_name"]:
-                        error_msg = f'''The config region name from the GlambieRunConfig and the GlambieRegionConfig
-                        do not match up: {region_config.region_name} != {region["region_name"]}.'''
+                        error_msg = f"""The config region name from the GlambieRunConfig and the GlambieRegionConfig
+                        do not match up: {region_config.region_name} != {region["region_name"]}."""
                         log.error(error_msg)
                         raise ValueError(error_msg)
                     new_regions.append(region_config)

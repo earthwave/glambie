@@ -34,8 +34,10 @@ def test_get_year_timedelta():
 
 def test_fractional_year_to_datetime_dates():
     fractional_year_list = [2000, 2001]
-    assert fractional_years_to_datetime_dates(fractional_year_list) \
-        == [datetime.datetime(2000, 1, 1), datetime.datetime(2001, 1, 1)]
+    assert fractional_years_to_datetime_dates(fractional_year_list) == [
+        datetime.datetime(2000, 1, 1),
+        datetime.datetime(2001, 1, 1),
+    ]
 
 
 def test_datetime_dates_to_fractional_years():
@@ -47,8 +49,9 @@ def test_get_glaciological_years():
     min_date = 2009.5
     max_date = 2010.8
     glaciological_year = 0.75
-    start_dates, end_dates = get_years(glaciological_year, min_date=min_date,
-                                       max_date=max_date, return_type="arrays")
+    start_dates, end_dates = get_years(
+        glaciological_year, min_date=min_date, max_date=max_date, return_type="arrays"
+    )
 
     assert start_dates[0] == 2009 + 0.75
     assert end_dates[0] == 2010 + 0.75
@@ -59,8 +62,9 @@ def test_get_glaciological_years_southern_hemisphere():
     min_date = 2009.7
     max_date = 2015.8
     glaciological_year = 0.25
-    start_dates, end_dates = get_years(glaciological_year, min_date=min_date,
-                                       max_date=max_date, return_type="arrays")
+    start_dates, end_dates = get_years(
+        glaciological_year, min_date=min_date, max_date=max_date, return_type="arrays"
+    )
 
     assert start_dates[0] == 2010 + 0.25
     assert end_dates[0] == 2011 + 0.25

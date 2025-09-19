@@ -15,29 +15,29 @@ if os.path.exists("full_version.txt"):
         """
         version_number = fh.read()
 else:
-    version_number = 'v0.0.0'  # default value when under development
+    version_number = "v0.0.0"  # default value when under development
 
 setup(
-    name='glambie',
+    name="glambie",
     version=version_number,
-    description='Public software developed for the Glacier Mass Balance Intercomparison Exercise (GlaMBIE)',
+    description="Public software developed for the Glacier Mass Balance Intercomparison Exercise (GlaMBIE)",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    author='Earthwave Ltd',
-    author_email='info@earthwave.co.uk',
-    url='https://github.com/earthwave/glambie',
+    author="Earthwave Ltd",
+    author_email="info@earthwave.co.uk",
+    url="https://github.com/earthwave/glambie",
     python_requires=">=3.11",
-    license='MIT',
+    license="MIT",
     packages=find_packages(),
     # note requirements listed ininstall_requires should be the *minimum required*
     # in order to allow pip to resolve multiple installed packages properly.
     # requirements.txt should contain a specific known working version instead.
     install_requires=[
-        'google-cloud-storage',
-        'numpy>1.15',
-        'pandas>1.2',
-        'matplotlib>3.0',
-        'scipy>1.6',
-        'pyyaml'
+        "google-cloud-storage",
+        "numpy>1.15",
+        "pandas>1.2",
+        "matplotlib>3.0",
+        "scipy>1.6",
+        "pyyaml",
     ],
 )

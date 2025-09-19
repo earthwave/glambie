@@ -25,7 +25,7 @@ _storage_client = None
 # which is not the case. This is a design flaw, but rather than redesigning those classes we're simply going to add a
 # "fake basepath" to indicate that the data has actually come from the submission system instead,
 # which is not a filesystem location.
-SUBMISSION_SYSTEM_BASEPATH_PLACEHOLDER = 'glambie_submission_system'
+SUBMISSION_SYSTEM_BASEPATH_PLACEHOLDER = "glambie_submission_system"
 
 
 def _instantiate_storage_client_if_needed() -> Client:
@@ -37,7 +37,7 @@ def _instantiate_storage_client_if_needed() -> Client:
     """
     global _storage_client
     if _storage_client is None:
-        _storage_client = Client(project='glambie')
+        _storage_client = Client(project="glambie")
 
 
 def _download_blob(blob_uri: str) -> Union[pd.DataFrame, dict]:
@@ -49,20 +49,26 @@ def _download_blob(blob_uri: str) -> Union[pd.DataFrame, dict]:
     blob_uri : str
         The URI for the blob to download
     """
-    assert blob_uri.startswith('gs://')
+    assert blob_uri.startswith("gs://")
     with BytesIO() as buffer:
         _storage_client.download_blob_to_file(blob_uri, buffer)
         buffer.seek(0)
-        if blob_uri.endswith('.csv'):
+        if blob_uri.endswith(".csv"):
             return pd.read_csv(buffer)
-        elif blob_uri.endswith('.json'):
+        elif blob_uri.endswith(".json"):
             return json.load(buffer)
         else:
-            raise NotImplementedError(f'download logic for blob uri {blob_uri} not implemented.')
+            raise NotImplementedError(
+                f"download logic for blob uri {blob_uri} not implemented."
+            )
 
 
 def fetch_timeseries_dataframe(
-        user_group: str, region: RGIRegion, data_group: GlambieDataGroup, glambie_bucket_name: str) -> pd.DataFrame:
+    user_group: str,
+    region: RGIRegion,
+    data_group: GlambieDataGroup,
+    glambie_bucket_name: str,
+) -> pd.DataFrame:
     """
     Download a particular timeseries from the submission system.
 
@@ -84,12 +90,18 @@ def fetch_timeseries_dataframe(
         A dataframe containing the loaded submission data. Will have a different format per data_group.
     """
     _instantiate_storage_client_if_needed()
-    csv_name_in_bucket = "_".join(
-        [region.short_name.lower(),
-         data_group.name.lower().replace("demdiff", "dem_differencing"),
-         user_group.replace(" ", "_").lower()]) + '.csv'
+    csv_name_in_bucket = (
+        "_".join(
+            [
+                region.short_name.lower(),
+                data_group.name.lower().replace("demdiff", "dem_differencing"),
+                user_group.replace(" ", "_").lower(),
+            ]
+        )
+        + ".csv"
+    )
 
-    return _download_blob("gs://" + glambie_bucket_name + '/' + csv_name_in_bucket)
+    return _download_blob("gs://" + glambie_bucket_name + "/" + csv_name_in_bucket)
 
 
 def fetch_all_submission_metadata(glambie_bucket_name: str) -> List[dict]:
@@ -108,34 +120,39 @@ def fetch_all_submission_metadata(glambie_bucket_name: str) -> List[dict]:
     _instantiate_storage_client_if_needed()
     glambie_bucket_uri = "gs://" + glambie_bucket_name
     # note that here, a "dataset" is a single csv file.
-    datasets = _download_blob(glambie_bucket_uri + '/meta.json')['datasets']
+    datasets = _download_blob(glambie_bucket_uri + "/meta.json")["datasets"]
 
     # load the other submission metadata.
     # to save effort, download each submission metadata file only once,
     # even though we duplicate the information within the Timeseries objects.
     submission_metadata_buffer = {}
     for dataset in datasets:
-        if dataset['submission_metadata_filename'] not in submission_metadata_buffer:
-            submission_metadata_buffer[dataset['submission_metadata_filename']] = _download_blob(
-                glambie_bucket_uri + '/' + dataset['submission_metadata_filename'])
-        dataset.update(submission_metadata_buffer[dataset['submission_metadata_filename']])
+        if dataset["submission_metadata_filename"] not in submission_metadata_buffer:
+            submission_metadata_buffer[dataset["submission_metadata_filename"]] = (
+                _download_blob(
+                    glambie_bucket_uri + "/" + dataset["submission_metadata_filename"]
+                )
+            )
+        dataset.update(
+            submission_metadata_buffer[dataset["submission_metadata_filename"]]
+        )
         # submission_metadata_filename no longer matters, so we can remove it.
-        del dataset['submission_metadata_filename']
+        del dataset["submission_metadata_filename"]
         # we now have two copies of the group name, so remove one.
         # We keep group_name because the submission system internals mean that group_name contains
         # case information that user_group does not. We need that case information to correctly
         # identify the files within the submission system bucket.
-        dataset['user_group'] = dataset['group_name']
-        del dataset['group_name']
+        dataset["user_group"] = dataset["group_name"]
+        del dataset["group_name"]
 
     return datasets
 
 
 def download_dataset_information_file_to_disk(
-        user_group: str,
-        data_group: GlambieDataGroup,
-        glambie_bucket_name: str,
-        target_directory: Optional[str] = '.'
+    user_group: str,
+    data_group: GlambieDataGroup,
+    glambie_bucket_name: str,
+    target_directory: Optional[str] = ".",
 ) -> None:
     """
     Download a dataset information file from the submission system.
@@ -153,13 +170,21 @@ def download_dataset_information_file_to_disk(
         The directory into which to download the file, by default the current working directory.
     """
     _instantiate_storage_client_if_needed()
-    dataset_information_filename = "_".join(
-        [data_group.name.lower().replace("demdiff", "dem_differencing"),
-         'dataset_information',
-         re.sub(r'[^0-9a-zA-Z]+', '-', user_group)]) + '.pdf'
+    dataset_information_filename = (
+        "_".join(
+            [
+                data_group.name.lower().replace("demdiff", "dem_differencing"),
+                "dataset_information",
+                re.sub(r"[^0-9a-zA-Z]+", "-", user_group),
+            ]
+        )
+        + ".pdf"
+    )
 
-    assert os.path.exists(target_directory), \
+    assert os.path.exists(target_directory), (
         f"Cannot download dataset information file to directory {target_directory} because it does not exist."
-    with open(os.path.join(target_directory, dataset_information_filename), 'wb') as fh:
+    )
+    with open(os.path.join(target_directory, dataset_information_filename), "wb") as fh:
         _storage_client.download_blob_to_file(
-            "gs://" + glambie_bucket_name + '/' + dataset_information_filename, fh)
+            "gs://" + glambie_bucket_name + "/" + dataset_information_filename, fh
+        )

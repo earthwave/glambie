@@ -88,6 +88,7 @@ class RegionRunConfig(Config):
 @dataclass
 class GlambieRunConfig(Config):
     glambie_version: Literal[1, 2]
+    config_folder: str
     result_base_path: str
     region_config_base_path: str
     catalogue_path: str
@@ -141,7 +142,9 @@ class GlambieRunConfig(Config):
                     "enable_this_region"
                 ]:  # else we don't include it in the config
                     config_file_path = os.path.join(
-                        self.region_config_base_path, region["config_file_path"]
+                        self.region_config_base_path,
+                        self.config_folder + str(self.glambie_version),
+                        region["config_file_path"],
                     )
                     region_config = RegionRunConfig.from_yaml(config_file_path)
                     # check that region name is the same in both configs, throw error if not

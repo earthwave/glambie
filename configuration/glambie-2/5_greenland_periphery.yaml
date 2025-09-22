@@ -1,0 +1,34 @@
+# config yaml file for greenland_periphery
+---
+region_name: greenland_periphery
+year_type: glaciological # glaciological or calendar
+
+seasonal_correction_dataset:
+  user_group: UZH_GlaciolSineWave
+  data_group: glaciological
+
+region_run_settings:
+  altimetry:
+    exclude_annual_datasets :
+    - Khan
+    - Bolch_2013
+    - Gardner2013_icesat
+    exclude_trend_datasets :
+    - 
+  gravimetry:
+    exclude_annual_datasets :
+    - 
+    exclude_trend_datasets :
+    - 
+  demdiff_and_glaciological :
+    exclude_annual_datasets : # glaciological datasets
+    - UZH_GlaciolSineWave
+    - WGMS-mean_ba
+    exclude_trend_datasets : # demdiff datasets
+    - 
+    include_combined_annual_datasets:
+    - DUS-combined
+    - Huss
+    include_combined_trend_datasets:
+    - DUS-combined
+    - Huss

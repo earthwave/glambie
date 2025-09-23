@@ -1,7 +1,8 @@
 # config yaml file for all regions
 ---
 # Option to run for Glambie 1 or 2. This drives which google bucket data is sourced from.
-glambie_version: 2
+glambie_version: 1
+config_folder: glambie-
 
 result_base_path: glambie/output_plots/processing
 region_config_base_path: configuration
@@ -13,19 +14,19 @@ rgi_area_version: 7
 
 datagroups_to_calculate:
   - altimetry
-  - demdiff_and_glaciological
-  - gravimetry
+  # - demdiff_and_glaciological
+  # - gravimetry
 
 method_to_extract_trends: regression # or start_vs_end
 seasonal_correction_method: proportional # or seasonal_homogenization
 
 regions: 
   - region_name: alaska
-    enable_this_region: true
+    enable_this_region: false
     config_file_path: 1_alaska.yaml
 
   - region_name: western_canada_us
-    enable_this_region: true
+    enable_this_region: false
     config_file_path: 2_western_canada_us.yaml
 
   - region_name: arctic_canada_north
@@ -37,61 +38,61 @@ regions:
     config_file_path: 4_arctic_canada_south.yaml
 
   - region_name: greenland_periphery
-    enable_this_region: true
+    enable_this_region: false
     config_file_path: 5_greenland_periphery.yaml
 
   - region_name: iceland
-    enable_this_region: true
+    enable_this_region: false
     config_file_path: 6_iceland.yaml
-    
+
   - region_name: svalbard
-    enable_this_region: true
+    enable_this_region: false
     config_file_path: 7_svalbard.yaml
 
   - region_name: scandinavia
-    enable_this_region: true
+    enable_this_region: false
     config_file_path: 8_scandinavia.yaml
 
   - region_name: russian_arctic
-    enable_this_region: true
+    enable_this_region: false
     config_file_path: 9_russian_arctic.yaml
 
   - region_name: north_asia
-    enable_this_region: true
+    enable_this_region: false
     config_file_path: 10_north_asia.yaml
 
   - region_name: central_europe
-    enable_this_region: true
+    enable_this_region: false
     config_file_path: 11_central_europe.yaml
 
   - region_name: caucasus_middle_east
-    enable_this_region: true
+    enable_this_region: false
     config_file_path: 12_caucasus_middle_east.yaml
 
   - region_name: central_asia
-    enable_this_region: true
+    enable_this_region: false
     config_file_path: 13_central_asia.yaml
-  
+
   - region_name: south_asia_west
-    enable_this_region: true
+    enable_this_region: false
     config_file_path: 14_south_asia_west.yaml
 
   - region_name: south_asia_east
-    enable_this_region: true
+    enable_this_region: false
     config_file_path: 15_south_asia_east.yaml
 
   - region_name: low_latitudes
-    enable_this_region: true
+    enable_this_region: false
     config_file_path: 16_low_latitudes.yaml
 
   - region_name: southern_andes
-    enable_this_region: true
+    enable_this_region: false
     config_file_path: 17_southern_andes.yaml
 
   - region_name: new_zealand
-    enable_this_region: true
+    enable_this_region: false
     config_file_path: 18_new_zealand.yaml
 
   - region_name: antarctic_and_subantarctic
-    enable_this_region: true
+    enable_this_region: false
     config_file_path: 19_antarctic_and_subantarctic.yaml

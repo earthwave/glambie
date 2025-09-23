@@ -191,7 +191,7 @@ def test_load_all_data(example_catalogue_small):
     # data not loaded yet
     assert not example_catalogue_small.datasets[0].is_data_loaded
     # load data of entire catalogue
-    example_catalogue_small.load_all_data()
+    example_catalogue_small.load_all_data(glambie_bucket_name="glambie2-submissions")
     # now data should be loaded
     assert example_catalogue_small.datasets[0].is_data_loaded
 
@@ -206,7 +206,7 @@ def test_datasets_are_same_unit(example_catalogue):
 
 
 def test_data_catalogue_copy(example_catalogue_small):
-    example_catalogue_small.load_all_data()
+    example_catalogue_small.load_all_data(glambie_bucket_name="glambie2-submissions")
     example_catalogue_copy = example_catalogue_small.copy()
     example_catalogue_copy.datasets[0].data.changes = [-4]
     assert example_catalogue_copy.datasets[0].data.changes[0] == -4
@@ -214,7 +214,7 @@ def test_data_catalogue_copy(example_catalogue_small):
 
 
 def test_average_timeseries_in_catalogue_both_same(example_catalogue_small):
-    example_catalogue_small.load_all_data()
+    example_catalogue_small.load_all_data(glambie_bucket_name="glambie2-submissions")
     example_catalogue_small.datasets.append(
         copy.deepcopy(example_catalogue_small.datasets[0])
     )
@@ -229,7 +229,7 @@ def test_average_timeseries_in_catalogue_both_same(example_catalogue_small):
 
 
 def test_average_timeseries_in_catalogue_example_with_doubled(example_catalogue_small):
-    example_catalogue_small.load_all_data()
+    example_catalogue_small.load_all_data(glambie_bucket_name="glambie2-submissions")
     example_catalogue_small.datasets.append(
         copy.deepcopy(example_catalogue_small.datasets[0])
     )
@@ -251,7 +251,7 @@ def test_average_timeseries_in_catalogue_example_with_doubled(example_catalogue_
 def test_average_timeseries_in_catalogue_example_with_trends_removed(
     example_catalogue_small,
 ):
-    example_catalogue_small.load_all_data()
+    example_catalogue_small.load_all_data(glambie_bucket_name="glambie2-submissions")
     example_catalogue_small.datasets.append(
         copy.deepcopy(example_catalogue_small.datasets[0])
     )
@@ -289,7 +289,7 @@ def test_average_timeseries_in_catalogue_example_with_trends_removed(
 
 
 def test_get_time_span_of_datasets(example_catalogue_small):
-    example_catalogue_small.load_all_data()
+    example_catalogue_small.load_all_data(glambie_bucket_name="glambie2-submissions")
     time_span = example_catalogue_small.get_time_span_of_datasets()
     # make sure all datasets are within the span
     for ds in example_catalogue_small.datasets:
@@ -298,7 +298,7 @@ def test_get_time_span_of_datasets(example_catalogue_small):
 
 
 def test_get_common_period_of_datasets_one_dataset(example_catalogue_small):
-    example_catalogue_small.load_all_data()
+    example_catalogue_small.load_all_data(glambie_bucket_name="glambie2-submissions")
     common_start_dates, common_end_dates = (
         example_catalogue_small.get_common_period_of_datasets()
     )
@@ -309,7 +309,7 @@ def test_get_common_period_of_datasets_one_dataset(example_catalogue_small):
 
 
 def test_get_common_period_of_datasets_with_gaps(example_catalogue_small):
-    example_catalogue_small.load_all_data()
+    example_catalogue_small.load_all_data(glambie_bucket_name="glambie2-submissions")
     # let's add a dataset with a time gap
     ds_with_gaps = example_catalogue_small.datasets[0].copy()
     data = ds_with_gaps.data

@@ -115,7 +115,7 @@ def test_metadata_as_dataframe(example_timeseries):
 
 
 def test_timeseries_load_data(example_timeseries):
-    example_timeseries.load_data()
+    example_timeseries.load_data(glambie_bucket_name="glambie2-submissions")
     assert example_timeseries.data.start_dates is not None
     assert example_timeseries.is_data_loaded
 

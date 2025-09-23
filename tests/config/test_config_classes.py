@@ -52,7 +52,7 @@ def test_glambie_run_config_regions_from_file():
 
 def test_write_glambie_region_config_to_yaml(tmp_path):
     yaml_inpath = os.path.join(
-        "tests", "test_data", "configs", "test_config_svalbard.yaml"
+        "tests", "test_data", "configs", "glambie-2", "test_config_svalbard.yaml"
     )
     yaml_outpath = os.path.join(tmp_path, "test-out-svalbard.yaml")
     config = RegionRunConfig.from_yaml(yaml_inpath)

@@ -206,7 +206,7 @@ def moving_average(
     else:
         result = np.cumsum(x, dtype=x.dtype)
         result[dx:] = result[dx:] - result[:-dx]
-        return result[dx - 1 :] / dx
+        return result[dx - 1:] / dx
 
 
 def timeseries_as_months(

@@ -696,7 +696,7 @@ def slice_timeseries_at_gaps(df_timeseries: pd.DataFrame) -> list[pd.DataFrame]:
     previous_index = 0
     for split_index in split_indices:
         split_timeseries_dataframes.append(
-            df_timeseries.iloc[previous_index : split_index + 1].reset_index(drop=True)
+            df_timeseries.iloc[previous_index: split_index + 1].reset_index(drop=True)
         )
         previous_index = split_index + 1
     # plus append last / full split in the end

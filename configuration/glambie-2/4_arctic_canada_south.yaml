@@ -1,0 +1,40 @@
+# config yaml file for arctic_canada_south
+---
+region_name: arctic_canada_south
+year_type: glaciological # glaciological or calendar
+
+seasonal_correction_dataset:
+  # user_group: Huss_monthly
+  # data_group: combined
+  user_group: UZH_GlaciolSineWave
+  data_group: glaciological
+
+region_run_settings:
+  altimetry:
+    exclude_annual_datasets :
+    - Tepes
+    - Khan
+    - Gardner2013_icesat
+    exclude_trend_datasets :
+    - 
+  gravimetry:
+    exclude_annual_datasets :
+    - Jacob_2012_dmdt
+    exclude_trend_datasets :
+    - 
+    include_combined_trend_datasets:
+    - Box2018
+    - Colgan2015
+  demdiff_and_glaciological :
+    exclude_annual_datasets : # glaciological datasets
+    - UZH_GlaciolSineWave
+    - WGMS-mean_ba
+    exclude_trend_datasets : # demdiff datasets
+    - 
+    include_combined_annual_datasets:
+    - ArcticInSituvGRACE
+    - DUS-combined
+    - Huss
+    include_combined_trend_datasets:
+    - DUS-combined
+    - Huss

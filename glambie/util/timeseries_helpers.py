@@ -15,12 +15,13 @@ from glambie.const.constants import ExtractTrendsMethod
 
 
 def contains_duplicates(x: np.array) -> bool:
-    """Checks if an array / list contains duplicate values
-    """
+    """Checks if an array / list contains duplicate values"""
     return len(np.unique(x)) != len(x)
 
 
-def get_matched_indices(array1: np.array, array2: np.array, tolerance: float = 0.0) -> Tuple[np.array, np.array]:
+def get_matched_indices(
+    array1: np.array, array2: np.array, tolerance: float = 0.0
+) -> Tuple[np.array, np.array]:
     """
     Returns two arrays of indices at which 'array1' and 'array2' match.
     Can e.g. be used to find matching dates from two timeseries
@@ -55,7 +56,9 @@ def get_matched_indices(array1: np.array, array2: np.array, tolerance: float = 0
         2. The indices at which values in 'array2' match a value in 'array1'
     """
     if contains_duplicates(array1) or contains_duplicates(array2):
-        raise ValueError('Input array <array1> or <array2> should not contain duplicates.')
+        raise ValueError(
+            "Input array <array1> or <array2> should not contain duplicates."
+        )
 
     length_arr1 = len(array1)
     length_arr2 = len(array2)
@@ -64,14 +67,14 @@ def get_matched_indices(array1: np.array, array2: np.array, tolerance: float = 0
 
     if length_arr1 == 1 or length_arr2 == 1:
         if length_arr2 > 1:
-            match_arr2[:] = (array2 == array1[0])
+            match_arr2[:] = array2 == array1[0]
             if match_arr2.any():
                 match_arr1 = np.zeros((np.count_nonzero(match_arr2)), dtype=np.int32)
             else:
                 match_arr1 = np.array([])
             match_arr2 = np.flatnonzero(match_arr2)
         else:
-            match_arr1[:] = (array1 == array2[0])
+            match_arr1[:] = array1 == array2[0]
             if match_arr1.any():
                 match_arr2 = np.zeros((np.count_nonzero(match_arr1)), dtype=np.int32)
             else:
@@ -79,12 +82,9 @@ def get_matched_indices(array1: np.array, array2: np.array, tolerance: float = 0
             match_arr1 = np.flatnonzero(match_arr1)
         return match_arr1, match_arr2
     concat_arr = np.concatenate((array1, array2))
-    ind = np.concatenate(
-        [np.arange(length_arr1), np.arange(length_arr2)]
-    )
+    ind = np.concatenate([np.arange(length_arr1), np.arange(length_arr2)])
     vec = np.concatenate(
-        [np.zeros([length_arr1], dtype=bool),
-         np.ones([length_arr2], dtype=bool)]
+        [np.zeros([length_arr1], dtype=bool), np.ones([length_arr2], dtype=bool)]
     )
 
     sub = np.argsort(concat_arr)
@@ -94,13 +94,12 @@ def get_matched_indices(array1: np.array, array2: np.array, tolerance: float = 0
 
     if tolerance == 0:
         firstdup = np.logical_and(
-            concat_arr == np.roll(concat_arr, -1),
-            vec != np.roll(vec, -1)
+            concat_arr == np.roll(concat_arr, -1), vec != np.roll(vec, -1)
         )
     else:
         firstdup = np.logical_and(
             np.abs(concat_arr - np.roll(concat_arr, -1)) < tolerance,
-            vec != np.roll(vec, -1)
+            vec != np.roll(vec, -1),
         )
     count = np.count_nonzero(firstdup)
     firstdup = np.flatnonzero(firstdup)
@@ -121,7 +120,9 @@ def get_matched_indices(array1: np.array, array2: np.array, tolerance: float = 0
     return match_arr1, match_arr2
 
 
-def resample_1d_array(x: np.array, y: np.array, x_new: np.array, mode: str = "linear") -> np.array:
+def resample_1d_array(
+    x: np.array, y: np.array, x_new: np.array, mode: str = "linear"
+) -> np.array:
     """Simple resampling of a an array: returns interpolated y-values based on a new x-array
 
     Parameters
@@ -152,7 +153,7 @@ def resample_1d_array(x: np.array, y: np.array, x_new: np.array, mode: str = "li
     elif mode == "linear":
         ynew = np.interp(x_new, x, y)
     elif mode == "nearest":
-        s = interpolate.interp1d(x, y, kind='nearest', fill_value="extrapolate")
+        s = interpolate.interp1d(x, y, kind="nearest", fill_value="extrapolate")
         ynew = s(x_new)
     else:
         raise ValueError("Unrecognised interpolation mode")
@@ -160,7 +161,9 @@ def resample_1d_array(x: np.array, y: np.array, x_new: np.array, mode: str = "li
     return ynew
 
 
-def moving_average(dx: float, x: np.array, y: np.array = None, clip: bool = False) -> np.array:
+def moving_average(
+    dx: float, x: np.array, y: np.array = None, clip: bool = False
+) -> np.array:
     """Calculates the moving average of an array.
 
     If an argument for y is not provided, the function instead provides a moving average of the signal x,
@@ -186,19 +189,17 @@ def moving_average(dx: float, x: np.array, y: np.array = None, clip: bool = Fals
     if y is not None:
         n = len(x)
 
-        ry = np.empty(n,)
+        ry = np.empty(
+            n,
+        )
         ry.fill(np.nan)
 
         for i in range(n):
-            ok = np.logical_and(
-                x > x[i] - dx / 2.,
-                x < x[i] + dx / 2.)
+            ok = np.logical_and(x > x[i] - dx / 2.0, x < x[i] + dx / 2.0)
             if ok.any():
                 ry[i] = np.mean(y[ok])
         if clip:
-            ok = np.logical_or(
-                x < np.min(x) + dx / 2 - 1,
-                x > np.max(x) - dx / 2 + 1)
+            ok = np.logical_or(x < np.min(x) + dx / 2 - 1, x > np.max(x) - dx / 2 + 1)
             if ok.any():
                 ry[ok] = np.nan
         return ry
@@ -208,7 +209,9 @@ def moving_average(dx: float, x: np.array, y: np.array = None, clip: bool = Fals
         return result[dx - 1:] / dx
 
 
-def timeseries_as_months(fractional_year_array: np.array, downsample_to_month: bool = True) -> np.array(float):
+def timeseries_as_months(
+    fractional_year_array: np.array, downsample_to_month: bool = True
+) -> np.array(float):
     """Calculates an array (in units of fractional years) of evenly spaced monthly intervals over the timespan of
     a given date array (in units of fractional years)
 
@@ -231,17 +234,21 @@ def timeseries_as_months(fractional_year_array: np.array, downsample_to_month: b
         the new monthly array of fractional years
     """
     if downsample_to_month:
-        t0 = math.floor(np.min(fractional_year_array) * 12) / 12.
-        t1 = math.ceil(np.max(fractional_year_array) * 12) / 12.
+        t0 = math.floor(np.min(fractional_year_array) * 12) / 12.0
+        t1 = math.ceil(np.max(fractional_year_array) * 12) / 12.0
         # small hack to include last element in case it's on a full integer number
-        monthly_array = np.arange(math.ceil((t1 - t0 + 0.00001) * 12)) / 12. + t0
+        monthly_array = np.arange(math.ceil((t1 - t0 + 0.00001) * 12)) / 12.0 + t0
     else:  # we add half a month (1/24) to fractional year so it's not always rounded down
-        monthly_array = np.floor((np.array(fractional_year_array) + (1 / 24)) * 12) / 12.
+        monthly_array = (
+            np.floor((np.array(fractional_year_array) + (1 / 24)) * 12) / 12.0
+        )
 
     if contains_duplicates(monthly_array):
-        warnings.warn("The rounded dates contain duplicates. "
-                      "To avoid this, use the function with data at lower temporal resolution than monthly.",
-                      stacklevel=2)
+        warnings.warn(
+            "The rounded dates contain duplicates. "
+            "To avoid this, use the function with data at lower temporal resolution than monthly.",
+            stacklevel=2,
+        )
 
     return monthly_array
 
@@ -263,7 +270,9 @@ def timeseries_is_monthly_grid(fractional_year_array: np.array) -> bool:
     """
     with warnings.catch_warnings():  # ignore warning about duplicates
         warnings.simplefilter("ignore")
-        monthly_grid = timeseries_as_months(fractional_year_array, downsample_to_month=False)
+        monthly_grid = timeseries_as_months(
+            fractional_year_array, downsample_to_month=False
+        )
     try:
         np.testing.assert_almost_equal(monthly_grid, fractional_year_array)
     except AssertionError:
@@ -271,13 +280,14 @@ def timeseries_is_monthly_grid(fractional_year_array: np.array) -> bool:
     return True
 
 
-def combine_timeseries_imbie(t_array: list[np.ndarray],
-                             y_array: list[np.ndarray],
-                             outlier_tolerance: float = None,
-                             calculate_as_errors: bool = False,
-                             perform_moving_average: bool = False,
-                             verbose=False) \
-        -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+def combine_timeseries_imbie(
+    t_array: list[np.ndarray],
+    y_array: list[np.ndarray],
+    outlier_tolerance: float = None,
+    calculate_as_errors: bool = False,
+    perform_moving_average: bool = False,
+    verbose=False,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Combines a number of input timeseries sequences using the logic from IMBIE
 
@@ -306,12 +316,23 @@ def combine_timeseries_imbie(t_array: list[np.ndarray],
                      data_out[1:] all following elements will be the resampled y_values for each solution
     """
 
-    colors = ['r', 'g', 'b', 'c', 'y', 'm', 'o', 'k']  # n.b. this assumes we have no more than 8 solutions
+    colors = [
+        "r",
+        "g",
+        "b",
+        "c",
+        "y",
+        "m",
+        "o",
+        "k",
+    ]  # n.b. this assumes we have no more than 8 solutions
     if verbose:
         for t_solution, y_solution, c in zip(t_array, y_array, colors[1:]):
-            plt.plot(t_solution, y_solution, c + '-')
+            plt.plot(t_solution, y_solution, c + "-")
     # create solution_indices array, which indicates which input array each element originated from
-    solution_indices = [np.ones(ti.shape, dtype=int) * (i + 1) for i, ti in enumerate(t_array)]
+    solution_indices = [
+        np.ones(ti.shape, dtype=int) * (i + 1) for i, ti in enumerate(t_array)
+    ]
     solution_indices = np.concatenate(solution_indices)
     # chain together input sequences, solution_indices describes
     t_array = np.concatenate(t_array)
@@ -323,25 +344,32 @@ def combine_timeseries_imbie(t_array: list[np.ndarray],
     # create output array to be filled
     y_array_combined = np.zeros(t_array_combined.shape, dtype=t_array_combined.dtype)
     # solutions_per_timestep is used to count the number of input data points that have been used for each output point
-    solutions_per_timestep = np.zeros(t_array_combined.shape, dtype=t_array_combined.dtype)
+    solutions_per_timestep = np.zeros(
+        t_array_combined.shape, dtype=t_array_combined.dtype
+    )
 
     # create data_out array for resampled data input
     full_resampled_data = np.empty(
         (len(t_array_combined), np.max(solution_indices) + 1),
-        dtype=t_array_combined.dtype
+        dtype=t_array_combined.dtype,
     )
     full_resampled_data.fill(np.nan)  # initially all values to NaN
     full_resampled_data[:, 0] = t_array_combined  # fill in time domain
 
     #  RESAMPLE ALL SOLUTIONS TO MONTHLY AND SUM UP SOLUTIONS in y_array_combined
-    for index_of_solution in range(1, np.max(solution_indices) + 1):  # iterate through each solution
+    for index_of_solution in range(
+        1, np.max(solution_indices) + 1
+    ):  # iterate through each solution
         # Find valid indices for solution in concatenated array
-        valid_indices = np.logical_and(solution_indices == index_of_solution, np.isfinite(y_array))
+        valid_indices = np.logical_and(
+            solution_indices == index_of_solution, np.isfinite(y_array)
+        )
 
         # if outlier_tolerance has been specified, eliminate values far from the mean
         if outlier_tolerance is not None:
-            valid_indices[valid_indices] = np.abs(y_array[valid_indices] - np.nanmean(y_array)) \
-                < max(outlier_tolerance, 1) * np.nanstd(y_array)
+            valid_indices[valid_indices] = np.abs(
+                y_array[valid_indices] - np.nanmean(y_array)
+            ) < max(outlier_tolerance, 1) * np.nanstd(y_array)
         # if we've eliminated all values in the current input, skip to the next solution.
         if not valid_indices.any():
             continue
@@ -355,43 +383,66 @@ def combine_timeseries_imbie(t_array: list[np.ndarray],
         # match time to monthly values
         t_solution_resampled = timeseries_as_months(t_solution)
         # use interpolation to find y-values at the new times
-        y_solution_resampled = resample_1d_array(t_solution, y_solution, t_solution_resampled)
+        y_solution_resampled = resample_1d_array(
+            t_solution, y_solution, t_solution_resampled
+        )
         # find locations where the times match the times of the combined series
-        matched_indices_1, matched_indices_2 = get_matched_indices(np.floor(t_array_combined * 12),
-                                                                   np.floor(t_solution_resampled * 12))
+        matched_indices_1, matched_indices_2 = get_matched_indices(
+            np.floor(t_array_combined * 12), np.floor(t_solution_resampled * 12)
+        )
         if verbose:
-            plt.plot(t_solution_resampled, y_solution_resampled, colors[index_of_solution] + '.',
-                     label='solution: {}'.format(index_of_solution))
+            plt.plot(
+                t_solution_resampled,
+                y_solution_resampled,
+                colors[index_of_solution] + ".",
+                label="solution: {}".format(index_of_solution),
+            )
         # add the values from the current input seq. to the output seq.
         if calculate_as_errors:
-            y_array_combined[matched_indices_1] += y_solution_resampled[matched_indices_2] ** 2.
+            y_array_combined[matched_indices_1] += (
+                y_solution_resampled[matched_indices_2] ** 2.0
+            )
         else:
-            y_array_combined[matched_indices_1] += y_solution_resampled[matched_indices_2]
-        full_resampled_data[matched_indices_1, index_of_solution] = y_solution_resampled[matched_indices_2]
+            y_array_combined[matched_indices_1] += y_solution_resampled[
+                matched_indices_2
+            ]
+        full_resampled_data[matched_indices_1, index_of_solution] = (
+            y_solution_resampled[matched_indices_2]
+        )
         # increment the values in solutions_per_timestep for each current point
         solutions_per_timestep[matched_indices_1] += 1
 
     # DIVIDE SUMMED RESULT BY NUMBER OF SOLUTIONS TO GET AVERAGE
     # set any zeros in solutions_per_timestep to ones so we don't run into divide by 0 errors
-    solutions_per_timestep_ = np.maximum(solutions_per_timestep, np.ones(solutions_per_timestep.shape))
+    solutions_per_timestep_ = np.maximum(
+        solutions_per_timestep, np.ones(solutions_per_timestep.shape)
+    )
     # use solutions_per_timestep_ to calculate the element-wise average of the data
     if calculate_as_errors:
-        y_array_combined = np.sqrt(y_array_combined / solutions_per_timestep_) / np.sqrt(solutions_per_timestep_)
+        y_array_combined = np.sqrt(
+            y_array_combined / solutions_per_timestep_
+        ) / np.sqrt(solutions_per_timestep_)
     else:
         y_array_combined /= solutions_per_timestep_
     # find any locations where no values were found
-    valid_indices = (solutions_per_timestep == 0)
+    valid_indices = solutions_per_timestep == 0
     # set those locations to NaNs
     if valid_indices.any():
         y_array_combined[valid_indices] = np.nan
 
     # PERFORM ADDITIONAL OPTIONAL EDITS ON RESULT
     if verbose:  # optionally plot output
-        plt.plot(t_array_combined, y_array_combined, '--k', label='combined')
+        plt.plot(t_array_combined, y_array_combined, "--k", label="combined")
     if perform_moving_average:  # optionally perform moving average
-        y_array_combined = moving_average(13. / 12, t_array_combined, y_array_combined)
+        y_array_combined = moving_average(13.0 / 12, t_array_combined, y_array_combined)
         if verbose:
-            plt.plot(t_array_combined, y_array_combined, '--k', color='grey', label='comb. moving avg')
+            plt.plot(
+                t_array_combined,
+                y_array_combined,
+                "--k",
+                color="grey",
+                label="comb. moving avg",
+            )
     full_resampled_data = full_resampled_data.T
     if verbose:
         plt.legend()
@@ -399,12 +450,14 @@ def combine_timeseries_imbie(t_array: list[np.ndarray],
     return t_array_combined, y_array_combined, full_resampled_data
 
 
-def derivative_to_cumulative(start_dates: list[float],
-                             end_dates: list[float],
-                             changes: list[float],
-                             return_type: str = "arrays",
-                             calculate_as_errors: bool = False,
-                             add_gaps_for_plotting: bool = True):
+def derivative_to_cumulative(
+    start_dates: list[float],
+    end_dates: list[float],
+    changes: list[float],
+    return_type: str = "arrays",
+    calculate_as_errors: bool = False,
+    add_gaps_for_plotting: bool = True,
+):
     """
     Calculates a cumulative timeseries from a list of non cumulative changes between start and end dates
 
@@ -432,19 +485,26 @@ def derivative_to_cumulative(start_dates: list[float],
         'arrays': (dates, cumulative_changes)
         'dataframe': pd.DataFrame({'dates': dates, 'changes': changes})
     """
-    contains_no_gaps = [start_date == end_date for start_date, end_date in zip(start_dates[1:], end_dates[:-1])]
+    contains_no_gaps = [
+        start_date == end_date
+        for start_date, end_date in zip(start_dates[1:], end_dates[:-1])
+    ]
 
     # add an extra row to dataset for each gap, so that it's represented in the cumulative timeseries as no data
 
     if calculate_as_errors:
-        changes = [0, *np.array(pd.Series(np.square(changes)).cumsum())**0.5]
+        changes = [0, *np.array(pd.Series(np.square(changes)).cumsum()) ** 0.5]
     else:
         changes = [0, *np.array(pd.Series(changes).cumsum())]
 
     if not all(contains_no_gaps) and add_gaps_for_plotting:
         indices_of_gaps = [i for i, x in enumerate(contains_no_gaps) if not (x)]
-        start_dates = list(start_dates.copy())  # make sure we are not editing the original list
-        end_dates = list(end_dates.copy())  # make sure we are not editing the original list
+        start_dates = list(
+            start_dates.copy()
+        )  # make sure we are not editing the original list
+        end_dates = list(
+            end_dates.copy()
+        )  # make sure we are not editing the original list
         for idx in indices_of_gaps:
             start_date_to_insert = end_dates[idx]
             end_date_to_insert = start_dates[idx + 1]
@@ -462,16 +522,24 @@ def derivative_to_cumulative(start_dates: list[float],
         return np.array(dates).astype(float), np.array(changes).astype(float)
     elif return_type == "dataframe":
         if calculate_as_errors:
-            return pd.DataFrame({'dates': dates,
-                                 'errors': changes,
-                                 })
+            return pd.DataFrame(
+                {
+                    "dates": dates,
+                    "errors": changes,
+                }
+            )
         else:
-            return pd.DataFrame({'dates': dates,
-                                 'changes': changes,
-                                 })
+            return pd.DataFrame(
+                {
+                    "dates": dates,
+                    "changes": changes,
+                }
+            )
 
 
-def cumulative_to_derivative(fractional_year_array, cumulative_changes, return_type="arrays"):
+def cumulative_to_derivative(
+    fractional_year_array, cumulative_changes, return_type="arrays"
+):
     """
     Calculates a a list of non cumulative changes between start and end dates from a list of cumulative changes.
 
@@ -500,11 +568,15 @@ def cumulative_to_derivative(fractional_year_array, cumulative_changes, return_t
     if return_type == "arrays":
         return start_dates, end_dates, derivative
     elif return_type == "dataframe":
-        df = pd.DataFrame({"start_dates": start_dates, "end_dates": end_dates, "changes": derivative})
+        df = pd.DataFrame(
+            {"start_dates": start_dates, "end_dates": end_dates, "changes": derivative}
+        )
         return df
 
 
-def resample_derivative_timeseries_to_monthly_grid(start_dates, end_dates, changes, return_type="arrays"):
+def resample_derivative_timeseries_to_monthly_grid(
+    start_dates, end_dates, changes, return_type="arrays"
+):
     """
     Resample a timeseries of derivatives to a uniform monthly grid.
     The monthly grid is defined by timeseries_as_months(), containing 12 evenly spaced months.
@@ -532,16 +604,25 @@ def resample_derivative_timeseries_to_monthly_grid(start_dates, end_dates, chang
     monthly_grid = timeseries_as_months(dates)
     changes = resample_1d_array(dates, changes, monthly_grid)
     # 3 convert back to derivatives
-    start_dates, end_dates, changes = cumulative_to_derivative(monthly_grid, changes, return_type="arrays")
+    start_dates, end_dates, changes = cumulative_to_derivative(
+        monthly_grid, changes, return_type="arrays"
+    )
     if return_type == "arrays":
         return start_dates, end_dates, changes
     elif return_type == "dataframe":
-        return pd.DataFrame({"start_dates": start_dates, "end_dates": end_dates, "changes": changes})
+        return pd.DataFrame(
+            {"start_dates": start_dates, "end_dates": end_dates, "changes": changes}
+        )
 
 
-def get_total_trend(start_dates: Iterable, end_dates: Iterable, changes: Iterable,
-                    method_to_extract_trends: ExtractTrendsMethod = ExtractTrendsMethod.START_VS_END,
-                    calculate_as_errors: bool = False, return_type: str = "dataframe"):
+def get_total_trend(
+    start_dates: Iterable,
+    end_dates: Iterable,
+    changes: Iterable,
+    method_to_extract_trends: ExtractTrendsMethod = ExtractTrendsMethod.START_VS_END,
+    calculate_as_errors: bool = False,
+    return_type: str = "dataframe",
+):
     """
     Calculates the full longterm trend of a derivatives timeseries
 
@@ -576,23 +657,38 @@ def get_total_trend(start_dates: Iterable, end_dates: Iterable, changes: Iterabl
         result = np.sqrt(np.nansum(changes**2)) / len(changes)
     else:
         if method_to_extract_trends == ExtractTrendsMethod.REGRESSION:
-            dates, changes = derivative_to_cumulative(start_dates, end_dates, changes, add_gaps_for_plotting=False)
+            dates, changes = derivative_to_cumulative(
+                start_dates, end_dates, changes, add_gaps_for_plotting=False
+            )
             result, _ = get_slope_of_timeseries_with_linear_regression(dates, changes)
         elif method_to_extract_trends == ExtractTrendsMethod.START_VS_END:
             result = np.nansum(changes)
         else:
-            raise NotImplementedError("Method '{}' to extract trends is not implemented yet."
-                                      .format(method_to_extract_trends.value))
+            raise NotImplementedError(
+                "Method '{}' to extract trends is not implemented yet.".format(
+                    method_to_extract_trends.value
+                )
+            )
     if return_type == "value":
         return result
     elif return_type == "dataframe":
-        return pd.DataFrame({"start_dates": [float(np.nanmin(start_dates))],
-                             "end_dates": [float(np.nanmax(end_dates))],
-                             "changes": [result]})
+        return pd.DataFrame(
+            {
+                "start_dates": [float(np.nanmin(start_dates))],
+                "end_dates": [float(np.nanmax(end_dates))],
+                "changes": [result],
+            }
+        )
 
 
-def get_average_trends_over_new_time_periods(start_dates, end_dates, changes, new_start_dates, new_end_dates,
-                                             calculate_as_errors=False):
+def get_average_trends_over_new_time_periods(
+    start_dates,
+    end_dates,
+    changes,
+    new_start_dates,
+    new_end_dates,
+    calculate_as_errors=False,
+):
     """
     Returns average trend over new time periods.
     Note that this can not be used for upsampling, only for downsampling (e.g. from months to annual averages)
@@ -623,27 +719,50 @@ def get_average_trends_over_new_time_periods(start_dates, end_dates, changes, ne
     """
     # check if in monthly grid
     if not np.isin(np.array(new_start_dates), np.array(start_dates)).all():
-        warnings.warn("New start dates should be values in timeseries start_dates."
-                      "Result may be invalid.", stacklevel=2)
+        warnings.warn(
+            "New start dates should be values in timeseries start_dates."
+            "Result may be invalid.",
+            stacklevel=2,
+        )
 
     if not np.isin(np.array(new_end_dates), np.array(end_dates)).all():
-        warnings.warn("New end dates should be values in timeseries end_dates."
-                      "Result may be invalid.", stacklevel=2)
+        warnings.warn(
+            "New end dates should be values in timeseries end_dates."
+            "Result may be invalid.",
+            stacklevel=2,
+        )
 
-    timeseries_df = pd.DataFrame({"start_dates": start_dates, "end_dates": end_dates, "changes": changes})
+    timeseries_df = pd.DataFrame(
+        {"start_dates": start_dates, "end_dates": end_dates, "changes": changes}
+    )
     annual_changes = []
     for start_date, end_date in zip(new_start_dates, new_end_dates):
-        df_sub = timeseries_df[(timeseries_df["start_dates"] >= start_date) & (timeseries_df["end_dates"] <= end_date)]
-        annual_changes.append(get_total_trend(df_sub["start_dates"],
-                              df_sub["end_dates"], df_sub["changes"], return_type="value",
-                              calculate_as_errors=calculate_as_errors))
+        df_sub = timeseries_df[
+            (timeseries_df["start_dates"] >= start_date)
+            & (timeseries_df["end_dates"] <= end_date)
+        ]
+        annual_changes.append(
+            get_total_trend(
+                df_sub["start_dates"],
+                df_sub["end_dates"],
+                df_sub["changes"],
+                return_type="value",
+                calculate_as_errors=calculate_as_errors,
+            )
+        )
 
-    return pd.DataFrame({"start_dates": new_start_dates,
-                         "end_dates": new_end_dates,
-                         "changes": annual_changes})
+    return pd.DataFrame(
+        {
+            "start_dates": new_start_dates,
+            "end_dates": new_end_dates,
+            "changes": annual_changes,
+        }
+    )
 
 
-def get_slope_of_timeseries_with_linear_regression(dates: Iterable, changes: Iterable) -> Tuple[float, float]:
+def get_slope_of_timeseries_with_linear_regression(
+    dates: Iterable, changes: Iterable
+) -> Tuple[float, float]:
     """
     Calculate linear regression over a timeseries and return its total slope
 
@@ -667,7 +786,9 @@ def get_slope_of_timeseries_with_linear_regression(dates: Iterable, changes: Ite
     return slope, slope_err
 
 
-def interpolate_change_per_day_to_fill_gaps(elevation_time_series: pd.DataFrame) -> pd.DataFrame:
+def interpolate_change_per_day_to_fill_gaps(
+    elevation_time_series: pd.DataFrame,
+) -> pd.DataFrame:
     """
     Fill gaps in an elevation change time series that has a non-uniform temporal resolution.
     Linear interpolation is performed on elevation_change_per_day values, to fill gaps in the input timeseries. An
@@ -686,58 +807,104 @@ def interpolate_change_per_day_to_fill_gaps(elevation_time_series: pd.DataFrame)
     """
 
     # Calculate the gaps between end dates and subsequent start dates in original time series
-    start_dates = [datetime.datetime.strptime(a, '%d/%m/%Y') for a in elevation_time_series.start_date]
-    end_dates = [datetime.datetime.strptime(a, '%d/%m/%Y') for a in elevation_time_series.end_date]
+    start_dates = [
+        datetime.datetime.strptime(a, "%d/%m/%Y")
+        for a in elevation_time_series.start_date
+    ]
+    end_dates = [
+        datetime.datetime.strptime(a, "%d/%m/%Y")
+        for a in elevation_time_series.end_date
+    ]
 
     date_gap_in_days_between_entries = [
-        (start_dates[i + 1] - end_dates[i]).days for i in range(len(elevation_time_series) - 1)]
-    elevation_time_series['date_gap_days'] = np.append(date_gap_in_days_between_entries, [0])
+        (start_dates[i + 1] - end_dates[i]).days
+        for i in range(len(elevation_time_series) - 1)
+    ]
+    elevation_time_series["date_gap_days"] = np.append(
+        date_gap_in_days_between_entries, [0]
+    )
 
-    date_gaps_indexes = np.where(elevation_time_series['date_gap_days'] > 1)[0]
+    date_gaps_indexes = np.where(elevation_time_series["date_gap_days"] > 1)[0]
     interpolated_dataframe = elevation_time_series.copy()
-    columns_to_keep = ['start_date', 'end_date', 'glacier_change_observed', 'glacier_change_uncertainty',
-                       'hydrological_correction_value', 'sea_level_correction_value']
+    columns_to_keep = [
+        "start_date",
+        "end_date",
+        "glacier_change_observed",
+        "glacier_change_uncertainty",
+        "hydrological_correction_value",
+        "sea_level_correction_value",
+    ]
     interpolated_dataframe = interpolated_dataframe[columns_to_keep]
 
     for date_gap_index in date_gaps_indexes:
         interpolated_dataframe.loc[date_gap_index + 0.5] = [
-            datetime.strftime(end_dates[date_gap_index] + relativedelta(days=1), '%d/%m/%Y'),
-            datetime.strftime(start_dates[date_gap_index + 1] - relativedelta(days=1), '%d/%m/%Y'),
-            np.nan, np.nan, np.nan, np.nan]
+            datetime.strftime(
+                end_dates[date_gap_index] + relativedelta(days=1), "%d/%m/%Y"
+            ),
+            datetime.strftime(
+                start_dates[date_gap_index + 1] - relativedelta(days=1), "%d/%m/%Y"
+            ),
+            np.nan,
+            np.nan,
+            np.nan,
+            np.nan,
+        ]
     interpolated_dataframe = interpolated_dataframe.sort_index().reset_index(drop=True)
 
     # calculate days covered by each row
     number_of_days_covered_by_each_row = [
-        (datetime.strptime(interpolated_dataframe['end_date'][i], '%d/%m/%Y') - datetime.strptime(
-            interpolated_dataframe['start_date'][i], '%d/%m/%Y')).days for i in range(len(interpolated_dataframe))]
-    interpolated_dataframe['days_covered'] = number_of_days_covered_by_each_row
+        (
+            datetime.strptime(interpolated_dataframe["end_date"][i], "%d/%m/%Y")
+            - datetime.strptime(interpolated_dataframe["start_date"][i], "%d/%m/%Y")
+        ).days
+        for i in range(len(interpolated_dataframe))
+    ]
+    interpolated_dataframe["days_covered"] = number_of_days_covered_by_each_row
 
     # calculate change per day in each row
-    interpolated_dataframe['glacier_change_per_day'] \
-        = interpolated_dataframe.glacier_change_observed / interpolated_dataframe.days_covered
-    interpolated_dataframe['glacier_change_uncertainty_per_day'] \
-        = interpolated_dataframe.glacier_change_uncertainty / interpolated_dataframe.days_covered
+    interpolated_dataframe["glacier_change_per_day"] = (
+        interpolated_dataframe.glacier_change_observed
+        / interpolated_dataframe.days_covered
+    )
+    interpolated_dataframe["glacier_change_uncertainty_per_day"] = (
+        interpolated_dataframe.glacier_change_uncertainty
+        / interpolated_dataframe.days_covered
+    )
 
-    interpolated_dataframe['date_fractional'] = datetime_dates_to_fractional_years([datetime.strptime(
-        interpolated_dataframe['start_date'][i], '%d/%m/%Y') for i in range(len(interpolated_dataframe))])
+    interpolated_dataframe["date_fractional"] = datetime_dates_to_fractional_years(
+        [
+            datetime.strptime(interpolated_dataframe["start_date"][i], "%d/%m/%Y")
+            for i in range(len(interpolated_dataframe))
+        ]
+    )
 
     # Linear interpolation of glacier_change_per_day to fill gaps
-    for column_name in ['glacier_change_per_day', 'glacier_change_uncertainty_per_day', 'hydrological_correction_value',
-                        'sea_level_correction_value']:
-        interpolated_dataframe[column_name] = interpolated_dataframe[column_name].interpolate(method='linear')
+    for column_name in [
+        "glacier_change_per_day",
+        "glacier_change_uncertainty_per_day",
+        "hydrological_correction_value",
+        "sea_level_correction_value",
+    ]:
+        interpolated_dataframe[column_name] = interpolated_dataframe[
+            column_name
+        ].interpolate(method="linear")
 
     # Convert back to glacier_change_observed
-    interpolated_dataframe['glacier_change_observed'] \
-        = interpolated_dataframe.glacier_change_per_day * interpolated_dataframe.days_covered
-    interpolated_dataframe['glacier_change_uncertainty'] \
-        = interpolated_dataframe.glacier_change_uncertainty_per_day * interpolated_dataframe.days_covered
+    interpolated_dataframe["glacier_change_observed"] = (
+        interpolated_dataframe.glacier_change_per_day
+        * interpolated_dataframe.days_covered
+    )
+    interpolated_dataframe["glacier_change_uncertainty"] = (
+        interpolated_dataframe.glacier_change_uncertainty_per_day
+        * interpolated_dataframe.days_covered
+    )
 
     # removing all remaining small day gaps by setting end_date(i) = start_date(i+1)
     updated_end_dates = []
     for i in range(len(interpolated_dataframe.end_date) - 1):
         updated_end_dates.append(interpolated_dataframe.start_date[i + 1])
-    updated_end_dates.append(interpolated_dataframe['end_date'].tolist()[-1])
-    interpolated_dataframe['end_date'] = updated_end_dates
+    updated_end_dates.append(interpolated_dataframe["end_date"].tolist()[-1])
+    interpolated_dataframe["end_date"] = updated_end_dates
 
     # then remove row that has been interpolated for GRACE gap (a ~13 month break between GRACE missions from July 2017
     # - August 2018), as this value will now be much bigger than the rest due to the largee time coverage. This rpw
@@ -745,11 +912,21 @@ def interpolate_change_per_day_to_fill_gaps(elevation_time_series: pd.DataFrame)
     # was previously a large temporal gap. The handling of the gap between GRACE missions by the GlaMBIE algorithm has
     # not yet been finalised, so the current approach is simply to remove it from all datasets.
     interpolated_dataframe.drop(
-        interpolated_dataframe.loc[interpolated_dataframe.start_date.__eq__('01/07/2017')].index, inplace=True)
+        interpolated_dataframe.loc[
+            interpolated_dataframe.start_date.__eq__("01/07/2017")
+        ].index,
+        inplace=True,
+    )
 
     # Remove columns from interpolation that glambie algorithm doesn't allow
-    interpolated_dataframe.drop(columns=['days_covered', 'glacier_change_per_day',
-                                         'glacier_change_uncertainty_per_day', 'date_fractional'],
-                                inplace=True)
+    interpolated_dataframe.drop(
+        columns=[
+            "days_covered",
+            "glacier_change_per_day",
+            "glacier_change_uncertainty_per_day",
+            "date_fractional",
+        ],
+        inplace=True,
+    )
 
     return interpolated_dataframe

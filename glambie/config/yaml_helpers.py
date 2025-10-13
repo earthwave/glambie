@@ -3,8 +3,8 @@ import yaml
 
 
 def year_type_class_representer(
-        yaml_dumper: yaml.dumper.Dumper,
-        object_to_represent: YearType) -> yaml.nodes.MappingNode:
+    yaml_dumper: yaml.dumper.Dumper, object_to_represent: YearType
+) -> yaml.nodes.MappingNode:
     """
     Class representer for YearType
 
@@ -24,8 +24,8 @@ def year_type_class_representer(
 
 
 def region_run_config_class_representer(
-        yaml_dumper: yaml.dumper.Dumper,
-        object_to_represent) -> yaml.nodes.MappingNode:
+    yaml_dumper: yaml.dumper.Dumper, object_to_represent
+) -> yaml.nodes.MappingNode:
     """
     Class representer for RegionRunConfig
 

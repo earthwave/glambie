@@ -1,0 +1,42 @@
+# config yaml file for western_canada_us
+---
+region_name: western_canada_us
+year_type: glaciological # glaciological or calendar
+
+seasonal_correction_dataset:
+  # user_group: Huss_monthly
+  # data_group: combined
+  user_group: UZH_GlaciolSineWave
+  data_group: glaciological
+
+region_run_settings:
+  altimetry:
+    exclude_annual_datasets :
+    - Menounos_WNA_alt1
+    - Menounos_WNA_is2gedi
+    exclude_trend_datasets :
+    -
+  gravimetry:
+    exclude_annual_datasets :
+    - Harig_Group
+    - Sasgen_AWIarc_RL01_2
+    - Wouters
+    - Jacob_2012_dmdt
+    exclude_trend_datasets :
+    - Harig_Group
+    - Sasgen_AWIarc_RL01_2
+    - Wouters
+    - Jacob_2012_dmdt
+  demdiff_and_glaciological :
+    exclude_annual_datasets : # glaciological datasets
+    - UZH_GlaciolSineWave
+    - WGMS-mean_ba
+    - Menounos_WNA_glac
+    exclude_trend_datasets : # demdiff datasets
+    - 
+    include_combined_annual_datasets:
+    - DUS-combined
+    - Huss
+    include_combined_trend_datasets:
+    - DUS-combined
+    - Huss

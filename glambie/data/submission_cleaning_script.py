@@ -611,6 +611,6 @@ def main(upload: bool = False, glambie_version: Literal[1, 2] = 2):
 
 if __name__ == "__main__":
     # setup logging
-    setup_logging(log_file_path="/data/ox1/working/glambie/submission_cleaning_log.log")
+    setup_logging(log_file_path="/data/yak1/working/glambie/submission_cleaning_log.log")
 
     main(upload=False, glambie_version=2)

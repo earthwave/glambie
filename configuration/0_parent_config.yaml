@@ -14,8 +14,8 @@ rgi_area_version: 7
 
 datagroups_to_calculate:
   - altimetry
-  # - demdiff_and_glaciological
-  # - gravimetry
+  - demdiff_and_glaciological
+  - gravimetry
 
 method_to_extract_trends: regression # or start_vs_end
 seasonal_correction_method: proportional # or seasonal_homogenization

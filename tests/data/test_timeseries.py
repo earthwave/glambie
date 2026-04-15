@@ -629,7 +629,7 @@ def test_apply_area_change_convert_to_gt_equals_same(example_timeseries_ingested
         [timeseries_area_change.data.changes[0]], area_km2=adjusted_area
     )
     # this should now give the same result in Gt
-    assert gt_no_area_c == gt_area_c
+    assert gt_no_area_c == pytest.approx(gt_area_c)
 
 
 def test_apply_area_change_and_remove(example_timeseries_ingested):

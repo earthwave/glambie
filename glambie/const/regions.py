@@ -78,7 +78,7 @@ REGIONS = {
         rgi7_area=86708,
         area_uncertainty_percentage=0.05,  # 5% defined in GlamBIE Assessment Algorithm
         area_change=-0.48,
-        area_change_reference_year=2008,
+        area_change_reference_year=2009,
         glaciological_year_start=0.75,
     ),
     "western_canada_us": RGIRegion(
@@ -91,7 +91,7 @@ REGIONS = {
         rgi7_area=14521,
         area_uncertainty_percentage=0.05,
         area_change=-0.54,
-        area_change_reference_year=2001,
+        area_change_reference_year=2003,
         glaciological_year_start=0.75,
     ),
     "arctic_canada_north": RGIRegion(
@@ -104,7 +104,7 @@ REGIONS = {
         rgi7_area=105370,
         area_uncertainty_percentage=0.05,
         area_change=-0.07,
-        area_change_reference_year=1999,
+        area_change_reference_year=2000,
         glaciological_year_start=0.75,
     ),
     "arctic_canada_south": RGIRegion(
@@ -117,7 +117,7 @@ REGIONS = {
         rgi7_area=40538,
         area_uncertainty_percentage=0.05,
         area_change=-0.08,
-        area_change_reference_year=2000,
+        area_change_reference_year=2001,
         glaciological_year_start=0.75,
     ),
     "greenland_periphery": RGIRegion(
@@ -143,7 +143,7 @@ REGIONS = {
         short_name="ISL",
         area_uncertainty_percentage=0.05,  # 5% defined in GlamBIE Assessment Algorithm
         area_change=-0.36,
-        area_change_reference_year=1999,
+        area_change_reference_year=2001,
         glaciological_year_start=0.75,
     ),
     "svalbard": RGIRegion(
@@ -156,7 +156,7 @@ REGIONS = {
         rgi7_area=33959,
         area_uncertainty_percentage=0.05,  # 5% defined in GlamBIE Assessment Algorithm
         area_change=-0.26,
-        area_change_reference_year=2006,
+        area_change_reference_year=2007,
         glaciological_year_start=0.75,
     ),
     "scandinavia": RGIRegion(
@@ -169,7 +169,7 @@ REGIONS = {
         rgi7_area=2948,
         area_uncertainty_percentage=0.05,
         area_change=-0.27,
-        area_change_reference_year=2002,
+        area_change_reference_year=2003,
         glaciological_year_start=0.75,
     ),
     "russian_arctic": RGIRegion(
@@ -182,7 +182,7 @@ REGIONS = {
         rgi7_area=51595,
         area_uncertainty_percentage=0.05,
         area_change=-0.08,
-        area_change_reference_year=2001,
+        area_change_reference_year=2005,
         glaciological_year_start=0.75,
     ),
     "north_asia": RGIRegion(
@@ -195,7 +195,7 @@ REGIONS = {
         rgi7_area=2643,
         area_uncertainty_percentage=0.05,
         area_change=-0.43,
-        area_change_reference_year=2008,
+        area_change_reference_year=2003,
         glaciological_year_start=0.75,
     ),
     "central_europe": RGIRegion(
@@ -208,7 +208,7 @@ REGIONS = {
         rgi7_area=2124,
         area_uncertainty_percentage=0.05,
         area_change=-0.93,
-        area_change_reference_year=2003,
+        area_change_reference_year=2004,
         glaciological_year_start=0.75,
     ),
     "caucasus_middle_east": RGIRegion(
@@ -221,7 +221,7 @@ REGIONS = {
         rgi7_area=1407,
         area_uncertainty_percentage=0.05,
         area_change=-0.53,
-        area_change_reference_year=1997,
+        area_change_reference_year=2000,
         glaciological_year_start=0.75,
     ),
     "central_asia": RGIRegion(
@@ -234,7 +234,7 @@ REGIONS = {
         rgi7_area=50344,
         area_uncertainty_percentage=0.05,  # 5% defined in GlamBIE Assessment Algorithm
         area_change=-0.18,
-        area_change_reference_year=2005,
+        area_change_reference_year=2001,
         glaciological_year_start=0.75,
     ),
     "south_asia_west": RGIRegion(
@@ -247,7 +247,7 @@ REGIONS = {
         rgi7_area=33075,
         area_uncertainty_percentage=0.05,
         area_change=-0.36,
-        area_change_reference_year=2000,
+        area_change_reference_year=2001,
         glaciological_year_start=0.75,
     ),
     "south_asia_east": RGIRegion(
@@ -260,7 +260,7 @@ REGIONS = {
         rgi7_area=16049,
         area_uncertainty_percentage=0.05,
         area_change=-0.47,
-        area_change_reference_year=2003,
+        area_change_reference_year=2001,
         glaciological_year_start=0.75,
     ),
     "low_latitudes": RGIRegion(
@@ -273,7 +273,7 @@ REGIONS = {
         rgi7_area=1929,
         area_uncertainty_percentage=0.05,
         area_change=-1.19,
-        area_change_reference_year=2001,
+        area_change_reference_year=1999,
         glaciological_year_start=0.0,
     ),
     "southern_andes": RGIRegion(
@@ -286,7 +286,7 @@ REGIONS = {
         rgi7_area=27674,
         area_uncertainty_percentage=0.05,
         area_change=-0.18,
-        area_change_reference_year=2000,
+        area_change_reference_year=2002,
         glaciological_year_start=0.25,
     ),
     "new_zealand": RGIRegion(
@@ -299,7 +299,7 @@ REGIONS = {
         rgi7_area=886,
         area_uncertainty_percentage=0.05,
         area_change=-0.69,
-        area_change_reference_year=1978,
+        area_change_reference_year=2001,
         glaciological_year_start=0.25,
     ),
     "antarctic_and_subantarctic": RGIRegion(
@@ -312,7 +312,7 @@ REGIONS = {
         rgi7_area=133432,
         area_uncertainty_percentage=0.05,
         area_change=-0.27,
-        area_change_reference_year=1986,
+        area_change_reference_year=1991,
         glaciological_year_start=0.25,
     ),
 }

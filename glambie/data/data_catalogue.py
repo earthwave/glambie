@@ -59,8 +59,7 @@ class DataCatalogue:
                 ]
             }
 
-            datasets.append(
-                Timeseries(
+            dataset = Timeseries(
                     region=REGIONS_BY_SHORT_NAME[metadata["region"].upper()],
                     data_group=GLAMBIE_DATA_GROUPS[
                         metadata["observational_source"].replace(
@@ -73,30 +72,8 @@ class DataCatalogue:
                     rgi_version=metadata.get("rgi_version_select", "6.0"),
                     additional_metadata=additional_metadata,
                 )
-            )
-
-            # we need to load the data anyway to get the unit, so may as well keep it loaded.
-            data = fetch_timeseries_dataframe(
-                datasets[-1].user_group,
-                datasets[-1].region,
-                datasets[-1].data_group,
-                glambie_bucket_name,
-            )
-            datasets[-1].unit = data["unit"].iloc[0]
-            datasets[-1].data = TimeseriesData(
-                start_dates=np.array(data["start_date_fractional"]),
-                end_dates=np.array(data["end_date_fractional"]),
-                changes=np.array(data["glacier_change_observed"]),
-                errors=np.array(data["glacier_change_uncertainty"]),
-                glacier_area_reference=np.array(data["glacier_area_reference"]),
-                glacier_area_observed=np.array(data["glacier_area_observed"]),
-                hydrological_correction_value=(
-                    np.array(data["hydrological_correction_value"])
-                    if "hydrological_correction_value" in data.columns
-                    else None
-                ),
-                remarks=np.array(data["remarks"]),
-            )
+            dataset.load_data(glambie_bucket_name)
+            datasets.append(dataset)
 
         return DataCatalogue(SUBMISSION_SYSTEM_BASEPATH_PLACEHOLDER, datasets)
 

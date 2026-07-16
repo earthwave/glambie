@@ -139,7 +139,7 @@ def test_data_catalogue_from_submission_system():
             "glambie.data.data_catalogue.fetch_all_submission_metadata"
         ) as mock_fetch_metadata,
         patch(
-            "glambie.data.data_catalogue.fetch_timeseries_dataframe"
+            "glambie.data.timeseries.fetch_timeseries_dataframe"
         ) as mock_fetch_dataframe,
     ):
         # return two fake metadata dicts
@@ -185,6 +185,41 @@ def test_data_catalogue_from_submission_system():
 
 def test_data_catalogue_regions(example_catalogue):
     assert len(example_catalogue.regions) == 2  # should contain 2 unique regions
+
+
+def test_data_catalogue_from_submission_system_without_optional_columns():
+    with (
+        patch(
+            "glambie.data.data_catalogue.fetch_all_submission_metadata"
+        ) as mock_fetch_metadata,
+        patch(
+            "glambie.data.timeseries.fetch_timeseries_dataframe"
+        ) as mock_fetch_dataframe,
+    ):
+        mock_fetch_metadata.return_value = [
+            {
+                "region": "ISL",
+                "observational_source": "altimetry",
+                "lead_author_name": "Gunnar Gunnarsson",
+                "user_group": "authors-altimetry",
+                "rgi_version_select": "6.0",
+                "lead_author_date_of_birth": "May 18th 1889",
+            }
+        ]
+        mock_fetch_dataframe.return_value = pd.DataFrame(
+            {
+                "unit": ["m"],
+                "start_date_fractional": [1],
+                "end_date_fractional": [2],
+                "glacier_change_observed": [3],
+                "glacier_change_uncertainty": [4],
+                "remarks": ["are we the baddies"],
+            }
+        )
+        catalogue = DataCatalogue.from_glambie_submission_system("glambie2-submissions")
+
+    assert catalogue.datasets[0].data.glacier_area_reference is None
+    assert catalogue.datasets[0].data.glacier_area_observed is None
 
 
 def test_load_all_data(example_catalogue_small):

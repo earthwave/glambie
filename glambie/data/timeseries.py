@@ -271,8 +271,16 @@ class Timeseries:
             end_dates=np.array(data["end_date_fractional"]),
             changes=np.array(data["glacier_change_observed"]),
             errors=np.array(data["glacier_change_uncertainty"]),
-            glacier_area_reference=np.array(data["glacier_area_reference"]),
-            glacier_area_observed=np.array(data["glacier_area_observed"]),
+            glacier_area_reference=(
+                np.array(data["glacier_area_reference"])
+                if "glacier_area_reference" in data.columns
+                else None
+            ),
+            glacier_area_observed=(
+                np.array(data["glacier_area_observed"])
+                if "glacier_area_observed" in data.columns
+                else None
+            ),
             hydrological_correction_value=(
                 np.array(data["hydrological_correction_value"])
                 if "hydrological_correction_value" in data.columns
@@ -280,6 +288,8 @@ class Timeseries:
             ),
             remarks=(np.array(data["remarks"]) if "remarks" in data.columns else None),
         )
+        if self.unit is None:
+            self.unit = data["unit"].iloc[0]
         self.is_data_loaded = True
         return self.data
 

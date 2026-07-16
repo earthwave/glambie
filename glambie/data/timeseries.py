@@ -43,22 +43,32 @@ class TimeseriesData:
     The respective glacier change is then the change between start and end date.
     This means, that time series are used as derivatives and not as cumulative timeseries.
 
+    The class contains 2 different schema versions, glambie-1 and glambie-2. The main difference is that each of them
+    contain different fields for glacier area and observational coverage percentage.
+
     For more information check the GlaMBIE Assessment Framework,
     or the data submission instructions on the GlaMBIE website.
     """
-
+    # Required fields
     start_dates: np.ndarray  # start date of change observed.
     end_dates: np.ndarray  # end date of change observed.
     changes: np.ndarray  # change observed between start and end date.
     errors: np.ndarray  # errors of observed change.
-    # Area of region taken from a reference glacier mask: e.g. Randolph Glacier Inventory v6.0 or v7.0.
-    glacier_area_reference: np.ndarray
-    # Area of region supplied alongside the timeseries data, a measurement made by the data provider.
-    glacier_area_observed: np.ndarray
-    hydrological_correction_value: (
-        np.ndarray
-    )  # A correction value used specifically for gravimetry.
-    remarks: np.ndarray  # An extra column for per-timeseries string comments.
+    
+    # common / optional fields
+    remarks: np.ndarray | None = None
+    hydrological_correction_value: np.ndarray | None = None #only given for gravimetry datasets
+
+    # glambie-1 specific fields
+    glacier_area_reference: np.ndarray | None = None # Area of region taken from a reference glacier mask: e.g. RGI
+    glacier_area_observed: np.ndarray | None = None # Area measured from data source, from this coverage can be inferred
+
+    # glambie-2 specific fields
+    glacier_area_reference_start: np.ndarray | None = None # Area assumed by data provider at start_date
+    glacier_area_reference_end: np.ndarray | None = None # Area assumed by data provider at end_date
+    observational_coverage_percentage: np.ndarray | None = None # Percentage of glacier area covered by observations
+
+    schema_version: str = "glambie1"
 
     @property
     def min_start_date(self) -> float:
@@ -111,36 +121,83 @@ class TimeseriesData:
     def __len__(self) -> int:
         return len(self.dates)
 
+    @classmethod
+    def from_dataframe(cls, data: pd.DataFrame, schema_version: str = "glambie1") -> "TimeseriesData":
+        """Create a TimeseriesData object from a dataframe, handling both GlaMBIE-1 and GlaMBIE-2 columns."""
+        return cls(
+            start_dates=np.array(data["start_date_fractional"]),
+            end_dates=np.array(data["end_date_fractional"]),
+            changes=np.array(data["glacier_change_observed"]),
+            errors=np.array(data["glacier_change_uncertainty"]),
+            glacier_area_reference=(
+                np.array(data["glacier_area_reference"])
+                if "glacier_area_reference" in data.columns
+                else None
+            ),
+            glacier_area_observed=(
+                np.array(data["glacier_area_observed"])
+                if "glacier_area_observed" in data.columns
+                else None
+            ),
+            hydrological_correction_value=(
+                np.array(data["hydrological_correction_value"])
+                if "hydrological_correction_value" in data.columns
+                else None
+            ),
+            remarks=(np.array(data["remarks"]) if "remarks" in data.columns else None),
+            glacier_area_reference_start=(
+                np.array(data["glacier_area_reference_start"])
+                if "glacier_area_reference_start" in data.columns
+                else None
+            ),
+            glacier_area_reference_end=(
+                np.array(data["glacier_area_reference_end"])
+                if "glacier_area_reference_end" in data.columns
+                else None
+            ),
+            observational_coverage_percentage=(
+                np.array(data["observational_coverage_percentage"])
+                if "observational_coverage_percentage" in data.columns
+                else None
+            ),
+            schema_version=schema_version,
+        )
+
     def as_dataframe(self):
         length = len(self.changes)
-        return pd.DataFrame(
-            {
-                "start_dates": self.start_dates,
-                "end_dates": self.end_dates,
-                "changes": self.changes,
-                "errors": self.errors,
-                "glacier_area_reference": (
-                    self.glacier_area_reference
-                    if self.glacier_area_reference is not None
-                    else [None] * length
-                ),
-                "glacier_area_observed": (
-                    self.glacier_area_observed
-                    if self.glacier_area_observed is not None
-                    else [None] * length
-                ),
-                "hydrological_correction_value": (
-                    self.hydrological_correction_value
-                    if self.hydrological_correction_value is not None
-                    else [None] * length
-                ),
-                "remarks": (
-                    self.remarks
-                    if self.remarks is not None and len(self.remarks) == length
-                    else [None] * length
-                ),
-            }
-        )
+        data_columns = {
+            "start_dates": self.start_dates,
+            "end_dates": self.end_dates,
+            "changes": self.changes,
+            "errors": self.errors,
+            "glacier_area_reference": (
+                self.glacier_area_reference
+                if self.glacier_area_reference is not None
+                else [None] * length
+            ),
+            "glacier_area_observed": (
+                self.glacier_area_observed
+                if self.glacier_area_observed is not None
+                else [None] * length
+            ),
+            "hydrological_correction_value": (
+                self.hydrological_correction_value
+                if self.hydrological_correction_value is not None
+                else [None] * length
+            ),
+            "remarks": (
+                self.remarks
+                if self.remarks is not None and len(self.remarks) == length
+                else [None] * length
+            ),
+        }
+        if self.glacier_area_reference_start is not None:
+            data_columns["glacier_area_reference_start"] = self.glacier_area_reference_start
+        if self.glacier_area_reference_end is not None:
+            data_columns["glacier_area_reference_end"] = self.glacier_area_reference_end
+        if self.observational_coverage_percentage is not None:
+            data_columns["observational_coverage_percentage"] = self.observational_coverage_percentage
+        return pd.DataFrame(data_columns)
 
     def as_cumulative_timeseries(self) -> pd.DataFrame:
         """
@@ -266,28 +323,19 @@ class Timeseries:
         else:
             data = pd.read_csv(self.data_filepath)
 
-        self.data = TimeseriesData(
-            start_dates=np.array(data["start_date_fractional"]),
-            end_dates=np.array(data["end_date_fractional"]),
-            changes=np.array(data["glacier_change_observed"]),
-            errors=np.array(data["glacier_change_uncertainty"]),
-            glacier_area_reference=(
-                np.array(data["glacier_area_reference"])
-                if "glacier_area_reference" in data.columns
-                else None
-            ),
-            glacier_area_observed=(
-                np.array(data["glacier_area_observed"])
-                if "glacier_area_observed" in data.columns
-                else None
-            ),
-            hydrological_correction_value=(
-                np.array(data["hydrological_correction_value"])
-                if "hydrological_correction_value" in data.columns
-                else None
-            ),
-            remarks=(np.array(data["remarks"]) if "remarks" in data.columns else None),
+        schema_version = (
+            "glambie2"
+            if any(
+                column in data.columns
+                for column in (
+                    "glacier_area_reference_start",
+                    "glacier_area_reference_end",
+                    "observational_coverage_percentage",
+                )
+            )
+            else "glambie1"
         )
+        self.data = TimeseriesData.from_dataframe(data, schema_version=schema_version)
         if self.unit is None:
             self.unit = data["unit"].iloc[0]
         self.is_data_loaded = True

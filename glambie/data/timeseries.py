@@ -9,8 +9,7 @@ import logging
 from glambie.const.data_groups import GlambieDataGroup
 from glambie.const.regions import RGIRegion
 from glambie.data.submission_system_interface import (
-    fetch_timeseries_dataframe,
-    SUBMISSION_SYSTEM_BASEPATH_PLACEHOLDER,
+    fetch_timeseries_dataframe_from_bucket,
 )
 from glambie.util.mass_height_conversions import meters_to_meters_water_equivalent
 from glambie.util.mass_height_conversions import meters_water_equivalent_to_gigatonnes
@@ -312,15 +311,20 @@ class Timeseries:
             self.is_data_loaded = True
         self.area_change_applied = area_change_applied
 
-    def load_data(self, glambie_bucket_name: str) -> TimeseriesData:
-        """Reads data into class from specified filepath"""
+    def load_data(self) -> TimeseriesData:
+        """Reads data into class from specified filepath or gs:// bucket URI.
+        """
         if self.data_filepath is None:
             raise ValueError("Can not load data: file path not set")
-        elif self.data_filepath == SUBMISSION_SYSTEM_BASEPATH_PLACEHOLDER:
-            data = fetch_timeseries_dataframe(
-                self.user_group, self.region, self.data_group, glambie_bucket_name
+        
+        # Check if this is a submission system (gs://) URI
+        if self.data_filepath.startswith("gs://"):
+            # Extract bucket path from the gs:// URI
+            data = fetch_timeseries_dataframe_from_bucket(
+                self.user_group, self.region, self.data_group, self.data_filepath
             )
         else:
+            # Load from local CSV file
             data = pd.read_csv(self.data_filepath)
 
         schema_version = (

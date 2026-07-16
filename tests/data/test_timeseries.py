@@ -115,7 +115,7 @@ def test_metadata_as_dataframe(example_timeseries):
 
 
 def test_timeseries_load_data(example_timeseries):
-    example_timeseries.load_data(glambie_bucket_name="glambie2-submissions")
+    example_timeseries.load_data()
     assert example_timeseries.data.start_dates is not None
     assert example_timeseries.is_data_loaded
 
@@ -153,7 +153,7 @@ def test_timeseries_load_glambie2_schema(tmp_path):
         region=REGIONS["iceland"],
     )
 
-    loaded_data = timeseries.load_data(glambie_bucket_name="unused")
+    loaded_data = timeseries.load_data()
 
     assert loaded_data.schema_version == "glambie2"
     assert loaded_data.glacier_area_reference_start is not None

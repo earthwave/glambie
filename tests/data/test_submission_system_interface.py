@@ -30,11 +30,11 @@ def test_fetch_timeseries_dataframe():
             )
         )
 
-        result = submission_system_interface.fetch_timeseries_dataframe(
+        result = submission_system_interface.fetch_timeseries_dataframe_from_bucket(
             user_group="wibble",
             region=REGIONS_BY_ID[0],
             data_group=GLAMBIE_DATA_GROUPS["altimetry"],
-            glambie_bucket_name="glambie2-submissions",
+            glambie_bucket_uri="gs://glambie2-submissions",
         )
 
         mock_storage_client.download_blob_to_file.assert_called_with(
@@ -68,8 +68,8 @@ def test_fetch_all_submission_metadata():
             )
         )
 
-        results = submission_system_interface.fetch_all_submission_metadata(
-            "glambie2-submissions"
+        results = submission_system_interface.fetch_all_submission_metadata_from_bucket(
+            submission_system_interface.get_glambie_bucket_uri("glambie2-submissions")
         )
 
         mock_storage_client.download_blob_to_file.assert_has_calls(

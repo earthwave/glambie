@@ -82,7 +82,6 @@ def run_one_region(
         region_config,
         data_catalogue,
         glambie_run_config.rgi_area_version,
-        get_glambie_bucket_name(glambie_run_config.glambie_version),
     )
 
     annual_backup_dataset = _prepare_consensus_variability_for_one_region(
@@ -116,12 +115,9 @@ def run_one_region(
             == 0
         ):
             # read data in catalogue
-            data_catalogue_annual.load_all_data(
-                get_glambie_bucket_name(glambie_run_config.glambie_version)
-            )
-            data_catalogue_trends.load_all_data(
-                get_glambie_bucket_name(glambie_run_config.glambie_version)
-            )
+            data_catalogue_annual.load_all_data()
+            data_catalogue_trends.load_all_data()
+            
             data_catalogue_annual = set_unneeded_columns_to_nan(data_catalogue_annual)
             data_catalogue_trends = set_unneeded_columns_to_nan(data_catalogue_trends)
 
@@ -234,9 +230,7 @@ def _prepare_consensus_variability_for_one_region(
         )
         if len(data_catalogue_annual.datasets) != 0:
             # read data in catalogue
-            data_catalogue_annual.load_all_data(
-                get_glambie_bucket_name(glambie_run_config.glambie_version)
-            )
+            data_catalogue_annual.load_all_data()
             data_catalogue_annual = set_unneeded_columns_to_nan(data_catalogue_annual)
             # remove GRACE gap from annual catalogue so that the variability isn't impacted by the lower resolution gap
             if data_group == GLAMBIE_DATA_GROUPS["gravimetry"]:

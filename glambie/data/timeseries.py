@@ -53,19 +53,19 @@ class TimeseriesData:
     end_dates: np.ndarray  # end date of change observed.
     changes: np.ndarray  # change observed between start and end date.
     errors: np.ndarray  # errors of observed change.
-    
+
     # common / optional fields
     remarks: np.ndarray | None = None
-    hydrological_correction_value: np.ndarray | None = None #only given for gravimetry datasets
+    hydrological_correction_value: np.ndarray | None = None  # only given for gravimetry datasets
 
     # glambie-1 specific fields
-    glacier_area_reference: np.ndarray | None = None # Area of region taken from a reference glacier mask: e.g. RGI
-    glacier_area_observed: np.ndarray | None = None # Area measured from data source, from this coverage can be inferred
+    glacier_area_reference: np.ndarray | None = None  # Area of region taken from a reference glacier mask: e.g. RGI
+    glacier_area_observed: np.ndarray | None = None  # Area measured from data source
 
     # glambie-2 specific fields
-    glacier_area_reference_start: np.ndarray | None = None # Area assumed by data provider at start_date
-    glacier_area_reference_end: np.ndarray | None = None # Area assumed by data provider at end_date
-    observational_coverage_percentage: np.ndarray | None = None # Percentage of glacier area covered by observations
+    glacier_area_reference_start: np.ndarray | None = None  # Area assumed by data provider at start_date
+    glacier_area_reference_end: np.ndarray | None = None  # Area assumed by data provider at end_date
+    observational_coverage_percentage: np.ndarray | None = None  # Percentage of glacier area covered by observations
 
     schema_version: str = "glambie1"
 
@@ -316,7 +316,7 @@ class Timeseries:
         """
         if self.data_filepath is None:
             raise ValueError("Can not load data: file path not set")
-        
+
         # Check if this is a submission system (gs://) URI
         if self.data_filepath.startswith("gs://"):
             # Extract bucket path from the gs:// URI

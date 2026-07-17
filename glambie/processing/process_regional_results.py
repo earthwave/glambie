@@ -41,7 +41,6 @@ from glambie.processing.processing_helpers import (
     recombine_split_timeseries_in_catalogue,
 )
 from glambie.processing.processing_helpers import set_unneeded_columns_to_nan
-from glambie.util.version_helpers import get_glambie_bucket_name
 
 log = logging.getLogger(__name__)
 
@@ -117,7 +116,7 @@ def run_one_region(
             # read data in catalogue
             data_catalogue_annual.load_all_data()
             data_catalogue_trends.load_all_data()
-            
+
             data_catalogue_annual = set_unneeded_columns_to_nan(data_catalogue_annual)
             data_catalogue_trends = set_unneeded_columns_to_nan(data_catalogue_trends)
 

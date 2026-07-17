@@ -10,7 +10,6 @@ from glambie.processing.processing_helpers import (
     prepare_seasonal_calibration_dataset,
 )
 from glambie.processing.processing_helpers import get_reduced_catalogue_to_date_window
-from glambie.util.version_helpers import get_glambie_bucket_name
 from glambie.const.data_groups import GLAMBIE_DATA_GROUPS
 from glambie.plot.processing_plots import plot_combination_of_regions_to_global
 import numpy as np

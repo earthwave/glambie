@@ -60,18 +60,18 @@ class DataCatalogue:
             }
 
             dataset = Timeseries(
-                    region=REGIONS_BY_SHORT_NAME[metadata["region"].upper()],
-                    data_group=GLAMBIE_DATA_GROUPS[
-                        metadata["observational_source"].replace(
-                            "dem_differencing", "demdiff"
-                        )
-                    ],
-                    data_filepath=glambie_bucket_uri,
-                    user=metadata["lead_author_name"],
-                    user_group=metadata["user_group"],
-                    rgi_version=metadata.get("rgi_version_select", "6.0"),
-                    additional_metadata=additional_metadata,
-                )
+                region=REGIONS_BY_SHORT_NAME[metadata["region"].upper()],
+                data_group=GLAMBIE_DATA_GROUPS[
+                    metadata["observational_source"].replace(
+                        "dem_differencing", "demdiff"
+                    )
+                ],
+                data_filepath=glambie_bucket_uri,
+                user=metadata["lead_author_name"],
+                user_group=metadata["user_group"],
+                rgi_version=metadata.get("rgi_version_select", "6.0"),
+                additional_metadata=additional_metadata,
+            )
             dataset.load_data()
             datasets.append(dataset)
 

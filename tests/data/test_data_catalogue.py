@@ -182,6 +182,7 @@ def test_data_catalogue_from_submission_system_glambie_1_format():
         == "May 18th 1889"
     )
 
+
 def test_data_catalogue_from_submission_system_glambie_2_format():
     with (
         patch(
@@ -231,6 +232,7 @@ def test_data_catalogue_from_submission_system_glambie_2_format():
         catalogue.datasets[1].additional_metadata["lead_author_date_of_birth"]
         == "May 18th 1889"
     )
+
 
 def test_data_catalogue_regions(example_catalogue):
     assert len(example_catalogue.regions) == 2  # should contain 2 unique regions

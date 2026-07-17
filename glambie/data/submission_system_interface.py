@@ -109,7 +109,7 @@ def fetch_all_submission_metadata_from_bucket(glambie_bucket_uri: str) -> List[d
 
     This fuses the content of both the top-level meta.json and the individual submission metadata
     files within the submission system, but does not load the Dataset Information File PDF.
-    
+
     Parameters
     ----------
     glambie_bucket_path: str

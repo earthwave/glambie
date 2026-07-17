@@ -112,7 +112,7 @@ def fetch_all_submission_metadata_from_bucket(glambie_bucket_uri: str) -> List[d
 
     Parameters
     ----------
-    glambie_bucket_path: str
+    glambie_bucket_uri: str
         GlaMBIE GCP bucket URI (e.g. gs://glambie2-submissions)
 
     Returns

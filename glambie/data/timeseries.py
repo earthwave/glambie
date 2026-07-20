@@ -123,79 +123,42 @@ class TimeseriesData:
     @classmethod
     def from_dataframe(cls, data: pd.DataFrame, schema_version: str = "glambie1") -> "TimeseriesData":
         """Create a TimeseriesData object from a dataframe, handling both GlaMBIE-1 and GlaMBIE-2 columns."""
+        optional_cols = [
+            "glacier_area_reference",
+            "glacier_area_observed",
+            "hydrological_correction_value",
+            "remarks",
+            "glacier_area_reference_start",
+            "glacier_area_reference_end",
+            "observational_coverage_percentage",
+        ]
+        optional_kwargs = {col: np.array(data[col]) if col in data.columns else None for col in optional_cols}
         return cls(
             start_dates=np.array(data["start_date_fractional"]),
             end_dates=np.array(data["end_date_fractional"]),
             changes=np.array(data["glacier_change_observed"]),
             errors=np.array(data["glacier_change_uncertainty"]),
-            glacier_area_reference=(
-                np.array(data["glacier_area_reference"])
-                if "glacier_area_reference" in data.columns
-                else None
-            ),
-            glacier_area_observed=(
-                np.array(data["glacier_area_observed"])
-                if "glacier_area_observed" in data.columns
-                else None
-            ),
-            hydrological_correction_value=(
-                np.array(data["hydrological_correction_value"])
-                if "hydrological_correction_value" in data.columns
-                else None
-            ),
-            remarks=(np.array(data["remarks"]) if "remarks" in data.columns else None),
-            glacier_area_reference_start=(
-                np.array(data["glacier_area_reference_start"])
-                if "glacier_area_reference_start" in data.columns
-                else None
-            ),
-            glacier_area_reference_end=(
-                np.array(data["glacier_area_reference_end"])
-                if "glacier_area_reference_end" in data.columns
-                else None
-            ),
-            observational_coverage_percentage=(
-                np.array(data["observational_coverage_percentage"])
-                if "observational_coverage_percentage" in data.columns
-                else None
-            ),
             schema_version=schema_version,
+            **optional_kwargs,
         )
 
     def as_dataframe(self):
         length = len(self.changes)
+        # Always-present optional cols: include as [None]*length when absent
+        always_optional = ["glacier_area_reference", "glacier_area_observed", "hydrological_correction_value"]
+        # Conditionally-present cols: only added to the dataframe when not None
+        conditional_cols = ["glacier_area_reference_start", "glacier_area_reference_end", "observational_coverage_percentage"]
         data_columns = {
             "start_dates": self.start_dates,
             "end_dates": self.end_dates,
             "changes": self.changes,
             "errors": self.errors,
-            "glacier_area_reference": (
-                self.glacier_area_reference
-                if self.glacier_area_reference is not None
-                else [None] * length
-            ),
-            "glacier_area_observed": (
-                self.glacier_area_observed
-                if self.glacier_area_observed is not None
-                else [None] * length
-            ),
-            "hydrological_correction_value": (
-                self.hydrological_correction_value
-                if self.hydrological_correction_value is not None
-                else [None] * length
-            ),
-            "remarks": (
-                self.remarks
-                if self.remarks is not None and len(self.remarks) == length
-                else [None] * length
-            ),
+            **{col: getattr(self, col) if getattr(self, col) is not None else [None] * length
+               for col in always_optional},
+            # remarks has an extra length guard to handle mismatched arrays
+            "remarks": self.remarks if self.remarks is not None and len(self.remarks) == length else [None] * length,
         }
-        if self.glacier_area_reference_start is not None:
-            data_columns["glacier_area_reference_start"] = self.glacier_area_reference_start
-        if self.glacier_area_reference_end is not None:
-            data_columns["glacier_area_reference_end"] = self.glacier_area_reference_end
-        if self.observational_coverage_percentage is not None:
-            data_columns["observational_coverage_percentage"] = self.observational_coverage_percentage
+        data_columns.update({col: getattr(self, col) for col in conditional_cols if getattr(self, col) is not None})
         return pd.DataFrame(data_columns)
 
     def as_cumulative_timeseries(self) -> pd.DataFrame:

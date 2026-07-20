@@ -145,9 +145,17 @@ class TimeseriesData:
     def as_dataframe(self):
         length = len(self.changes)
         # Always-present optional cols: include as [None]*length when absent
-        always_optional = ["glacier_area_reference", "glacier_area_observed", "hydrological_correction_value"]
+        always_optional = [
+            "glacier_area_reference",
+            "glacier_area_observed",
+            "hydrological_correction_value",
+        ]
         # Conditionally-present cols: only added to the dataframe when not None
-        conditional_cols = ["glacier_area_reference_start", "glacier_area_reference_end", "observational_coverage_percentage"]
+        conditional_cols = [
+            "glacier_area_reference_start",
+            "glacier_area_reference_end",
+            "observational_coverage_percentage",
+        ]
         data_columns = {
             "start_dates": self.start_dates,
             "end_dates": self.end_dates,

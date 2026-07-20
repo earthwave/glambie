@@ -24,6 +24,8 @@ _storage_client = None
 
 def get_glambie_bucket_uri(glambie_bucket_name: str) -> str:
     """Construct a gs:// URI for the GlaMBIE bucket."""
+    if glambie_bucket_name.startswith("gs://"):
+        return glambie_bucket_name
     return f"gs://{glambie_bucket_name}"
 
 

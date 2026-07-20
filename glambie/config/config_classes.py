@@ -91,7 +91,6 @@ class GlambieRunConfig(Config):
     config_folder: str
     result_base_path: str
     region_config_base_path: str
-    catalogue_path: str
     datagroups_to_calculate: list[GlambieDataGroup]
     regions: list[RegionRunConfig]
     start_year: float

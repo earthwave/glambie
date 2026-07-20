@@ -6,11 +6,10 @@ config_folder: glambie-
 
 result_base_path: glambie/output_plots/processing
 region_config_base_path: configuration
-catalogue_path: glambie_submission_system
 
 start_year: 2000
 end_year: 2025
-rgi_area_version: 7
+rgi_area_version: 6
 
 datagroups_to_calculate:
   - altimetry

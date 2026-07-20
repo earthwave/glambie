@@ -117,8 +117,8 @@ class TimeseriesData:
         )
         return float(resolution)
 
-    def __len__(self) -> int:
-        return len(self.dates)
+def __len__(self) -> int:
+        return len(self.start_dates)
 
     @classmethod
     def from_dataframe(cls, data: pd.DataFrame, schema_version: str = "glambie1") -> "TimeseriesData":

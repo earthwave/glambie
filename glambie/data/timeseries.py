@@ -117,7 +117,7 @@ class TimeseriesData:
         )
         return float(resolution)
 
-def __len__(self) -> int:
+    def __len__(self) -> int:
         return len(self.start_dates)
 
     @classmethod

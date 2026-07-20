@@ -122,6 +122,7 @@ def run_one_region(
 
             # remove GRACE gap from annual catalogue so that the variability isn't impacted by the lower resolution gap
             if data_group == GLAMBIE_DATA_GROUPS["gravimetry"]:
+                data_catalogue_annual = convert_datasets_to_monthly_grid(data_catalogue_annual)
                 data_catalogue_annual = get_reduced_catalogue_to_date_window(
                     data_catalogue=data_catalogue_annual,
                     start_date=GraceGap.START_DATE.value,
@@ -231,6 +232,7 @@ def _prepare_consensus_variability_for_one_region(
             # read data in catalogue
             data_catalogue_annual.load_all_data()
             data_catalogue_annual = set_unneeded_columns_to_nan(data_catalogue_annual)
+            data_catalogue_annual = convert_datasets_to_monthly_grid(data_catalogue_annual)
             # remove GRACE gap from annual catalogue so that the variability isn't impacted by the lower resolution gap
             if data_group == GLAMBIE_DATA_GROUPS["gravimetry"]:
                 data_catalogue_annual = get_reduced_catalogue_to_date_window(
@@ -242,9 +244,7 @@ def _prepare_consensus_variability_for_one_region(
             data_catalogue_annual, split_dataset_names_annual = (
                 check_and_handle_gaps_in_timeseries(data_catalogue_annual)
             )
-            data_catalogue_annual = convert_datasets_to_monthly_grid(
-                data_catalogue_annual
-            )
+
 
             annual_combined, _, _ = _run_region_variability_for_one_source(
                 data_catalogue_annual=data_catalogue_annual,

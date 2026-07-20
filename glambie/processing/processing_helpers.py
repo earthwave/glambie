@@ -603,8 +603,8 @@ def extend_annual_timeseries_if_shorter_than_time_window(
             how="outer",
         )
         # Fill Nans in 'annual_timeseries' with values from 'timeseries_for_extension'
-        df_merged.changes_x.fillna(df_merged.changes_y, inplace=True)
-        df_merged.errors_x.fillna(df_merged.errors_y, inplace=True)
+        df_merged["changes_x"] = df_merged["changes_x"].fillna(df_merged["changes_y"])
+        df_merged["errors_x"] = df_merged["errors_x"].fillna(df_merged["errors_y"])
         df_merged = df_merged.sort_values(by="start_dates").reset_index()
         # now update the annual timeseries object with the extended timeseries
         annual_timeseries_copy.data.changes = np.array(df_merged["changes_x"])

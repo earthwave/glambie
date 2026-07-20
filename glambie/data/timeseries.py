@@ -767,8 +767,8 @@ class Timeseries:
         ):  # if already in monthly grid there is no need to convert
             # check resolution
             if (
-                self.data.max_temporal_resolution >= 0.5
-            ):  # resolution above half a year: shift to closest month
+                self.data.max_temporal_resolution >= 0.905
+            ):  # resolution around a year: shift to closest month
                 start_dates = timeseries_as_months(
                     self.data.start_dates, downsample_to_month=False
                 )

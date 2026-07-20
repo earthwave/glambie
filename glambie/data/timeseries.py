@@ -738,7 +738,7 @@ class Timeseries:
         ):  # if already in monthly grid there is no need to convert
             # check resolution
             if (
-                self.data.max_temporal_resolution >= 0.905
+                self.data.max_temporal_resolution >= 11 / 12
             ):  # resolution around a year: shift to closest month
                 start_dates = timeseries_as_months(
                     self.data.start_dates, downsample_to_month=False
@@ -748,7 +748,7 @@ class Timeseries:
                 )
                 object_copy.data.start_dates = np.array(start_dates)
                 object_copy.data.end_dates = np.array(end_dates)
-            else:  # resolution below half a year: resample timeseries to monthly grid
+            else:  # resolution a year: resample timeseries to monthly grid
                 start_dates, end_dates, changes = (
                     resample_derivative_timeseries_to_monthly_grid(
                         self.data.start_dates, self.data.end_dates, self.data.changes

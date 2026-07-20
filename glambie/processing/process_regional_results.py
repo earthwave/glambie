@@ -245,7 +245,6 @@ def _prepare_consensus_variability_for_one_region(
                 check_and_handle_gaps_in_timeseries(data_catalogue_annual)
             )
 
-
             annual_combined, _, _ = _run_region_variability_for_one_source(
                 data_catalogue_annual=data_catalogue_annual,
                 seasonal_calibration_dataset=seasonal_calibration_dataset,

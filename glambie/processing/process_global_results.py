@@ -10,7 +10,6 @@ from glambie.processing.processing_helpers import (
     prepare_seasonal_calibration_dataset,
 )
 from glambie.processing.processing_helpers import get_reduced_catalogue_to_date_window
-from glambie.util.version_helpers import get_glambie_bucket_name
 from glambie.const.data_groups import GLAMBIE_DATA_GROUPS
 from glambie.plot.processing_plots import plot_combination_of_regions_to_global
 import numpy as np
@@ -176,7 +175,6 @@ def _homogenize_regional_results_to_calendar_year(
             region_config,
             data_catalogue,
             glambie_run_config.rgi_area_version,
-            get_glambie_bucket_name(glambie_run_config.glambie_version),
         )
         # step 2: homogenize to calendar year
         data_set = regional_results_catalogue.get_filtered_catalogue(

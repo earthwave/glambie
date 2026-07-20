@@ -115,9 +115,55 @@ def test_metadata_as_dataframe(example_timeseries):
 
 
 def test_timeseries_load_data(example_timeseries):
-    example_timeseries.load_data(glambie_bucket_name="glambie2-submissions")
+    example_timeseries.load_data()
     assert example_timeseries.data.start_dates is not None
     assert example_timeseries.is_data_loaded
+
+
+def test_timeseries_data_load_glambie1_schema():
+    data = TimeseriesData(
+        start_dates=[2010.1],
+        end_dates=[2010.2],
+        changes=[1.0],
+        errors=[0.1],
+    )
+
+    assert data.schema_version == "glambie1"
+
+
+def test_timeseries_load_glambie2_schema(tmp_path):
+    csv_path = tmp_path / "glambie2_timeseries.csv"
+    pd.DataFrame(
+        {
+            "start_date_fractional": [2010.1],
+            "end_date_fractional": [2010.2],
+            "glacier_change_observed": [1.0],
+            "glacier_change_uncertainty": [0.1],
+            "unit": ["m"],
+            "glacier_area_reference_start": [10000.0],
+            "glacier_area_reference_end": [10050.0],
+            "observational_coverage_percentage": [95.0],
+            "remarks": ["look how easy it is to load glambie-2 data"],
+        }
+    ).to_csv(csv_path, index=False)
+
+    timeseries = Timeseries(
+        data_filepath=str(csv_path),
+        data_group=GLAMBIE_DATA_GROUPS["demdiff"],
+        region=REGIONS["iceland"],
+    )
+
+    loaded_data = timeseries.load_data()
+
+    assert loaded_data.schema_version == "glambie2"
+    assert loaded_data.glacier_area_reference_start is not None
+    assert loaded_data.glacier_area_reference_end is not None
+    assert loaded_data.observational_coverage_percentage is not None
+
+    df = loaded_data.as_dataframe()
+    assert "glacier_area_reference_start" in df.columns
+    assert "glacier_area_reference_end" in df.columns
+    assert "observational_coverage_percentage" in df.columns
 
 
 def test_is_cumulative_valid(example_timeseries_ingested):

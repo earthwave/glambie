@@ -133,13 +133,13 @@ def test_data_catalogue_from_file():
     assert len(catalogue.datasets) == 4
 
 
-def test_data_catalogue_from_submission_system():
+def test_data_catalogue_from_submission_system_glambie_1_format():
     with (
         patch(
-            "glambie.data.data_catalogue.fetch_all_submission_metadata"
+            "glambie.data.data_catalogue.fetch_all_submission_metadata_from_bucket"
         ) as mock_fetch_metadata,
         patch(
-            "glambie.data.data_catalogue.fetch_timeseries_dataframe"
+            "glambie.data.timeseries.fetch_timeseries_dataframe_from_bucket"
         ) as mock_fetch_dataframe,
     ):
         # return two fake metadata dicts
@@ -174,6 +174,57 @@ def test_data_catalogue_from_submission_system():
                 "remarks": ["are we the baddies"],
             }
         )
+        catalogue = DataCatalogue.from_glambie_submission_system("glambie1-submissions")
+    assert len(catalogue.datasets) == 2
+    assert catalogue.datasets_are_same_unit()
+    assert (
+        catalogue.datasets[1].additional_metadata["lead_author_date_of_birth"]
+        == "May 18th 1889"
+    )
+
+
+def test_data_catalogue_from_submission_system_glambie_2_format():
+    with (
+        patch(
+            "glambie.data.data_catalogue.fetch_all_submission_metadata_from_bucket"
+        ) as mock_fetch_metadata,
+        patch(
+            "glambie.data.timeseries.fetch_timeseries_dataframe_from_bucket"
+        ) as mock_fetch_dataframe,
+    ):
+        # return two fake metadata dicts
+        mock_fetch_metadata.return_value = [
+            {
+                "region": "ISL",
+                "observational_source": "altimetry",
+                "lead_author_name": "Gunnar Gunnarsson",
+                "user_group": "authors-altimetry",
+                "rgi_version_select": "6.0",
+                "lead_author_date_of_birth": "May 18th 1889",
+            },
+            {
+                "region": "ISL",
+                "observational_source": "gravimetry",
+                "lead_author_name": "Gunnar Gunnarsson",
+                "user_group": "authors-gravimetry",
+                "rgi_version_select": "6.0",
+                "lead_author_date_of_birth": "May 18th 1889",
+            },
+        ]
+        # and return some fake data
+        mock_fetch_dataframe.return_value = pd.DataFrame(
+            {
+                "unit": ["m"],
+                "start_date_fractional": [1],
+                "end_date_fractional": [2],
+                "glacier_change_observed": [3],
+                "glacier_change_uncertainty": [4],
+                "glacier_area_reference_start": [5],
+                "glacier_area_reference_end": [6],
+                "observational_coverage_percentage": [6],
+                "remarks": ["are we the baddies"],
+            }
+        )
         catalogue = DataCatalogue.from_glambie_submission_system("glambie2-submissions")
     assert len(catalogue.datasets) == 2
     assert catalogue.datasets_are_same_unit()
@@ -191,7 +242,7 @@ def test_load_all_data(example_catalogue_small):
     # data not loaded yet
     assert not example_catalogue_small.datasets[0].is_data_loaded
     # load data of entire catalogue
-    example_catalogue_small.load_all_data(glambie_bucket_name="glambie2-submissions")
+    example_catalogue_small.load_all_data()
     # now data should be loaded
     assert example_catalogue_small.datasets[0].is_data_loaded
 
@@ -206,7 +257,7 @@ def test_datasets_are_same_unit(example_catalogue):
 
 
 def test_data_catalogue_copy(example_catalogue_small):
-    example_catalogue_small.load_all_data(glambie_bucket_name="glambie2-submissions")
+    example_catalogue_small.load_all_data()
     example_catalogue_copy = example_catalogue_small.copy()
     example_catalogue_copy.datasets[0].data.changes = [-4]
     assert example_catalogue_copy.datasets[0].data.changes[0] == -4
@@ -214,7 +265,7 @@ def test_data_catalogue_copy(example_catalogue_small):
 
 
 def test_average_timeseries_in_catalogue_both_same(example_catalogue_small):
-    example_catalogue_small.load_all_data(glambie_bucket_name="glambie2-submissions")
+    example_catalogue_small.load_all_data()
     example_catalogue_small.datasets.append(
         copy.deepcopy(example_catalogue_small.datasets[0])
     )
@@ -229,7 +280,7 @@ def test_average_timeseries_in_catalogue_both_same(example_catalogue_small):
 
 
 def test_average_timeseries_in_catalogue_example_with_doubled(example_catalogue_small):
-    example_catalogue_small.load_all_data(glambie_bucket_name="glambie2-submissions")
+    example_catalogue_small.load_all_data()
     example_catalogue_small.datasets.append(
         copy.deepcopy(example_catalogue_small.datasets[0])
     )
@@ -251,7 +302,7 @@ def test_average_timeseries_in_catalogue_example_with_doubled(example_catalogue_
 def test_average_timeseries_in_catalogue_example_with_trends_removed(
     example_catalogue_small,
 ):
-    example_catalogue_small.load_all_data(glambie_bucket_name="glambie2-submissions")
+    example_catalogue_small.load_all_data()
     example_catalogue_small.datasets.append(
         copy.deepcopy(example_catalogue_small.datasets[0])
     )
@@ -289,7 +340,7 @@ def test_average_timeseries_in_catalogue_example_with_trends_removed(
 
 
 def test_get_time_span_of_datasets(example_catalogue_small):
-    example_catalogue_small.load_all_data(glambie_bucket_name="glambie2-submissions")
+    example_catalogue_small.load_all_data()
     time_span = example_catalogue_small.get_time_span_of_datasets()
     # make sure all datasets are within the span
     for ds in example_catalogue_small.datasets:
@@ -298,7 +349,7 @@ def test_get_time_span_of_datasets(example_catalogue_small):
 
 
 def test_get_common_period_of_datasets_one_dataset(example_catalogue_small):
-    example_catalogue_small.load_all_data(glambie_bucket_name="glambie2-submissions")
+    example_catalogue_small.load_all_data()
     common_start_dates, common_end_dates = (
         example_catalogue_small.get_common_period_of_datasets()
     )
@@ -309,7 +360,7 @@ def test_get_common_period_of_datasets_one_dataset(example_catalogue_small):
 
 
 def test_get_common_period_of_datasets_with_gaps(example_catalogue_small):
-    example_catalogue_small.load_all_data(glambie_bucket_name="glambie2-submissions")
+    example_catalogue_small.load_all_data()
     # let's add a dataset with a time gap
     ds_with_gaps = example_catalogue_small.datasets[0].copy()
     data = ds_with_gaps.data

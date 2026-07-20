@@ -27,7 +27,6 @@ def test_glambie_run_config_from_file():
     assert isinstance(config.seasonal_correction_method, SeasonalCorrectionMethod)
     with open(yaml_abspath, "r") as fh:
         config_dict = yaml.safe_load(fh)
-        assert config_dict["catalogue_path"] == config.catalogue_path
         assert all(
             isinstance(g, GlambieDataGroup) for g in config.datagroups_to_calculate
         )

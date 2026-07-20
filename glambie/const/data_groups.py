@@ -21,4 +21,7 @@ GLAMBIE_DATA_GROUPS = {
     "consensus": GlambieDataGroup(
         name="consensus", long_name="Consensus of a combination of data sets"
     ),
+    "model": GlambieDataGroup(
+        name="model", long_name="Model-based estimates"
+    ),
 }

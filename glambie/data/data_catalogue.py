@@ -10,9 +10,8 @@ from glambie.const.regions import REGIONS, REGIONS_BY_SHORT_NAME
 from glambie.const.regions import RGIRegion
 from glambie.data.timeseries import Timeseries, TimeseriesData
 from glambie.data.submission_system_interface import (
-    fetch_all_submission_metadata,
-    fetch_timeseries_dataframe,
-    SUBMISSION_SYSTEM_BASEPATH_PLACEHOLDER,
+    fetch_all_submission_metadata_from_bucket,
+    get_glambie_bucket_uri,
 )
 import pandas as pd
 import numpy as np
@@ -41,7 +40,8 @@ class DataCatalogue:
         DataCatalogue
             Data catalogue (actually all of the data, not just metadata) containing data for GlaMBIE.
         """
-        submission_system_metadata = fetch_all_submission_metadata(glambie_bucket_name)
+        glambie_bucket_uri = get_glambie_bucket_uri(glambie_bucket_name)
+        submission_system_metadata = fetch_all_submission_metadata_from_bucket(glambie_bucket_uri)
 
         datasets = []
         for metadata in submission_system_metadata:
@@ -59,46 +59,23 @@ class DataCatalogue:
                 ]
             }
 
-            datasets.append(
-                Timeseries(
-                    region=REGIONS_BY_SHORT_NAME[metadata["region"].upper()],
-                    data_group=GLAMBIE_DATA_GROUPS[
-                        metadata["observational_source"].replace(
-                            "dem_differencing", "demdiff"
-                        )
-                    ],
-                    data_filepath=SUBMISSION_SYSTEM_BASEPATH_PLACEHOLDER,
-                    user=metadata["lead_author_name"],
-                    user_group=metadata["user_group"],
-                    rgi_version=metadata.get("rgi_version_select", "6.0"),
-                    additional_metadata=additional_metadata,
-                )
+            dataset = Timeseries(
+                region=REGIONS_BY_SHORT_NAME[metadata["region"].upper()],
+                data_group=GLAMBIE_DATA_GROUPS[
+                    metadata["observational_source"].replace(
+                        "dem_differencing", "demdiff"
+                    )
+                ],
+                data_filepath=glambie_bucket_uri,
+                user=metadata["lead_author_name"],
+                user_group=metadata["user_group"],
+                rgi_version=metadata.get("rgi_version_select", "6.0"),
+                additional_metadata=additional_metadata,
             )
+            dataset.load_data()
+            datasets.append(dataset)
 
-            # we need to load the data anyway to get the unit, so may as well keep it loaded.
-            data = fetch_timeseries_dataframe(
-                datasets[-1].user_group,
-                datasets[-1].region,
-                datasets[-1].data_group,
-                glambie_bucket_name,
-            )
-            datasets[-1].unit = data["unit"].iloc[0]
-            datasets[-1].data = TimeseriesData(
-                start_dates=np.array(data["start_date_fractional"]),
-                end_dates=np.array(data["end_date_fractional"]),
-                changes=np.array(data["glacier_change_observed"]),
-                errors=np.array(data["glacier_change_uncertainty"]),
-                glacier_area_reference=np.array(data["glacier_area_reference"]),
-                glacier_area_observed=np.array(data["glacier_area_observed"]),
-                hydrological_correction_value=(
-                    np.array(data["hydrological_correction_value"])
-                    if "hydrological_correction_value" in data.columns
-                    else None
-                ),
-                remarks=np.array(data["remarks"]),
-            )
-
-        return DataCatalogue(SUBMISSION_SYSTEM_BASEPATH_PLACEHOLDER, datasets)
+        return DataCatalogue(glambie_bucket_uri, datasets)
 
     @staticmethod
     def from_json_file(metadata_file_path: str) -> DataCatalogue:
@@ -243,14 +220,14 @@ class DataCatalogue:
         """
         return copy.deepcopy(self)
 
-    def load_all_data(self, glambie_bucket_name: str):
+    def load_all_data(self):
         """
         Loads the timeseries data of all datasets in catalogue
         Only loads data if it is not already loaded in a specific dataset
         """
         for dataset in self.datasets:
             if not dataset.is_data_loaded:
-                dataset.load_data(glambie_bucket_name)
+                dataset.load_data()
 
     def datasets_are_same_unit(self):
         """

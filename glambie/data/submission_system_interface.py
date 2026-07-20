@@ -21,11 +21,12 @@ from glambie.const.regions import RGIRegion
 
 _storage_client = None
 
-# The design of the DataCatalogue and Timeseries classes implicitly assumes that data is always present on disk,
-# which is not the case. This is a design flaw, but rather than redesigning those classes we're simply going to add a
-# "fake basepath" to indicate that the data has actually come from the submission system instead,
-# which is not a filesystem location.
-SUBMISSION_SYSTEM_BASEPATH_PLACEHOLDER = "glambie_submission_system"
+
+def get_glambie_bucket_uri(glambie_bucket_name: str) -> str:
+    """Construct a gs:// URI for the GlaMBIE bucket."""
+    if glambie_bucket_name.startswith("gs://"):
+        return glambie_bucket_name
+    return f"gs://{glambie_bucket_name}"
 
 
 def _instantiate_storage_client_if_needed() -> Client:
@@ -63,11 +64,11 @@ def _download_blob(blob_uri: str) -> Union[pd.DataFrame, dict]:
             )
 
 
-def fetch_timeseries_dataframe(
+def fetch_timeseries_dataframe_from_bucket(
     user_group: str,
     region: RGIRegion,
     data_group: GlambieDataGroup,
-    glambie_bucket_name: str,
+    glambie_bucket_uri: str,
 ) -> pd.DataFrame:
     """
     Download a particular timeseries from the submission system.
@@ -78,8 +79,8 @@ def fetch_timeseries_dataframe(
         The user group for the submission (called "group_name" within the submission system)
     region : RGIRegion
         The RGIRegion for the submission
-    glambie_bucket_name: str
-        Glambie GCP bucket name.
+    glambie_bucket_uri: str
+        GlaMBIE GCP bucket URI (e.g. gs://glambie2-submissions)
     data_group : GlambieDataGroup
         The GlambieDataGroup for the submission.
         Note that 'demdiff_and_glaciological' and 'consensus' Data Groups never appear in the submission system.
@@ -101,15 +102,20 @@ def fetch_timeseries_dataframe(
         + ".csv"
     )
 
-    return _download_blob("gs://" + glambie_bucket_name + "/" + csv_name_in_bucket)
+    return _download_blob(f"{glambie_bucket_uri}/{csv_name_in_bucket}")
 
 
-def fetch_all_submission_metadata(glambie_bucket_name: str) -> List[dict]:
+def fetch_all_submission_metadata_from_bucket(glambie_bucket_uri: str) -> List[dict]:
     """
     Download the metadata for all submissions provided to GlaMBIE.
 
     This fuses the content of both the top-level meta.json and the individual submission metadata
     files within the submission system, but does not load the Dataset Information File PDF.
+
+    Parameters
+    ----------
+    glambie_bucket_uri: str
+        GlaMBIE GCP bucket URI (e.g. gs://glambie2-submissions)
 
     Returns
     -------
@@ -118,7 +124,6 @@ def fetch_all_submission_metadata(glambie_bucket_name: str) -> List[dict]:
         The field values provided for each submission are repeated for each individual Timeseries.
     """
     _instantiate_storage_client_if_needed()
-    glambie_bucket_uri = "gs://" + glambie_bucket_name
     # note that here, a "dataset" is a single csv file.
     datasets = _download_blob(glambie_bucket_uri + "/meta.json")["datasets"]
 
@@ -185,6 +190,7 @@ def download_dataset_information_file_to_disk(
         f"Cannot download dataset information file to directory {target_directory} because it does not exist."
     )
     with open(os.path.join(target_directory, dataset_information_filename), "wb") as fh:
+        glambie_bucket_uri = get_glambie_bucket_uri(glambie_bucket_name)
         _storage_client.download_blob_to_file(
-            "gs://" + glambie_bucket_name + "/" + dataset_information_filename, fh
+            f"{glambie_bucket_uri}/{dataset_information_filename}", fh
         )

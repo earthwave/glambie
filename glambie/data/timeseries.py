@@ -1141,7 +1141,7 @@ class Timeseries:
         Raises
         ------
         AssertionError
-            Thrown if timeseries resolution is higher than a year (we here assume higher than 11 months to allow 
+            Thrown if timeseries resolution is higher than a year (we here assume higher than 11 months to allow
             some margin). In that case the operation cannot be performed.
         """
         if self.data.max_temporal_resolution < 11 / 12:

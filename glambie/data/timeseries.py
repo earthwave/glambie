@@ -1141,11 +1141,12 @@ class Timeseries:
         Raises
         ------
         AssertionError
-            Thrown if timeseries resolution below half a year. In that case the operation cannot be performed.
+            Thrown if timeseries resolution is higher than a year (we here assume higher than 11 months to allow 
+            some margin). In that case the operation cannot be performed.
         """
-        if self.data.max_temporal_resolution < 0.5:
+        if self.data.max_temporal_resolution < 11 / 12:
             raise AssertionError(
-                "Resolution of timeseries is below half a year. Operation not possible."
+                "Resolution of timeseries is higher than a year. Operation not possible."
             )
 
         if year_type == constants.YearType.CALENDAR:

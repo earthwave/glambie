@@ -813,9 +813,10 @@ def test_shift_timeseries_to_annual_grid_proportionally_period_stays_same_length
 def test_shift_timeseries_to_annual_grid_proportionally_period_length_changes(
     example_timeseries_ingested,
 ):
-    # case where the adapted period length changes
+    # case where the adapted period length changes, we here choose a period length of a year or longer
+    # for higher resolution time series a different method is needed which resamples and extrapolates
     example_timeseries_ingested.data.start_dates = np.array([2010.1, 2011.2])
-    example_timeseries_ingested.data.end_dates = np.array([2011.2, 2011.9])
+    example_timeseries_ingested.data.end_dates = np.array([2011.2, 2012.4])
     shifted_ts = (
         example_timeseries_ingested.shift_timeseries_to_annual_grid_proportionally(
             year_type=constants.YearType.CALENDAR

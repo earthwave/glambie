@@ -738,8 +738,8 @@ class Timeseries:
         ):  # if already in monthly grid there is no need to convert
             # check resolution
             if (
-                self.data.max_temporal_resolution >= 0.5
-            ):  # resolution above half a year: shift to closest month
+                self.data.max_temporal_resolution >= 11 / 12
+            ):  # resolution around a year: shift to closest month
                 start_dates = timeseries_as_months(
                     self.data.start_dates, downsample_to_month=False
                 )
@@ -748,7 +748,7 @@ class Timeseries:
                 )
                 object_copy.data.start_dates = np.array(start_dates)
                 object_copy.data.end_dates = np.array(end_dates)
-            else:  # resolution below half a year: resample timeseries to monthly grid
+            else:  # resolution a year: resample timeseries to monthly grid
                 start_dates, end_dates, changes = (
                     resample_derivative_timeseries_to_monthly_grid(
                         self.data.start_dates, self.data.end_dates, self.data.changes
@@ -1141,11 +1141,12 @@ class Timeseries:
         Raises
         ------
         AssertionError
-            Thrown if timeseries resolution below half a year. In that case the operation cannot be performed.
+            Thrown if timeseries resolution is higher than a year (we here assume higher than 11 months to allow
+            some margin). In that case the operation cannot be performed.
         """
-        if self.data.max_temporal_resolution < 0.5:
+        if self.data.max_temporal_resolution < 11 / 12:
             raise AssertionError(
-                "Resolution of timeseries is below half a year. Operation not possible."
+                "Resolution of timeseries is higher than a year. Operation not possible."
             )
 
         if year_type == constants.YearType.CALENDAR:

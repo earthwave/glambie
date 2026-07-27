@@ -35,7 +35,7 @@ setup(
     install_requires=[
         "google-cloud-storage",
         "numpy>1.15",
-        "pandas>1.2,<=2.3.3",
+        "pandas>1.2,<=3.0.5",
         "matplotlib>3.0",
         "scipy>1.6",
         "pyyaml",

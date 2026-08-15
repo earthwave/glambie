@@ -95,7 +95,6 @@ def test_resample_1d_array_linear():
     x = np.array([2011, 2012, 2013])
     x_new = np.array([2011, 2011.5, 2012, 2012.1, 2013])
     result = resample_1d_array(x=x, y=y, x_new=x_new, mode="linear")
-    print(result)
     assert result[1] == 3.0
     assert round(result[3], 5) == 4.1  # due to floating point
 

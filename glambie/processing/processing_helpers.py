@@ -806,6 +806,9 @@ def set_unneeded_columns_to_nan(data_catalogue: DataCatalogue) -> DataCatalogue:
         timeseries.data.glacier_area_reference = None
         timeseries.data.hydrological_correction_value = None
         timeseries.data.remarks = None
+        timeseries.data.glacier_area_reference_start = None
+        timeseries.data.glacier_area_reference_end = None
+        timeseries.data.observational_coverage_percentage = None
     return result_catalogue
 
 

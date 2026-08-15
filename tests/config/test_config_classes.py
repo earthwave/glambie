@@ -49,6 +49,39 @@ def test_glambie_run_config_regions_from_file():
     assert config.regions[0].seasonal_correction_dataset["user_group"] == "wgms_sine"
 
 
+def test_write_glambie_run_config_to_yaml(tmp_path):
+    yaml_abspath = os.path.join("tests", "test_data", "configs", "test_config.yaml")
+    config = GlambieRunConfig.from_yaml(yaml_abspath)
+    config.save_to_yaml(str(tmp_path))
+
+    parent_outfile = os.path.join(tmp_path, "0_parent.yaml")
+    assert os.path.exists(parent_outfile)
+
+    # Check a region yaml was also written out
+    for region in config.regions:
+        assert os.path.exists(os.path.join(tmp_path, f"{region.region_name}.yaml"))
+
+    # Verify the raw yaml content matches the original config values
+    with open(parent_outfile, "r") as fh:
+        raw = yaml.safe_load(fh)
+
+    assert raw["glambie_version"] == config.glambie_version
+    assert raw["start_year"] == config.start_year
+    assert raw["end_year"] == config.end_year
+    assert raw["rgi_area_version"] == config.rgi_area_version
+    assert raw["method_to_extract_trends"] == config.method_to_extract_trends.value
+    assert raw["seasonal_correction_method"] == config.seasonal_correction_method.value
+
+    # datagroups_to_calculate must be plain strings, not full dicts
+    assert all(isinstance(g, str) for g in raw["datagroups_to_calculate"])
+    assert raw["datagroups_to_calculate"] == [g.name for g in config.datagroups_to_calculate]
+
+    # regions must be minimal dicts with the expected keys
+    assert [r["region_name"] for r in raw["regions"]] == [r.region_name for r in config.regions]
+    assert all(r["enable_this_region"] is True for r in raw["regions"])
+    assert all("config_file_path" in r for r in raw["regions"])
+
+
 def test_write_glambie_region_config_to_yaml(tmp_path):
     yaml_inpath = os.path.join(
         "tests", "test_data", "configs", "glambie-2", "test_config_svalbard.yaml"

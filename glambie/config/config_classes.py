@@ -15,9 +15,14 @@ from glambie.const.constants import (
 from glambie.config.yaml_helpers import (
     region_run_config_class_representer,
     year_type_class_representer,
+    enum_class_representer,
+    glambie_data_group_representer,
+    glambie_run_config_representer,
 )
 from glambie.const.data_groups import GLAMBIE_DATA_GROUPS, GlambieDataGroup
 import os
+from enum import Enum
+
 
 log = logging.getLogger(__name__)
 
@@ -156,6 +161,14 @@ class GlambieRunConfig(Config):
         self.regions = new_regions
 
     def save_to_yaml(self, output_folder_path: str):
+        yaml.add_representer(GlambieRunConfig, glambie_run_config_representer)
+        yaml.add_representer(GlambieDataGroup, glambie_data_group_representer)
+        yaml.add_multi_representer(Enum, enum_class_representer)
+        parent_outfile = os.path.join(output_folder_path, "0_parent.yaml")
+        with open(parent_outfile, "w") as fh:
+            yaml.dump(self, fh, default_flow_style=False, sort_keys=False) 
+
+        # Save out the region configs as well
         for region in self.regions:
             outfile = os.path.join(output_folder_path, f"{region.region_name}.yaml")
             region.save_to_yaml(outfile)

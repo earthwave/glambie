@@ -2,7 +2,6 @@ from enum import Enum
 from glambie.const.constants import YearType
 from glambie.const.data_groups import GlambieDataGroup
 import yaml
-import dataclasses
 
 
 def enum_class_representer(

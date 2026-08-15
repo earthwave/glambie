@@ -166,7 +166,7 @@ class GlambieRunConfig(Config):
         yaml.add_multi_representer(Enum, enum_class_representer)
         parent_outfile = os.path.join(output_folder_path, "0_parent.yaml")
         with open(parent_outfile, "w") as fh:
-            yaml.dump(self, fh, default_flow_style=False, sort_keys=False) 
+            yaml.dump(self, fh, default_flow_style=False, sort_keys=False)
 
         # Save out the region configs as well
         for region in self.regions:

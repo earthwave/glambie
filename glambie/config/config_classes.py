@@ -170,7 +170,7 @@ class GlambieRunConfig(Config):
 
         parent_outfile = os.path.join(output_folder_path, "0_parent.yaml")
         with open(parent_outfile, "w") as fh:
-            yaml.safe_dump(self, fh, Dumper=_GlambieConfigDumper, default_flow_style=False, sort_keys=False)
+            yaml.dump(self, fh, Dumper=_GlambieConfigDumper, default_flow_style=False, sort_keys=False)
         # Save out the region configs as well
         for region in self.regions:
             outfile = os.path.join(output_folder_path, f"{region.region_name}.yaml")

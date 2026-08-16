@@ -113,9 +113,6 @@ def run_one_region(
             == len(data_catalogue_trends.datasets)
             == 0
         ):
-            # read data in catalogue
-            data_catalogue_annual.load_all_data()
-            data_catalogue_trends.load_all_data()
 
             data_catalogue_annual = set_unneeded_columns_to_nan(data_catalogue_annual)
             data_catalogue_trends = set_unneeded_columns_to_nan(data_catalogue_trends)
@@ -229,8 +226,6 @@ def _prepare_consensus_variability_for_one_region(
             data_catalogue=data_catalogue,
         )
         if len(data_catalogue_annual.datasets) != 0:
-            # read data in catalogue
-            data_catalogue_annual.load_all_data()
             data_catalogue_annual = set_unneeded_columns_to_nan(data_catalogue_annual)
             data_catalogue_annual = convert_datasets_to_monthly_grid(data_catalogue_annual)
             # remove GRACE gap from annual catalogue so that the variability isn't impacted by the lower resolution gap

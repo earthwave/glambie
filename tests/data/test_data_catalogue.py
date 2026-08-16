@@ -2,6 +2,7 @@ import os
 from unittest.mock import patch
 
 from glambie.data.data_catalogue import DataCatalogue
+from glambie.data.data_catalogue_helpers import calibrate_timeseries_with_trends_catalogue
 from glambie.data.timeseries import TimeseriesData
 import pytest
 import copy
@@ -283,6 +284,22 @@ def test_datasets_are_same_unit(example_catalogue):
     assert not example_catalogue.datasets_are_same_unit()
 
 
+def test_datasets_are_same_uncertainty_level(example_catalogue):
+    # all test datasets are 95 by default
+    assert example_catalogue.datasets_are_same_uncertainty_level(95)
+    assert example_catalogue.datasets_are_same_uncertainty_level("95%")
+
+    # make one dataset 68 and ensure mixed levels fail the check
+    example_catalogue.datasets[0].uncertainty_level = 68
+    assert not example_catalogue.datasets_are_same_uncertainty_level(95)
+    assert not example_catalogue.datasets_are_same_uncertainty_level(68)
+
+    # set all to 68 to verify successful match
+    for dataset in example_catalogue.datasets:
+        dataset.uncertainty_level = 68
+    assert example_catalogue.datasets_are_same_uncertainty_level(68)
+
+
 def test_data_catalogue_copy(example_catalogue_small):
     example_catalogue_small.load_all_data()
     example_catalogue_copy = example_catalogue_small.copy()
@@ -364,6 +381,44 @@ def test_average_timeseries_in_catalogue_example_with_trends_removed(
         result_timeseries_trend_removed_added_after_averaging.data.changes,
         result_timeseries.data.changes,
     )
+
+
+def test_average_timeseries_in_catalogue_requires_sigma2_uncertainty(
+    example_catalogue_small,
+):
+    example_catalogue_small.load_all_data()
+    example_catalogue_small.datasets.append(
+        copy.deepcopy(example_catalogue_small.datasets[0])
+    )
+    example_catalogue_small.datasets[0].uncertainty_level = 68
+
+    with pytest.raises(
+        AssertionError,
+        match=r"sigma-2 \(95%\) uncertainty level",
+    ):
+        example_catalogue_small.average_timeseries_in_catalogue(
+            remove_trend=False, add_trend_after_averaging=False
+        )
+
+
+def test_calibrate_timeseries_with_trends_catalogue_requires_sigma2_uncertainty(
+    example_catalogue_small,
+):
+    example_catalogue_small.load_all_data()
+    example_catalogue_small.datasets.append(
+        copy.deepcopy(example_catalogue_small.datasets[0])
+    )
+    example_catalogue_small.datasets[0].uncertainty_level = 68
+
+    calibration_timeseries = copy.deepcopy(example_catalogue_small.datasets[1])
+    with pytest.raises(
+        AssertionError,
+        match=r"sigma-2 \(95%\) uncertainty level",
+    ):
+        calibrate_timeseries_with_trends_catalogue(
+            catalogue_with_trends=example_catalogue_small,
+            calibration_timeseries=calibration_timeseries,
+        )
 
 
 def test_get_time_span_of_datasets(example_catalogue_small):

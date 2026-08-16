@@ -281,6 +281,32 @@ class DataCatalogue:
         else:
             return True
 
+    def datasets_are_same_uncertainty_level(self, uncertainty_level: int | str):
+        """
+        Checks if all datasets within catalogue have the same uncertainty level.
+
+        Parameters
+        ----------
+        uncertainty_level : int | str
+            uncertainty level to compare against; supported values are 68, 95, "68%", and "95%".
+
+        Returns
+        -------
+        bool
+            True if all datasets have the same uncertainty level, False otherwise.
+        """
+        parsed_uncertainty_level = _parse_uncertainty_level(
+            {"uncertainty_level": uncertainty_level},
+            field_name="uncertainty_level",
+        )
+        if len(self.datasets) > 0:
+            return all(
+                dataset.uncertainty_level == parsed_uncertainty_level
+                for dataset in self.datasets
+            )
+        else:
+            return True
+
     def get_common_period_of_datasets(self) -> Tuple[np.array, np.array]:
         """
         Calculates arrays of the common period in all datasets of the catalogue
@@ -384,11 +410,17 @@ class DataCatalogue:
         ------
         AssertionError
             If timeseries within catalogue are not all the same unit.
+        AssertionError
+            If timeseries within catalogue are not all provided at sigma-2 (95%) uncertainty level.
         """
 
         if not self.datasets_are_same_unit():
             raise AssertionError(
                 "Timeseries within catalogue need to be same unit before performing this operation."
+            )
+        if not self.datasets_are_same_uncertainty_level(95):
+            raise AssertionError(
+                "Timeseries within catalogue need to be sigma-2 (95%) uncertainty level before performing this operation."
             )
 
         # merge all dataframes

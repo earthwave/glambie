@@ -789,6 +789,48 @@ def test_reduce_to_date_window_with_gap(example_timeseries_ingested):
     )
 
 
+def test_convert_timeseries_uncertainty_level_68_to_95(example_timeseries_ingested):
+    example_timeseries_ingested.uncertainty_level = 68
+
+    converted_timeseries = (
+        example_timeseries_ingested.convert_timeseries_uncertainty_level(95)
+    )
+
+    assert converted_timeseries.uncertainty_level == 95
+    assert np.allclose(
+        converted_timeseries.data.errors,
+        example_timeseries_ingested.data.errors * 1.96,
+    )
+
+
+def test_convert_timeseries_uncertainty_level_95_to_68(example_timeseries_ingested):
+    example_timeseries_ingested.uncertainty_level = 95
+
+    converted_timeseries = (
+        example_timeseries_ingested.convert_timeseries_uncertainty_level(68)
+    )
+
+    assert converted_timeseries.uncertainty_level == 68
+    assert np.allclose(
+        converted_timeseries.data.errors,
+        example_timeseries_ingested.data.errors / 1.96,
+    )
+
+
+def test_convert_timeseries_uncertainty_level_same_level_no_change(example_timeseries_ingested):
+    example_timeseries_ingested.uncertainty_level = 95
+
+    converted_timeseries = (
+        example_timeseries_ingested.convert_timeseries_uncertainty_level(95)
+    )
+
+    assert converted_timeseries.uncertainty_level == 95
+    assert np.array_equal(
+        converted_timeseries.data.errors,
+        example_timeseries_ingested.data.errors,
+    )
+
+
 def test_shift_timeseries_to_annual_grid_proportionally_period_stays_same_length(
     example_timeseries_ingested,
 ):

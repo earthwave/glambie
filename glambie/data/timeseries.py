@@ -407,6 +407,41 @@ class Timeseries:
         df_data.dropna(how="all", axis=1, inplace=True)  # drop empty columns
         df_data.to_csv(csv_outpath, index=False)
 
+    def convert_timeseries_uncertainty_level(
+        self, target_uncertainty_level: int
+    ) -> Timeseries:
+        """
+        Converts uncertainty values between sigma-1 (68%) and sigma-2 (95%).
+
+        Parameters
+        ----------
+        target_uncertainty_level : int
+            target uncertainty level as 68 or 95.
+
+        Returns
+        -------
+        Timeseries
+            A copy of the Timeseries object with converted uncertainty values and updated uncertainty level.
+
+        Raises
+        ------
+        AssertionError
+            If current uncertainty level is not set.
+        """
+        if self.uncertainty_level not in {68, 95} or target_uncertainty_level not in {68, 95}:
+            raise AssertionError(
+                "Cannot convert uncertainty level: both current and target uncertainty levels must be 68 or 95."
+            )
+
+        object_copy = self.copy()
+        if self.uncertainty_level == target_uncertainty_level:
+            return object_copy
+
+        conversion_factor = 1.96 if target_uncertainty_level == 95 else 1 / 1.96
+        object_copy.data.errors = np.array(object_copy.data.errors * conversion_factor)
+        object_copy.uncertainty_level = target_uncertainty_level
+        return object_copy
+
     def convert_timeseries_to_unit_mwe(
         self,
         rgi_area_version: int,

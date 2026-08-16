@@ -41,10 +41,14 @@ def run_glambie_assessment(
     data_catalogue_original = DataCatalogue.from_glambie_submission_system(glambie_bucket_name=glambie_bucket_name)
     data_catalogue_original.load_all_data()
 
+    # Initial homogenisation of datasets in data catalogue
+    # Convert all datasets to sigma 2 (95%) uncertainty level
+    data_catalogue = data_catalogue_original.convert_all_datasets_to_uncertainty_level(95)
+
     # run regional results
     results_catalogue_combined_per_region_mwe, _ = _run_regional_results(
         glambie_run_config,
-        data_catalogue_original,
+        data_catalogue,
         output_path_handler=output_path_handler,
     )
 
@@ -81,7 +85,7 @@ def _run_regional_results(
         - Data Catalogue with regional results. Contains one timeseries per region specified to run within the config.
         First element is in unit mwe, second element is in unit Gt
     """
-    # data_group_results_per_region = []
+    # Run per region
     combined_regional_results_mwe = []
     combined_regional_results_gt = []
     for region_config in glambie_run_config.regions:

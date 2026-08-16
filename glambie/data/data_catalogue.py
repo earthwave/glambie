@@ -549,6 +549,23 @@ class DataCatalogue:
             uncertainty_level=reference_dataset_for_metadata.uncertainty_level
         ), data_catalogue_out
 
+    def convert_all_datasets_to_uncertainty_level(self, target_uncertainty_level: int) -> DataCatalogue:
+        """
+        Converts the uncertainty values of all datasets in the catalogue to the target uncertainty level.
+
+        Parameters
+        ----------
+        target_uncertainty_level : int
+            Target uncertainty level to convert to. Must be 68 or 95.
+
+        Returns
+        -------
+        DataCatalogue
+            New data catalogue with all datasets converted to the target uncertainty level.
+        """
+        datasets = [ds.convert_timeseries_uncertainty_level(target_uncertainty_level) for ds in self._datasets]
+        return DataCatalogue.from_list(datasets, base_path=self._base_path)
+
     def __len__(self) -> int:
         return len(self._datasets)
 

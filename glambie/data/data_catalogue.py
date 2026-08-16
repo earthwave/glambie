@@ -420,7 +420,8 @@ class DataCatalogue:
             )
         if not self.datasets_are_same_uncertainty_level(95):
             raise AssertionError(
-                "Timeseries within catalogue need to be sigma-2 (95%) uncertainty level before performing this operation."
+                "Timeseries within catalogue need to be sigma-2 (95%) "
+                "uncertainty level before performing this operation."
             )
 
         # merge all dataframes

@@ -117,7 +117,7 @@ def apply_vertical_adjustment_for_cumulative_plot(
             )
             ts_new = pd.DataFrame({"dates": monthly_grid, "changes": changes})
             # handle Nan values, e.g. when there is a gap in the timeseries
-            ts_new = ts_new.fillna(method="bfill")
+            ts_new = ts_new.bfill()
             adjustment = ts_new[ts_new.dates == adjustment_date].iloc[0].changes
     else:
         # this means we adjust the adjustment series at the first date of the reference series

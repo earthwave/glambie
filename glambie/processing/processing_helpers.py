@@ -526,7 +526,6 @@ def prepare_seasonal_calibration_dataset(
         user_group=region_config.seasonal_correction_dataset["user_group"],
         data_group=region_config.seasonal_correction_dataset["data_group"],
     ).datasets[0]
-    season_calibration_dataset.load_data()
     season_calibration_dataset = (
         season_calibration_dataset.convert_timeseries_to_monthly_grid()
     )

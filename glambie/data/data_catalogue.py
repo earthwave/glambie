@@ -546,6 +546,7 @@ class DataCatalogue:
             unit=reference_dataset_for_metadata.unit,
             user_group=out_user_group,
             area_change_applied=reference_dataset_for_metadata.area_change_applied,
+            uncertainty_level=reference_dataset_for_metadata.uncertainty_level
         ), data_catalogue_out
 
     def __len__(self) -> int:

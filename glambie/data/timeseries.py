@@ -234,6 +234,7 @@ class Timeseries:
         rgi_version: int = None,
         unit: str = None,
         additional_metadata: dict = None,
+        uncertainty_level: int | None = None,
         area_change_applied: bool = False,
     ):
         """
@@ -278,6 +279,7 @@ class Timeseries:
         self.data_filepath = data_filepath
         self.data = data
         self.additional_metadata = additional_metadata
+        self.uncertainty_level = uncertainty_level
         if self.data is not None:
             self.is_data_loaded = True
         self.area_change_applied = area_change_applied
@@ -332,6 +334,7 @@ class Timeseries:
             "user_group": self.user_group,
             "rgi_version": self.rgi_version,
             "unit": self.unit,
+            "uncertainty_level": self.uncertainty_level,
         }
         if self.additional_metadata is not None:
             metadata_dict.update(self.additional_metadata)

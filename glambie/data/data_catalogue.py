@@ -18,6 +18,27 @@ import numpy as np
 import copy
 
 
+def _parse_uncertainty_level(
+    metadata: dict,
+    field_name: str,
+    default: int = 95,
+) -> int:
+    uncertainty_level = metadata.get(field_name, default)
+    if uncertainty_level is None or pd.isna(uncertainty_level):
+        return default
+
+    if isinstance(uncertainty_level, str):
+        uncertainty_level = uncertainty_level.strip().rstrip("%")
+
+    if str(uncertainty_level) in {"68", "95"}:
+        return int(uncertainty_level)
+
+    raise ValueError(
+        f"Unsupported uncertainty level in field '{field_name}': "
+        f"{uncertainty_level!r}"
+    )
+
+
 class DataCatalogue:
     """Class containing a catalogue of datasets"""
 
@@ -78,6 +99,10 @@ class DataCatalogue:
                 user_group=metadata["user_group"],
                 rgi_version=rgi_version,
                 additional_metadata=additional_metadata,
+                uncertainty_level=_parse_uncertainty_level(
+                    metadata,
+                    field_name="uncertainties_select",
+                ),
             )
             dataset.load_data()
             datasets.append(dataset)
@@ -128,6 +153,10 @@ class DataCatalogue:
             data_group = GLAMBIE_DATA_GROUPS[ds_dict["data_group"]]
             user_group = ds_dict["user_group"]
             unit = ds_dict["unit"]
+            uncertainty_level = _parse_uncertainty_level(
+                ds_dict,
+                field_name="uncertainty_level",
+            )
             datasets.append(
                 Timeseries(
                     data_filepath=fp,
@@ -135,6 +164,7 @@ class DataCatalogue:
                     data_group=data_group,
                     user_group=user_group,
                     unit=unit,
+                    uncertainty_level=uncertainty_level,
                 )
             )
 

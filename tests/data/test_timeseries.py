@@ -23,6 +23,7 @@ def example_timeseries():
             "tests", "test_data", "datastore", "central_asia_demdiff_sharks.csv"
         ),
         additional_metadata={"toves": "slithy", "mome raths": "outgrabe"},
+        uncertainty_level=95
     )
     return ts
 
@@ -111,6 +112,7 @@ def test_data_as_dataframe(example_timeseries_ingested):
 def test_metadata_as_dataframe(example_timeseries):
     df = example_timeseries.metadata_as_dataframe()
     assert df["data_group"].iloc[0] == "demdiff"
+    assert df["uncertainty_level"].iloc[0] == 95
     assert df.shape[0] == 1
 
 

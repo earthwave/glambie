@@ -74,6 +74,27 @@ def test_data_catalogue_datasets_correctly_ingested(example_catalogue):
     assert example_catalogue.datasets[1].data_group.name == "altimetry"
     assert example_catalogue.datasets[2].data_group.name == "gravimetry"
     assert example_catalogue.datasets[0].unit == "m"
+    assert example_catalogue.datasets[0].uncertainty_level == 95
+
+
+def test_data_catalogue_from_dict_with_uncertainty_level():
+    catalogue = DataCatalogue.from_dict(
+        {
+            "base_path": ["tests", "test_data", "datastore"],
+            "datasets": [
+                {
+                    "filename": "iceland_altimetry_sharks.csv",
+                    "region": "iceland",
+                    "user_group": "sharks",
+                    "data_group": "altimetry",
+                    "unit": "m",
+                    "uncertainty_level": "68%",
+                },
+            ],
+        }
+    )
+
+    assert catalogue.datasets[0].uncertainty_level == 68
 
 
 def test_get_filtered_catalogue_by_region(example_catalogue):
@@ -181,6 +202,8 @@ def test_data_catalogue_from_submission_system_glambie_1_format():
         catalogue.datasets[1].additional_metadata["lead_author_date_of_birth"]
         == "May 18th 1889"
     )
+    assert catalogue.datasets[0].uncertainty_level == 95
+    assert catalogue.datasets[1].uncertainty_level == 95
 
 
 def test_data_catalogue_from_submission_system_glambie_2_format():
@@ -201,6 +224,7 @@ def test_data_catalogue_from_submission_system_glambie_2_format():
                 "user_group": "authors-altimetry",
                 "rgi_version_select": "6.0",
                 "lead_author_date_of_birth": "May 18th 1889",
+                "uncertainties_select": "68%",
             },
             {
                 "region": "ISL",
@@ -209,6 +233,7 @@ def test_data_catalogue_from_submission_system_glambie_2_format():
                 "user_group": "authors-gravimetry",
                 "rgi_version_select": "6.0",
                 "lead_author_date_of_birth": "May 18th 1889",
+                "uncertainties_select": "95%",
             },
         ]
         # and return some fake data
@@ -232,6 +257,8 @@ def test_data_catalogue_from_submission_system_glambie_2_format():
         catalogue.datasets[1].additional_metadata["lead_author_date_of_birth"]
         == "May 18th 1889"
     )
+    assert catalogue.datasets[0].uncertainty_level == 68
+    assert catalogue.datasets[1].uncertainty_level == 95
 
 
 def test_data_catalogue_regions(example_catalogue):

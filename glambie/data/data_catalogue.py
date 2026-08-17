@@ -266,6 +266,17 @@ class DataCatalogue:
             if not dataset.is_data_loaded:
                 dataset.load_data()
 
+    def is_all_data_loaded(self) -> bool:
+        """
+        Checks if all datasets in the catalogue have their data loaded.
+
+        Returns
+        -------
+        bool
+            True if all datasets have data loaded, False otherwise
+        """
+        return all(dataset.is_data_loaded for dataset in self.datasets)
+
     def datasets_are_same_unit(self):
         """
         Checks if all datasets within catalogue have the same unit

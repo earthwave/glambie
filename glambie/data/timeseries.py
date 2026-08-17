@@ -286,7 +286,11 @@ class Timeseries:
 
     def load_data(self) -> TimeseriesData:
         """Reads data into class from specified filepath or gs:// bucket URI.
+
+        If data is already loaded, returns the existing data without reloading.
         """
+        if self.is_data_loaded:
+            return self.data
         if self.data_filepath is None:
             raise ValueError("Can not load data: file path not set")
 

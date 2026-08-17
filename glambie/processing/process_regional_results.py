@@ -76,6 +76,10 @@ def run_one_region(
         region_name=region_config.region_name
     )
 
+    # ensure that data in catalogue is already loaded, as we will be using the data in memory for processing
+    if not data_catalogue.is_all_data_loaded():
+        raise ValueError("Expected all datasets in data_catalogue to be loaded before processing.")
+
     # get seasonal calibration dataset and convert to monthly grid
     seasonal_calibration_dataset = prepare_seasonal_calibration_dataset(
         region_config,

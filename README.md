@@ -100,8 +100,15 @@ python -m glambie <config_file>
 ```
 
 e.g. 
+
+For GlaMBIE-1:
 ```
-python -m glambie configuration/0_parent_config.yaml
+python -m glambie configuration/0_parent_config_glambie_1.yaml
+```
+
+For GlaMBIE-2:
+```
+python -m glambie configuration/0_parent_config_glambie_2.yaml
 ```
 
 ## Versioning and releases

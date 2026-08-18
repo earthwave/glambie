@@ -45,6 +45,13 @@ class DataCatalogue:
 
         datasets = []
         for metadata in submission_system_metadata:
+            rgi_version_raw = metadata.get("rgi_version_select", "6.0")
+            rgi_version_str = str(rgi_version_raw).strip().lower()
+            if rgi_version_str.replace("_", " ") == "custom outlines":
+                rgi_version = None
+            else:
+                rgi_version = int(float(rgi_version_raw))
+
             # create a reduced dict that only contains the metadata fields that this repo does not directly use.
             additional_metadata = {
                 k: v
@@ -69,7 +76,7 @@ class DataCatalogue:
                 data_filepath=glambie_bucket_uri,
                 user=metadata["lead_author_name"],
                 user_group=metadata["user_group"],
-                rgi_version=metadata.get("rgi_version_select", "6.0"),
+                rgi_version=rgi_version,
                 additional_metadata=additional_metadata,
             )
             dataset.load_data()

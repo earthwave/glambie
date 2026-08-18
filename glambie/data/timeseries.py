@@ -708,11 +708,7 @@ class Timeseries:
             start_dates=np.array(df["start_dates"]),
             end_dates=np.array(df["end_dates"]),
             changes=np.array(df["changes"]),
-            errors=np.array(df["errors"]),
-            glacier_area_observed=None,
-            glacier_area_reference=None,
-            hydrological_correction_value=None,
-            remarks=None,
+            errors=np.array(df["errors"])
         )
 
         return object_copy
@@ -763,11 +759,7 @@ class Timeseries:
                     start_dates=np.array(start_dates),
                     end_dates=np.array(end_dates),
                     changes=np.array(changes),
-                    errors=np.array(errors),
-                    glacier_area_observed=None,
-                    glacier_area_reference=None,
-                    hydrological_correction_value=None,
-                    remarks=None,
+                    errors=np.array(errors)
                 )
 
         return object_copy  # return copy of itself
@@ -913,11 +905,7 @@ class Timeseries:
             start_dates=np.array(trend["start_dates"]),
             end_dates=np.array(trend["end_dates"]),
             changes=np.array(trend["changes"]),
-            errors=np.array([trend_errors]),
-            glacier_area_observed=None,
-            glacier_area_reference=None,
-            hydrological_correction_value=None,
-            remarks=None,
+            errors=np.array([trend_errors])
         )
 
         return object_copy  # return copy of itself

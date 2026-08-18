@@ -4,35 +4,47 @@ region_name: south_asia_west
 year_type: glaciological # glaciological or calendar
 
 seasonal_correction_dataset:
-  user_group: UZH_GlaciolSineWave
-  data_group: glaciological
+  user_group: ETHZ extended
+  data_group: combined
 
 region_run_settings:
   altimetry:
     exclude_annual_datasets :
-    - Ke
-    - Treichler_ICESat
-    - Treichler_snowfall
-    exclude_trend_datasets :
-    - Treichler_ICESat
+    - Ke CQ et al from NJU
+    - Treichler et al.
+    - Menounos et al
+    include_combined_annual_datasets:
+    - Gardner et al
+    include_combined_trend_datasets:
+    - 
   gravimetry:
     exclude_annual_datasets :
-    - Wouters
-    - Sasgen_AWIarc_RL01_2
-    - Jacob_2012_dmdt
+    - Jacob-et-al_grav
+    #- Harig et al.
+    #- Ciraci et al.
+    #- Sasgen_AWIarc_RL02.1
+    #- Gardner et al
+    #- Romero_et_al
+    #- Wouters
     exclude_trend_datasets :
-    - Wouters
-    - Sasgen_AWIarc_RL01_2
-    - Jacob_2012_dmdt
+    -
+    #- Wouters
+    #- Ciraci et al.
+    #- Sasgen_AWIarc_RL02.1
+    #- Harig et al.
+    #- Romero_et_al
+    #- Gardner et al
+    include_combined_trend_datasets:
+    - 
   demdiff_and_glaciological :
     exclude_annual_datasets : # glaciological datasets
-    - UZH_GlaciolSineWave
-    - WGMS-mean_ba
+    - 
     exclude_trend_datasets : # demdiff datasets
     - 
     include_combined_annual_datasets:
-    - DUS-combined
-    - Huss
+    - WGMS-DUS_combined
+    - ETHZ
     include_combined_trend_datasets:
-    - DUS-combined
-    - Huss
+    - WGMS-DUS_combined
+    - ETHZ
+    - Gardner et al

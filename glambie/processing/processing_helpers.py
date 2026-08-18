@@ -132,11 +132,11 @@ def filter_catalogue_with_config_settings(
     datasets_trend.extend(additional_trend_datasets)
     log.info(
         "Including the following combined datasets to ANNUAL calculations: datasets=%s",
-        additional_annual_datasets,
+        [ds.user_group for ds in additional_annual_datasets]
     )
     log.info(
         "Including the following combined datasets to TREND calculations: datasets=%s",
-        additional_trend_datasets,
+        [ds.user_group for ds in additional_trend_datasets]
     )
 
     data_catalogue_annual = DataCatalogue.from_list(
@@ -314,7 +314,8 @@ def convert_datasets_to_longterm_trends_in_unit_mwe(
     output_trend_date_range : Tuple[float, float], optional
         If specified, the time series are filtered by the time window before the longterm trend is extracted,
         meaning that the resulting longterm trends are within the minimum and maximum of the time window.
-        Note that existing longterm trends are removed if the are outside the time window.
+        Datasets that do not overlap this time window are removed from the output catalogue.
+        A log message is emitted for each removed dataset.
         The dates are expected in decimal years format (float), e.g. 2012.75.
 
 
@@ -324,17 +325,15 @@ def convert_datasets_to_longterm_trends_in_unit_mwe(
         New data catalogue with converted data
     """
     data_catalogue = convert_datasets_to_monthly_grid(data_catalogue)
+    # remove any dates outside minimum and maximum
+    if output_trend_date_range is not None:
+        data_catalogue = get_reduced_catalogue_to_date_window(
+            data_catalogue, start_date=output_trend_date_range[0],
+            end_date=output_trend_date_range[1]
+        )
     datasets = []
-    for original_dataset in data_catalogue.datasets:
-        temporal_resolution = original_dataset.data.max_temporal_resolution
-        # remove any dates outside minimum and maximum
-        if output_trend_date_range is not None:
-            ds = original_dataset.reduce_to_date_window(
-                start_date=output_trend_date_range[0],
-                end_date=output_trend_date_range[1],
-            )
-        else:
-            ds = original_dataset
+    for ds in data_catalogue.datasets:
+        temporal_resolution = ds.data.max_temporal_resolution
 
         # if temporal resolution lower than a year read from higher resolution timeseries
         # note that this assumes we now have monthly resolution.
@@ -806,6 +805,9 @@ def set_unneeded_columns_to_nan(data_catalogue: DataCatalogue) -> DataCatalogue:
         timeseries.data.glacier_area_reference = None
         timeseries.data.hydrological_correction_value = None
         timeseries.data.remarks = None
+        timeseries.data.glacier_area_reference_start = None
+        timeseries.data.glacier_area_reference_end = None
+        timeseries.data.observational_coverage_percentage = None
     return result_catalogue
 
 
@@ -835,15 +837,23 @@ def get_reduced_catalogue_to_date_window(
     Returns
     -------
     DataCatalogue
-        Data catalogue with reduced datasets
+        Data catalogue with reduced datasets.
+        Datasets with no remaining entries after reduction are excluded and logged.
     """
     reduced_datasets = []
     for dataset in data_catalogue.datasets:
-        reduced_datasets.append(
-            dataset.reduce_to_date_window(
-                start_date=start_date,
-                end_date=end_date,
-                date_window_is_gap=date_window_is_gap,
-            )
+        reduced_dataset = dataset.reduce_to_date_window(
+            start_date=start_date,
+            end_date=end_date,
+            date_window_is_gap=date_window_is_gap,
         )
+        if len(reduced_dataset.data) > 0:
+            reduced_datasets.append(reduced_dataset)
+        else:
+            log.info(
+                "Removing dataset from calculations because it does not overlap with the requested date window: "
+                "dataset=%s, date_window=%s",
+                dataset.user_group,
+                (start_date, end_date),
+            )
     return DataCatalogue.from_list(reduced_datasets, base_path=data_catalogue.base_path)

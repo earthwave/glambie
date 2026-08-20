@@ -429,11 +429,11 @@ class Timeseries:
 
         Raises
         ------
-        AssertionError
+        ValueError
             If current uncertainty level is not set.
         """
         if self.uncertainty_level not in {68, 95} or target_uncertainty_level not in {68, 95}:
-            raise AssertionError(
+            raise ValueError(
                 "Cannot convert uncertainty level: both current and target uncertainty levels must be 68 or 95."
             )
 
@@ -586,14 +586,14 @@ class Timeseries:
         ------
         NotImplementedError
             For units to be converted that are not implemented yet
-        AssertionError
+        ValueError
             When area_change_applied is True.
             Varying glacier area should only be applied to specific changes (meters or meters water equivalent)
             and should be removed before converting to Gigatonnes as we are using a constant area when converting
             to Gigatonnes. For more information refer to the GlaMBIE algorithm description document section 4.3.
         """
         if self.area_change_applied:
-            raise AssertionError(
+            raise ValueError(
                 "Cannot convert dataset to Gt. Area change needs to be removed first."
             )
 
@@ -667,23 +667,23 @@ class Timeseries:
 
         Raises
         ------
-        AssertionError
+        ValueError
             When units are not either 'm' or 'mwe'
-        AssertionError
+        ValueError
             When trying to apply area change on a dataset where it's already applied
-        AssertionError
+        ValueError
             When trying to remove area change on a dataset where it's not already applied
         """
         if self.unit not in ["mwe", "m"]:
-            raise AssertionError(
+            raise ValueError(
                 "Area change should only be applied/removed to 'm' or 'mwe'."
             )
         if self.area_change_applied and apply_area_change:
-            raise AssertionError(
+            raise ValueError(
                 "Area change is already applied to current dataset. Cannot be applied again."
             )
         if not self.area_change_applied and not apply_area_change:
-            raise AssertionError(
+            raise ValueError(
                 "Area change is not applied to current dataset. Cannot be removed."
             )
 
@@ -826,14 +826,14 @@ class Timeseries:
 
         Raises
         ------
-        AssertionError
+        ValueError
             Thrown if timeseries is not on monthly grid.
-        AssertionError
+        ValueError
             Thrown for resolutions > 1 year if timeseries is not on annual grid.
         """
         # Check if on monthly grid. if not throw an exception
         if not self.timeseries_is_monthly_grid():
-            raise AssertionError(
+            raise ValueError(
                 "Timeseries needs to be converted to monthly grid before performing this operation."
             )
 
@@ -878,7 +878,7 @@ class Timeseries:
         # 2) Case where resolution is >= a year: we upsample and take the average from the longterm trend
         else:  # make sure that the trends don't start in the middle of the year
             if not self.timeseries_is_annual_grid(year_type=year_type):
-                raise AssertionError(
+                raise ValueError(
                     "Timeseries needs to fit into annual grid before \
                                      up-sampling to annual changes."
                 )
@@ -985,29 +985,29 @@ class Timeseries:
 
         Raises
         ------
-        AssertionError
+        ValueError
             Thrown if timeseries is not on monthly grid.
-        AssertionError
+        ValueError
             Thrown if calibration dataset is not on monthly grid.
-        AssertionError
+        ValueError
             Thrown if timeseries resolution below a year.
         """
         # first some checks if inputs area valid
         if not self.timeseries_is_monthly_grid():
-            raise AssertionError(
+            raise ValueError(
                 "Timeseries needs to be converted to monthly grid before performing this operation."
             )
         if not seasonal_calibration_dataset.timeseries_is_monthly_grid():
-            raise AssertionError(
+            raise ValueError(
                 "Seasonal calibration dataset needs to be converted to monthly grid"
                 "before performing this operation."
             )
         if self.data.max_temporal_resolution < 1:
-            raise AssertionError(
+            raise ValueError(
                 "Resolution of timeseries is below a year. No seasonal homogenization possible."
             )
         if not self.unit == seasonal_calibration_dataset.unit:
-            raise AssertionError(
+            raise ValueError(
                 "Seasonal calibration dataset and dataset unit should be the same, however "
                 f"they are units {seasonal_calibration_dataset.unit} and {self.unit}."
             )
@@ -1170,12 +1170,12 @@ class Timeseries:
 
         Raises
         ------
-        AssertionError
+        ValueError
             Thrown if timeseries resolution is higher than a year (we here assume higher than 11 months to allow
             some margin). In that case the operation cannot be performed.
         """
         if self.data.max_temporal_resolution < 11 / 12:
-            raise AssertionError(
+            raise ValueError(
                 "Resolution of timeseries is higher than a year. Operation not possible."
             )
 

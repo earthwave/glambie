@@ -533,7 +533,7 @@ def test_convert_timeseries_to_annual_trends_up_sampling_throws_exception(
     example_timeseries_ingested.data.end_dates = np.array([2015.0])
     example_timeseries_ingested.data.changes = np.array([5.0])
     assert not example_timeseries_ingested.timeseries_is_annual_grid()
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         example_timeseries_ingested.convert_timeseries_to_annual_trends()
 
 
@@ -697,7 +697,7 @@ def test_apply_area_change_and_remove(example_timeseries_ingested):
 
 def test_apply_area_change_and_wrong_unit(example_timeseries_ingested):
     example_timeseries_ingested.unit = "gt"
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         example_timeseries_ingested.apply_or_remove_area_change(
             rgi_area_version=7, apply_area_change=True
         )
@@ -707,7 +707,7 @@ def test_apply_area_change_when_already_applied(example_timeseries_ingested):
     timeseries_area_change = example_timeseries_ingested.apply_or_remove_area_change(
         rgi_area_version=7, apply_area_change=True
     )
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         timeseries_area_change.apply_or_remove_area_change(
             rgi_area_version=7, apply_area_change=True
         )
@@ -715,19 +715,19 @@ def test_apply_area_change_when_already_applied(example_timeseries_ingested):
 
 def test_remove_area_change_when_already_removed(example_timeseries_ingested):
     assert not example_timeseries_ingested.area_change_applied
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         example_timeseries_ingested.apply_or_remove_area_change(
             rgi_area_version=7, apply_area_change=False
         )
 
 
-def test_raises_assertion_error_when_converting_to_gt_with_area_change_applied(
+def test_raises_value_error_when_converting_to_gt_with_area_change_applied(
     example_timeseries_ingested,
 ):
     timeseries_area_change = example_timeseries_ingested.apply_or_remove_area_change(
         rgi_area_version=7, apply_area_change=True
     )
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         timeseries_area_change.convert_timeseries_to_unit_gt(rgi_area_version=7)
 
 

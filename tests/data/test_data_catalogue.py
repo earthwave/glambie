@@ -393,7 +393,7 @@ def test_average_timeseries_in_catalogue_requires_sigma2_uncertainty(
     example_catalogue_small.datasets[0].uncertainty_level = 68
 
     with pytest.raises(
-        AssertionError,
+        ValueError,
         match=r"sigma-2 \(95%\) uncertainty level",
     ):
         example_catalogue_small.average_timeseries_in_catalogue(
@@ -412,7 +412,7 @@ def test_calibrate_timeseries_with_trends_catalogue_requires_sigma2_uncertainty(
 
     calibration_timeseries = copy.deepcopy(example_catalogue_small.datasets[1])
     with pytest.raises(
-        AssertionError,
+        ValueError,
         match=r"sigma-2 \(95%\) uncertainty level",
     ):
         calibrate_timeseries_with_trends_catalogue(

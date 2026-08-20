@@ -414,7 +414,7 @@ def apply_seasonal_correction_to_dataset(
     """
     if method_to_correct_seasonally == SeasonalCorrectionMethod.SEASONAL_HOMOGENIZATION:
         if seasonal_calibration_dataset is None:
-            raise AssertionError(
+            raise ValueError(
                 "Seasonal calibration dataset is None, cannot perform operation."
             )
         corrected_dataset = dataset_to_correct.shift_timeseries_to_annual_grid_with_seasonal_homogenization(

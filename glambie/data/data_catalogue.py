@@ -269,6 +269,7 @@ class DataCatalogue:
     def is_all_data_loaded(self) -> bool:
         """
         Checks if all datasets in the catalogue have their data loaded.
+        Note that this will also return True if the catalogue is empty.
 
         Returns
         -------
@@ -419,18 +420,18 @@ class DataCatalogue:
 
         Raises
         ------
-        AssertionError
+        ValueError
             If timeseries within catalogue are not all the same unit.
-        AssertionError
+        ValueError
             If timeseries within catalogue are not all provided at sigma-2 (95%) uncertainty level.
         """
 
         if not self.datasets_are_same_unit():
-            raise AssertionError(
+            raise ValueError(
                 "Timeseries within catalogue need to be same unit before performing this operation."
             )
         if not self.datasets_are_same_uncertainty_level(95):
-            raise AssertionError(
+            raise ValueError(
                 "Timeseries within catalogue need to be sigma-2 (95%) "
                 "uncertainty level before performing this operation."
             )

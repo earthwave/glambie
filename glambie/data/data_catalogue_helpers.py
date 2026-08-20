@@ -29,18 +29,18 @@ def calibrate_timeseries_with_trends_catalogue(
 
     Raises
     ------
-        AssertionError
+        ValueError
             If trends are not all the same unit.
-        AssertionError
+        ValueError
             If trends are not all provided at sigma-2 (95%) uncertainty level.
     """
 
     if not catalogue_with_trends.datasets_are_same_unit():
-        raise AssertionError(
+        raise ValueError(
             "Trends within catalogue all need to be the same unit before performing this operation."
         )
     if not catalogue_with_trends.datasets_are_same_uncertainty_level(95):
-        raise AssertionError(
+        raise ValueError(
             "Trends within catalogue all need to be sigma-2 (95%) uncertainty level before performing this operation."
         )
 

@@ -535,7 +535,7 @@ def test_convert_timeseries_to_annual_trends_up_sampling_throws_exception(
     assert not example_timeseries_ingested.timeseries_is_annual_grid()
     with pytest.raises(
         ValueError,
-        match=r"Timeseries needs to fit into annual grid",
+        match=r"Timeseries needs to be converted to monthly grid before performing this operation.",
     ):
         example_timeseries_ingested.convert_timeseries_to_annual_trends()
 

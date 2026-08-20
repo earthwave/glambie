@@ -284,20 +284,27 @@ def test_datasets_are_same_unit(example_catalogue):
     assert not example_catalogue.datasets_are_same_unit()
 
 
-def test_datasets_are_same_uncertainty_level(example_catalogue):
-    # all test datasets are 95 by default
-    assert example_catalogue.datasets_are_same_uncertainty_level(95)
-    assert example_catalogue.datasets_are_same_uncertainty_level("95%")
+@pytest.mark.parametrize(
+    "updated_levels, uncertainty_level, expected",
+    [
+        (None, 95, True),
+        (None, "95%", True),
+        ([68, 95, 95], 95, False),
+        ([68, 95, 95], 68, False),
+        ([68, 68, 68], 68, True),
+    ],
+)
+def test_datasets_are_same_uncertainty_level(
+    example_catalogue, updated_levels, uncertainty_level, expected
+):
+    if updated_levels is not None:
+        for dataset, level in zip(example_catalogue.datasets, updated_levels):
+            dataset.uncertainty_level = level
 
-    # make one dataset 68 and ensure mixed levels fail the check
-    example_catalogue.datasets[0].uncertainty_level = 68
-    assert not example_catalogue.datasets_are_same_uncertainty_level(95)
-    assert not example_catalogue.datasets_are_same_uncertainty_level(68)
-
-    # set all to 68 to verify successful match
-    for dataset in example_catalogue.datasets:
-        dataset.uncertainty_level = 68
-    assert example_catalogue.datasets_are_same_uncertainty_level(68)
+    assert (
+        example_catalogue.datasets_are_same_uncertainty_level(uncertainty_level)
+        == expected
+    )
 
 
 def test_data_catalogue_copy(example_catalogue_small):

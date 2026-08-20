@@ -285,7 +285,7 @@ def test_datasets_are_same_unit(example_catalogue):
 
 
 @pytest.mark.parametrize(
-    "updated_levels, uncertainty_level, expected",
+    ("updated_levels", "uncertainty_level", "expected"),
     [
         (None, 95, True),
         (None, "95%", True),

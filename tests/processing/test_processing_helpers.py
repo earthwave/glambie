@@ -366,6 +366,7 @@ def test_convert_datasets_to_annual_trends_output_date_range(example_catalogue_f
         output_date_range=[2011, 2012],
     )
 
+    assert len(result_catalogue.datasets) > 0
     for ds in result_catalogue.datasets:
         assert ds.data.min_start_date >= 2011
         assert ds.data.max_end_date <= 2012

@@ -610,7 +610,7 @@ def _run_region_variability_for_one_source(
     data_group: GlambieDataGroup,
     dataset_names_where_split_at_gap: list,
     rgi_area_version: int,
-    min_max_time_window: Tuple[float, float] = None,
+    min_max_time_window: Tuple[float, float],
 ) -> Tuple[Timeseries, DataCatalogue]:
     """
     Runs the combination of annual variability datasets for one Glambie Data Group within a region
@@ -634,7 +634,7 @@ def _run_region_variability_for_one_source(
         this is so that the annual trends that were split at a data gap can be recombined
     rgi_area_version : int
         version of RGI area to use for area adjustment
-    min_max_time_window : Tuple[float, float], optional, by default None
+    min_max_time_window : Tuple[float, float]
         if specified, the datasets are clipped to this date range before the common period is calculated
         to remove the trends. A one year buffer is added to the min and max of the time window to ensure that
         hydrological years are fully covered.

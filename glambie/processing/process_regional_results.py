@@ -654,7 +654,7 @@ def _run_region_variability_for_one_source(
         method_to_correct_seasonally=method_to_correct_seasonally,
         seasonal_calibration_dataset=seasonal_calibration_dataset,
         rgi_area_version=rgi_area_version,
-        output_date_range=[min_max_time_window[0]-1, min_max_time_window[1]+1],
+        output_date_range=[min_max_time_window[0] - 1, min_max_time_window[1] + 1],
     )
     # convert to mwe
     data_catalogue_annual_homogenized = convert_datasets_to_unit_mwe(

@@ -18,6 +18,27 @@ import numpy as np
 import copy
 
 
+def _parse_uncertainty_level(
+    metadata: dict,
+    field_name: str,
+    default: int = 95,
+) -> int:
+    uncertainty_level = metadata.get(field_name, default)
+    if uncertainty_level is None or pd.isna(uncertainty_level):
+        return default
+
+    if isinstance(uncertainty_level, str):
+        uncertainty_level = uncertainty_level.strip().rstrip("%")
+
+    if str(uncertainty_level) in {"68", "95"}:
+        return int(uncertainty_level)
+
+    raise ValueError(
+        f"Unsupported uncertainty level in field '{field_name}': "
+        f"{uncertainty_level!r}"
+    )
+
+
 class DataCatalogue:
     """Class containing a catalogue of datasets"""
 
@@ -78,6 +99,10 @@ class DataCatalogue:
                 user_group=metadata["user_group"],
                 rgi_version=rgi_version,
                 additional_metadata=additional_metadata,
+                uncertainty_level=_parse_uncertainty_level(
+                    metadata,
+                    field_name="uncertainties_select",
+                ),
             )
             dataset.load_data()
             datasets.append(dataset)
@@ -128,6 +153,10 @@ class DataCatalogue:
             data_group = GLAMBIE_DATA_GROUPS[ds_dict["data_group"]]
             user_group = ds_dict["user_group"]
             unit = ds_dict["unit"]
+            uncertainty_level = _parse_uncertainty_level(
+                ds_dict,
+                field_name="uncertainty_level",
+            )
             datasets.append(
                 Timeseries(
                     data_filepath=fp,
@@ -135,6 +164,7 @@ class DataCatalogue:
                     data_group=data_group,
                     user_group=user_group,
                     unit=unit,
+                    uncertainty_level=uncertainty_level,
                 )
             )
 
@@ -236,6 +266,18 @@ class DataCatalogue:
             if not dataset.is_data_loaded:
                 dataset.load_data()
 
+    def is_all_data_loaded(self) -> bool:
+        """
+        Checks if all datasets in the catalogue have their data loaded.
+        Note that this will also return True if the catalogue is empty.
+
+        Returns
+        -------
+        bool
+            True if all datasets have data loaded, False otherwise
+        """
+        return all(dataset.is_data_loaded for dataset in self.datasets)
+
     def datasets_are_same_unit(self):
         """
         Checks if all datasets within catalogue have the same unit
@@ -248,6 +290,32 @@ class DataCatalogue:
         if len(self.datasets) > 0:
             unit = self.datasets[0].unit
             return all(dataset.unit == unit for dataset in self.datasets)
+        else:
+            return True
+
+    def datasets_are_same_uncertainty_level(self, uncertainty_level: int | str):
+        """
+        Checks if all datasets within catalogue have the same uncertainty level.
+
+        Parameters
+        ----------
+        uncertainty_level : int | str
+            uncertainty level to compare against; supported values are 68, 95, "68%", and "95%".
+
+        Returns
+        -------
+        bool
+            True if all datasets have the same uncertainty level, False otherwise.
+        """
+        parsed_uncertainty_level = _parse_uncertainty_level(
+            {"uncertainty_level": uncertainty_level},
+            field_name="uncertainty_level",
+        )
+        if len(self.datasets) > 0:
+            return all(
+                dataset.uncertainty_level == parsed_uncertainty_level
+                for dataset in self.datasets
+            )
         else:
             return True
 
@@ -352,13 +420,20 @@ class DataCatalogue:
 
         Raises
         ------
-        AssertionError
+        ValueError
             If timeseries within catalogue are not all the same unit.
+        ValueError
+            If timeseries within catalogue are not all provided at sigma-2 (95%) uncertainty level.
         """
 
         if not self.datasets_are_same_unit():
-            raise AssertionError(
+            raise ValueError(
                 "Timeseries within catalogue need to be same unit before performing this operation."
+            )
+        if not self.datasets_are_same_uncertainty_level(95):
+            raise ValueError(
+                "Timeseries within catalogue need to be sigma-2 (95%) "
+                "uncertainty level before performing this operation."
             )
 
         # merge all dataframes
@@ -484,7 +559,30 @@ class DataCatalogue:
             unit=reference_dataset_for_metadata.unit,
             user_group=out_user_group,
             area_change_applied=reference_dataset_for_metadata.area_change_applied,
+            uncertainty_level=reference_dataset_for_metadata.uncertainty_level
         ), data_catalogue_out
+
+    def convert_all_datasets_to_uncertainty_level(
+        self, target_uncertainty_level: int
+    ) -> DataCatalogue:
+        """
+        Converts the uncertainty values of all datasets in the catalogue to the target uncertainty level.
+
+        Parameters
+        ----------
+        target_uncertainty_level : int
+            Target uncertainty level to convert to. Must be 68 or 95.
+
+        Returns
+        -------
+        DataCatalogue
+            New data catalogue with all datasets converted to the target uncertainty level.
+        """
+        datasets = [
+            ds.convert_timeseries_uncertainty_level(target_uncertainty_level)
+            for ds in self._datasets
+        ]
+        return DataCatalogue.from_list(datasets, base_path=self._base_path)
 
     def __len__(self) -> int:
         return len(self._datasets)

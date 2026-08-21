@@ -2,6 +2,7 @@ import os
 from unittest.mock import patch
 
 from glambie.data.data_catalogue import DataCatalogue
+from glambie.data.data_catalogue_helpers import calibrate_timeseries_with_trends_catalogue
 from glambie.data.timeseries import TimeseriesData
 import pytest
 import copy
@@ -74,6 +75,27 @@ def test_data_catalogue_datasets_correctly_ingested(example_catalogue):
     assert example_catalogue.datasets[1].data_group.name == "altimetry"
     assert example_catalogue.datasets[2].data_group.name == "gravimetry"
     assert example_catalogue.datasets[0].unit == "m"
+    assert example_catalogue.datasets[0].uncertainty_level == 95
+
+
+def test_data_catalogue_from_dict_with_uncertainty_level():
+    catalogue = DataCatalogue.from_dict(
+        {
+            "base_path": ["tests", "test_data", "datastore"],
+            "datasets": [
+                {
+                    "filename": "iceland_altimetry_sharks.csv",
+                    "region": "iceland",
+                    "user_group": "sharks",
+                    "data_group": "altimetry",
+                    "unit": "m",
+                    "uncertainty_level": "68%",
+                },
+            ],
+        }
+    )
+
+    assert catalogue.datasets[0].uncertainty_level == 68
 
 
 def test_get_filtered_catalogue_by_region(example_catalogue):
@@ -181,6 +203,8 @@ def test_data_catalogue_from_submission_system_glambie_1_format():
         catalogue.datasets[1].additional_metadata["lead_author_date_of_birth"]
         == "May 18th 1889"
     )
+    assert catalogue.datasets[0].uncertainty_level == 95
+    assert catalogue.datasets[1].uncertainty_level == 95
 
 
 def test_data_catalogue_from_submission_system_glambie_2_format():
@@ -201,6 +225,7 @@ def test_data_catalogue_from_submission_system_glambie_2_format():
                 "user_group": "authors-altimetry",
                 "rgi_version_select": "6.0",
                 "lead_author_date_of_birth": "May 18th 1889",
+                "uncertainties_select": "68%",
             },
             {
                 "region": "ISL",
@@ -209,6 +234,7 @@ def test_data_catalogue_from_submission_system_glambie_2_format():
                 "user_group": "authors-gravimetry",
                 "rgi_version_select": "6.0",
                 "lead_author_date_of_birth": "May 18th 1889",
+                "uncertainties_select": "95%",
             },
         ]
         # and return some fake data
@@ -232,6 +258,8 @@ def test_data_catalogue_from_submission_system_glambie_2_format():
         catalogue.datasets[1].additional_metadata["lead_author_date_of_birth"]
         == "May 18th 1889"
     )
+    assert catalogue.datasets[0].uncertainty_level == 68
+    assert catalogue.datasets[1].uncertainty_level == 95
 
 
 def test_data_catalogue_regions(example_catalogue):
@@ -254,6 +282,29 @@ def test_datasets_are_same_unit(example_catalogue):
     # change first datasets unit
     example_catalogue.datasets[0].unit = "gt"
     assert not example_catalogue.datasets_are_same_unit()
+
+
+@pytest.mark.parametrize(
+    ("updated_levels", "uncertainty_level", "expected"),
+    [
+        (None, 95, True),
+        (None, "95%", True),
+        ([68, 95, 95], 95, False),
+        ([68, 95, 95], 68, False),
+        ([68, 68, 68], 68, True),
+    ],
+)
+def test_datasets_are_same_uncertainty_level(
+    example_catalogue, updated_levels, uncertainty_level, expected
+):
+    if updated_levels is not None:
+        for dataset, level in zip(example_catalogue.datasets, updated_levels):
+            dataset.uncertainty_level = level
+
+    assert (
+        example_catalogue.datasets_are_same_uncertainty_level(uncertainty_level)
+        == expected
+    )
 
 
 def test_data_catalogue_copy(example_catalogue_small):
@@ -337,6 +388,44 @@ def test_average_timeseries_in_catalogue_example_with_trends_removed(
         result_timeseries_trend_removed_added_after_averaging.data.changes,
         result_timeseries.data.changes,
     )
+
+
+def test_average_timeseries_in_catalogue_requires_sigma2_uncertainty(
+    example_catalogue_small,
+):
+    example_catalogue_small.load_all_data()
+    example_catalogue_small.datasets.append(
+        copy.deepcopy(example_catalogue_small.datasets[0])
+    )
+    example_catalogue_small.datasets[0].uncertainty_level = 68
+
+    with pytest.raises(
+        ValueError,
+        match=r"sigma-2 \(95%\) uncertainty level",
+    ):
+        example_catalogue_small.average_timeseries_in_catalogue(
+            remove_trend=False, add_trend_after_averaging=False
+        )
+
+
+def test_calibrate_timeseries_with_trends_catalogue_requires_sigma2_uncertainty(
+    example_catalogue_small,
+):
+    example_catalogue_small.load_all_data()
+    example_catalogue_small.datasets.append(
+        copy.deepcopy(example_catalogue_small.datasets[0])
+    )
+    example_catalogue_small.datasets[0].uncertainty_level = 68
+
+    calibration_timeseries = copy.deepcopy(example_catalogue_small.datasets[1])
+    with pytest.raises(
+        ValueError,
+        match=r"sigma-2 \(95%\) uncertainty level",
+    ):
+        calibrate_timeseries_with_trends_catalogue(
+            catalogue_with_trends=example_catalogue_small,
+            calibration_timeseries=calibration_timeseries,
+        )
 
 
 def test_get_time_span_of_datasets(example_catalogue_small):

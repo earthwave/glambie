@@ -414,7 +414,7 @@ def apply_seasonal_correction_to_dataset(
     """
     if method_to_correct_seasonally == SeasonalCorrectionMethod.SEASONAL_HOMOGENIZATION:
         if seasonal_calibration_dataset is None:
-            raise AssertionError(
+            raise ValueError(
                 "Seasonal calibration dataset is None, cannot perform operation."
             )
         corrected_dataset = dataset_to_correct.shift_timeseries_to_annual_grid_with_seasonal_homogenization(
@@ -504,8 +504,10 @@ def prepare_seasonal_calibration_dataset(
     """
     Retrieves and prepares the seasonal calibration dataset from a data catalogue.
 
-    In this function the seasonal calibration dataset is loaded, standardised date axis to a monthly grid
-    and then converted to unit mwe
+    In this function the seasonal calibration dataset is standardised by converting date axis to a monthly grid
+    and then converting the dataset to unit mwe.
+
+    The function assumes that the seasonal calibration dataset is available and loaded in the catalogue
 
     Parameters
     ----------
@@ -526,7 +528,7 @@ def prepare_seasonal_calibration_dataset(
         user_group=region_config.seasonal_correction_dataset["user_group"],
         data_group=region_config.seasonal_correction_dataset["data_group"],
     ).datasets[0]
-    season_calibration_dataset.load_data()
+    assert season_calibration_dataset.is_data_loaded
     season_calibration_dataset = (
         season_calibration_dataset.convert_timeseries_to_monthly_grid()
     )

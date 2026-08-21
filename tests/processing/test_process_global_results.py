@@ -34,6 +34,7 @@ def example_catalogue():
         data_group=GLAMBIE_DATA_GROUPS["consensus"],
         data=data1,
         region=REGIONS["iceland"],
+        uncertainty_level=95,
         area_change_applied=True,
     )
     data2 = TimeseriesData(
@@ -52,6 +53,7 @@ def example_catalogue():
         data_group=GLAMBIE_DATA_GROUPS["consensus"],
         data=data2,
         region=REGIONS["svalbard"],
+        uncertainty_level=95,
         area_change_applied=True,
     )
     return DataCatalogue.from_list([ts1, ts2])

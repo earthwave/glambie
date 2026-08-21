@@ -23,6 +23,7 @@ def example_timeseries():
             "tests", "test_data", "datastore", "central_asia_demdiff_sharks.csv"
         ),
         additional_metadata={"toves": "slithy", "mome raths": "outgrabe"},
+        uncertainty_level=95
     )
     return ts
 
@@ -111,6 +112,7 @@ def test_data_as_dataframe(example_timeseries_ingested):
 def test_metadata_as_dataframe(example_timeseries):
     df = example_timeseries.metadata_as_dataframe()
     assert df["data_group"].iloc[0] == "demdiff"
+    assert df["uncertainty_level"].iloc[0] == 95
     assert df.shape[0] == 1
 
 
@@ -531,7 +533,10 @@ def test_convert_timeseries_to_annual_trends_up_sampling_throws_exception(
     example_timeseries_ingested.data.end_dates = np.array([2015.0])
     example_timeseries_ingested.data.changes = np.array([5.0])
     assert not example_timeseries_ingested.timeseries_is_annual_grid()
-    with pytest.raises(AssertionError):
+    with pytest.raises(
+        ValueError,
+        match=r"Timeseries needs to be converted to monthly grid before performing this operation.",
+    ):
         example_timeseries_ingested.convert_timeseries_to_annual_trends()
 
 
@@ -695,7 +700,10 @@ def test_apply_area_change_and_remove(example_timeseries_ingested):
 
 def test_apply_area_change_and_wrong_unit(example_timeseries_ingested):
     example_timeseries_ingested.unit = "gt"
-    with pytest.raises(AssertionError):
+    with pytest.raises(
+        ValueError,
+        match=r"Area change should only be applied/removed to 'm' or 'mwe'",
+    ):
         example_timeseries_ingested.apply_or_remove_area_change(
             rgi_area_version=7, apply_area_change=True
         )
@@ -705,7 +713,10 @@ def test_apply_area_change_when_already_applied(example_timeseries_ingested):
     timeseries_area_change = example_timeseries_ingested.apply_or_remove_area_change(
         rgi_area_version=7, apply_area_change=True
     )
-    with pytest.raises(AssertionError):
+    with pytest.raises(
+        ValueError,
+        match=r"Area change is already applied to current dataset",
+    ):
         timeseries_area_change.apply_or_remove_area_change(
             rgi_area_version=7, apply_area_change=True
         )
@@ -713,19 +724,25 @@ def test_apply_area_change_when_already_applied(example_timeseries_ingested):
 
 def test_remove_area_change_when_already_removed(example_timeseries_ingested):
     assert not example_timeseries_ingested.area_change_applied
-    with pytest.raises(AssertionError):
+    with pytest.raises(
+        ValueError,
+        match=r"Area change is not applied to current dataset",
+    ):
         example_timeseries_ingested.apply_or_remove_area_change(
             rgi_area_version=7, apply_area_change=False
         )
 
 
-def test_raises_assertion_error_when_converting_to_gt_with_area_change_applied(
+def test_raises_value_error_when_converting_to_gt_with_area_change_applied(
     example_timeseries_ingested,
 ):
     timeseries_area_change = example_timeseries_ingested.apply_or_remove_area_change(
         rgi_area_version=7, apply_area_change=True
     )
-    with pytest.raises(AssertionError):
+    with pytest.raises(
+        ValueError,
+        match=r"Cannot convert dataset to Gt\. Area change needs to be removed first",
+    ):
         timeseries_area_change.convert_timeseries_to_unit_gt(rgi_area_version=7)
 
 
@@ -784,6 +801,48 @@ def test_reduce_to_date_window_with_gap(example_timeseries_ingested):
     assert np.array_equal(
         reduced_timeseries.data.end_dates,
         example_timeseries_ingested.data.end_dates[:-1],
+    )
+
+
+def test_convert_timeseries_uncertainty_level_68_to_95(example_timeseries_ingested):
+    example_timeseries_ingested.uncertainty_level = 68
+
+    converted_timeseries = (
+        example_timeseries_ingested.convert_timeseries_uncertainty_level(95)
+    )
+
+    assert converted_timeseries.uncertainty_level == 95
+    assert np.allclose(
+        converted_timeseries.data.errors,
+        example_timeseries_ingested.data.errors * 1.96,
+    )
+
+
+def test_convert_timeseries_uncertainty_level_95_to_68(example_timeseries_ingested):
+    example_timeseries_ingested.uncertainty_level = 95
+
+    converted_timeseries = (
+        example_timeseries_ingested.convert_timeseries_uncertainty_level(68)
+    )
+
+    assert converted_timeseries.uncertainty_level == 68
+    assert np.allclose(
+        converted_timeseries.data.errors,
+        example_timeseries_ingested.data.errors / 1.96,
+    )
+
+
+def test_convert_timeseries_uncertainty_level_same_level_no_change(example_timeseries_ingested):
+    example_timeseries_ingested.uncertainty_level = 95
+
+    converted_timeseries = (
+        example_timeseries_ingested.convert_timeseries_uncertainty_level(95)
+    )
+
+    assert converted_timeseries.uncertainty_level == 95
+    assert np.array_equal(
+        converted_timeseries.data.errors,
+        example_timeseries_ingested.data.errors,
     )
 
 

@@ -212,6 +212,9 @@ def _combine_regional_results_into_global(
         Globally aggregated timeseries in input unit
     """
     assert regional_results_catalogue.datasets_are_same_unit()
+    assert regional_results_catalogue.datasets_are_same_uncertainty_level(95), (
+        "Regional results must all be sigma-2 (95%) uncertainty level before combining into global."
+    )
     assert (
         regional_results_catalogue.datasets[0].unit == "mwe"
         or regional_results_catalogue.datasets[0].unit.lower() == "gt"
@@ -310,4 +313,5 @@ def _combine_regional_results_into_global(
         data_group=GLAMBIE_DATA_GROUPS["consensus"],
         data=ts_data,
         unit=reference_dataset_for_metadata.unit,
+        uncertainty_level=reference_dataset_for_metadata.uncertainty_level,
     )

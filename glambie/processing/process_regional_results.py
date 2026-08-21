@@ -425,7 +425,7 @@ def _run_region_timeseries_for_one_source(
     data_group: GlambieDataGroup,
     output_path_handler: OutputPathHandler,
     rgi_area_version: int,
-    min_max_time_window: Tuple[float, float] = None,
+    min_max_time_window: Tuple[float, float],
 ) -> Timeseries:
     """
     Runs the glambie algorithm for all datasets for one Glambie Data Group within a region
@@ -456,7 +456,7 @@ def _run_region_timeseries_for_one_source(
         object to handle output path. If set to None, no plots / other data will be saved
     rgi_area_version : int
         version of RGI area to use for area adjustment
-    min_max_time_window : Tuple[float, float], optional, by default None
+    min_max_time_window : Tuple[float, float]
         if specified, the datasets are filtered by the time window before any operations are performed
         This impacts the annual variability as well as the longterm trends.
         For the annual variability this means that the datasets are clipped to the date range specified before
@@ -654,7 +654,7 @@ def _run_region_variability_for_one_source(
         method_to_correct_seasonally=method_to_correct_seasonally,
         seasonal_calibration_dataset=seasonal_calibration_dataset,
         rgi_area_version=rgi_area_version,
-        output_date_range=[min_max_time_window[0] - 1, min_max_time_window[1] + 1],
+        output_date_range=[min_max_time_window[0] - 1, min_max_time_window[1] + 1]
     )
     # convert to mwe
     data_catalogue_annual_homogenized = convert_datasets_to_unit_mwe(

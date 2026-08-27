@@ -231,6 +231,7 @@ def convert_datasets_to_annual_trends(
     method_to_correct_seasonally: SeasonalCorrectionMethod,
     rgi_area_version: int,
     seasonal_calibration_dataset: Timeseries = None,
+    output_date_range: Tuple[float, float] = None,
 ) -> DataCatalogue:
     """
     Convert all datasets in data catalogue to annual trends.
@@ -251,6 +252,9 @@ def convert_datasets_to_annual_trends(
         correction method is not set to SeasonalCorrectionMethod.SEASONAL_HOMOGENIZATION
     rgi_area_version : int
         version of RGI area to use for area adjustment
+    output_date_range : Tuple[float, float], optional, by default None
+        if specified, datasets are clipped to this date range after conversion to annual trends.
+        The dates are expected in decimal years format (float), e.g. 2012.75.
 
     Returns
     -------
@@ -278,6 +282,12 @@ def convert_datasets_to_annual_trends(
     catalogue_annual_grid = DataCatalogue.from_list(
         datasets, base_path=data_catalogue.base_path
     )
+    # remove any dates outside minimum and maximum
+    if output_date_range is not None:
+        catalogue_annual_grid = get_reduced_catalogue_to_date_window(
+            catalogue_annual_grid, start_date=output_date_range[0],
+            end_date=output_date_range[1]
+        )
     return catalogue_annual_grid
 
 

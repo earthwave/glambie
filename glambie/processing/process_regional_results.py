@@ -95,7 +95,7 @@ def run_one_region(
         year_type=region_config.year_type,
         method_to_correct_seasonally=glambie_run_config.seasonal_correction_method,
         backup_dataset=seasonal_calibration_dataset,
-        desired_time_span=[glambie_run_config.start_year, glambie_run_config.end_year],
+        min_max_time_window=[glambie_run_config.start_year, glambie_run_config.end_year],
     )
 
     result_datasets = []
@@ -143,7 +143,7 @@ def run_one_region(
                 region=REGIONS[region_config.region_name],
                 data_group=data_group,
                 output_path_handler=output_path_handler,
-                min_max_time_window_for_longterm_trends=[
+                min_max_time_window=[
                     glambie_run_config.start_year,
                     glambie_run_config.end_year,
                 ],
@@ -184,7 +184,7 @@ def _prepare_consensus_variability_for_one_region(
     year_type: YearType,
     method_to_correct_seasonally: SeasonalCorrectionMethod,
     backup_dataset: Timeseries,
-    desired_time_span: Tuple[float, float],
+    min_max_time_window: Tuple[float, float],
 ) -> Timeseries:
     """
     Prepares a consensus varibility dataset for a region, which can be used as an annual backup dataset
@@ -206,15 +206,17 @@ def _prepare_consensus_variability_for_one_region(
         method as to how long-term trends are correct when they don't start in the desired season, i.e. don't follow
         the desired annual grid defined with 'year_type'
     backup_dataset : Timeseries
-        the backup timeseries to be used to fill missing data for achieving the desired time span
-    desired_time_span : Tuple[float, float]
+        the backup timeseries to be used to fill missing data for achieving the desired time window defined
+        by 'min_max_time_window'
+    min_max_time_window : Tuple[float, float]
         the desired span of the output dataset in the format [min_start_date, max_end_date]
+        the datasets will be filtered by that date range before removing a rate over a shared period
         the dates are expected in decimal years format (float), e.g. 2012.75.
 
     Returns
     -------
     Timeseries
-        a combined annual timeseries spanning the 'desired_time_span'
+        a combined annual timeseries spanning the 'min_max_time_window'
     """
 
     log.info(
@@ -252,6 +254,7 @@ def _prepare_consensus_variability_for_one_region(
                 data_group=data_group,
                 dataset_names_where_split_at_gap=split_dataset_names_annual,
                 rgi_area_version=glambie_run_config.rgi_area_version,
+                min_max_time_window=min_max_time_window
             )
 
             result_datasets.append(annual_combined)
@@ -272,7 +275,7 @@ def _prepare_consensus_variability_for_one_region(
     consensus_annual_full_ext = extend_annual_timeseries_if_shorter_than_time_window(
         annual_timeseries=consensus_annual,
         timeseries_for_extension=backup_dataset,
-        desired_time_window=desired_time_span,
+        desired_time_window=min_max_time_window,
     )
 
     # now we set all uncertainties to 0 so that they are not doublecounted when combined with the consensus
@@ -422,7 +425,7 @@ def _run_region_timeseries_for_one_source(
     data_group: GlambieDataGroup,
     output_path_handler: OutputPathHandler,
     rgi_area_version: int,
-    min_max_time_window_for_longterm_trends: Tuple[float, float] = None,
+    min_max_time_window: Tuple[float, float],
 ) -> Timeseries:
     """
     Runs the glambie algorithm for all datasets for one Glambie Data Group within a region
@@ -453,12 +456,14 @@ def _run_region_timeseries_for_one_source(
         object to handle output path. If set to None, no plots / other data will be saved
     rgi_area_version : int
         version of RGI area to use for area adjustment
-    min_max_time_window_for_longterm_trends : Tuple[float, float], optional
-        if specified, the time series are filtered by the time window before the longterm trend is extracted,
-        meaning that the resulting longterm trends are within the minimum and maximum of the time window.
-        Note that existing longterm trends are removed if they are outside the time window.
+    min_max_time_window : Tuple[float, float]
+        if specified, the datasets are filtered by the time window before any operations are performed
+        This impacts the annual variability as well as the longterm trends.
+        For the annual variability this means that the datasets are clipped to the date range specified before
+        a common period is calculated to remove the trends.
+        For the longterm trends, this means that the resulting longterm trends are within the minimum and maximum
+        of the time window and existing longterm trends are removed if they are outside the time window.
         The dates are expected in decimal years format (float), e.g. 2012.75.
-
 
     Returns
     -------
@@ -511,6 +516,7 @@ def _run_region_timeseries_for_one_source(
             data_group=data_group,
             dataset_names_where_split_at_gap=split_dataset_names_annual,
             rgi_area_version=rgi_area_version,
+            min_max_time_window=min_max_time_window
         )
     )
 
@@ -533,7 +539,7 @@ def _run_region_timeseries_for_one_source(
             method_to_correct_seasonally=method_to_correct_seasonally,
             data_group=data_group,
             rgi_area_version=rgi_area_version,
-            min_max_time_window_for_longterm_trends=min_max_time_window_for_longterm_trends,
+            min_max_time_window=min_max_time_window,
         )
     )
 
@@ -589,8 +595,8 @@ def _run_region_timeseries_for_one_source(
             data_catalogue_trends_homogenized=data_catalogue_trends_homogenized,
             data_catalogue_calibrated_series=catalogue_calibrated_series,
             timeseries_trend_combined=trend_combined,
-            min_date=min_max_time_window_for_longterm_trends[0] - 1,
-            max_date=min_max_time_window_for_longterm_trends[1] + 1,
+            min_date=min_max_time_window[0] - 1,
+            max_date=min_max_time_window[1] + 1,
             rgi_area_version=rgi_area_version,
         )
     return trend_combined
@@ -604,6 +610,7 @@ def _run_region_variability_for_one_source(
     data_group: GlambieDataGroup,
     dataset_names_where_split_at_gap: list,
     rgi_area_version: int,
+    min_max_time_window: Tuple[float, float],
 ) -> Tuple[Timeseries, DataCatalogue]:
     """
     Runs the combination of annual variability datasets for one Glambie Data Group within a region
@@ -627,6 +634,11 @@ def _run_region_variability_for_one_source(
         this is so that the annual trends that were split at a data gap can be recombined
     rgi_area_version : int
         version of RGI area to use for area adjustment
+    min_max_time_window : Tuple[float, float]
+        if specified, the datasets are clipped to this date range before the common period is calculated
+        to remove the trends. A one year buffer is added to the min and max of the time window to ensure that
+        hydrological years are fully covered.
+        The dates are expected in decimal years format (float), e.g. 2012.75.
 
     Returns
     -------
@@ -635,7 +647,6 @@ def _run_region_variability_for_one_source(
         2) a data catalogue of homogenized annual datasets
         3) a data catalogue of all the annual anomalies/variability that went into the combination
     """
-
     # convert to annual trends
     data_catalogue_annual_homogenized = convert_datasets_to_annual_trends(
         data_catalogue_annual,
@@ -643,6 +654,7 @@ def _run_region_variability_for_one_source(
         method_to_correct_seasonally=method_to_correct_seasonally,
         seasonal_calibration_dataset=seasonal_calibration_dataset,
         rgi_area_version=rgi_area_version,
+        output_date_range=[min_max_time_window[0] - 1, min_max_time_window[1] + 1]
     )
     # convert to mwe
     data_catalogue_annual_homogenized = convert_datasets_to_unit_mwe(
@@ -679,7 +691,7 @@ def _run_region_trends_for_one_source(
     method_to_correct_seasonally: SeasonalCorrectionMethod,
     data_group: GlambieDataGroup,
     rgi_area_version: int,
-    min_max_time_window_for_longterm_trends: Tuple[float, float] = None,
+    min_max_time_window: Tuple[float, float] = None,
 ) -> Tuple[Timeseries, DataCatalogue, DataCatalogue]:
     """
     Runs the combination algorithm for all trend datasets for one Glambie Data Group within a region
@@ -706,12 +718,11 @@ def _run_region_trends_for_one_source(
         _description_
     rgi_area_version : int
         version of RGI area to use for area adjustment
-    min_max_time_window_for_longterm_trends : Tuple[float, float], optional
+    min_max_time_window : Tuple[float, float], optional, by default None
         if specified, the time series are filtered by the time window before the longterm trend is extracted,
         meaning that the resulting longterm trends are within the minimum and maximum of the time window.
         Note that existing longterm trends are removed if they are outside the time window.
         The dates are expected in decimal years format (float), e.g. 2012.75.
-        by default None
 
 
     Returns
@@ -730,7 +741,7 @@ def _run_region_trends_for_one_source(
         seasonal_calibration_dataset=seasonal_calibration_dataset,
         method_to_extract_trends=method_to_extract_trends,
         method_to_correct_seasonally=method_to_correct_seasonally,
-        output_trend_date_range=min_max_time_window_for_longterm_trends,
+        output_trend_date_range=min_max_time_window,
         rgi_area_version=rgi_area_version,
     )
 

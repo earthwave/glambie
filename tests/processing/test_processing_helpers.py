@@ -7,6 +7,8 @@ from glambie.processing.processing_helpers import check_and_handle_gaps_in_times
 from glambie.processing.processing_helpers import (
     extend_annual_timeseries_if_shorter_than_time_window,
 )
+from glambie.processing.processing_helpers import convert_datasets_to_annual_trends
+from glambie.const.constants import YearType, SeasonalCorrectionMethod
 from glambie.const.data_groups import GLAMBIE_DATA_GROUPS
 from glambie.data.data_catalogue import DataCatalogue
 from glambie.data.timeseries import TimeseriesData, Timeseries
@@ -352,3 +354,19 @@ def test_extend_annual_timeseries_if_shorter_than_time_window(example_catalogue_
     assert np.array_equal(
         extended_timeseries.data.start_dates, timeseries_for_extension.data.start_dates
     )
+
+
+def test_convert_datasets_to_annual_trends_output_date_range(example_catalogue_filled):
+    # ts1 covers 2010-2018, ts2 covers 2010-2012; restrict output to 2011-2012
+    result_catalogue = convert_datasets_to_annual_trends(
+        data_catalogue=example_catalogue_filled,
+        year_type=YearType.CALENDAR,
+        method_to_correct_seasonally=SeasonalCorrectionMethod.PROPORTIONAL,
+        rgi_area_version=6,
+        output_date_range=[2011, 2012],
+    )
+
+    assert len(result_catalogue.datasets) > 0
+    for ds in result_catalogue.datasets:
+        assert ds.data.min_start_date >= 2011
+        assert ds.data.max_end_date <= 2012

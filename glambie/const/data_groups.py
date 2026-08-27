@@ -19,7 +19,7 @@ GLAMBIE_DATA_GROUPS = {
         name="demdiff_and_glaciological", long_name="DEM diff. & glaciol."
     ),
     "consensus": GlambieDataGroup(
-        name="consensus", long_name="Consensus of a combination of data sets"
+        name="consensus", long_name="Reconciliation of multiple data sets"
     ),
     "model": GlambieDataGroup(
         name="model", long_name="Model-based estimates"

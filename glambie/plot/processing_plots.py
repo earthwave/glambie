@@ -523,7 +523,7 @@ def plot_recalibrated_result_of_data_group(
         ax=axes[0],
         colour="black",
         linestyle="--",
-        label="Consensus solution",
+        label="Reconciled solution",
         plot_errors=plot_errors,
     )
 
@@ -546,7 +546,7 @@ def plot_recalibrated_result_of_data_group(
         plot_errors=plot_errors,
         linestyle="--",
         timeseries_for_vertical_adjustment=None,
-        label="Consensus solution",
+        label="Reconciled solution",
     )
 
     add_labels_axlines_and_title(
@@ -586,7 +586,7 @@ def plot_combination_of_sources_within_region(
         ax=axes[0],
         colour="black",
         linestyle="--",
-        label="Consensus estimate",
+        label="Reconciled estimate",
         plot_errors=plot_errors,
     )
 
@@ -610,7 +610,7 @@ def plot_combination_of_sources_within_region(
         plot_errors=plot_errors,
         linestyle="-",
         timeseries_for_vertical_adjustment=None,
-        label="Consensus estimate",
+        label="Reconciled estimate",
     )
 
     add_labels_axlines_and_title(

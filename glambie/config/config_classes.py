@@ -107,10 +107,16 @@ class RegionRunConfig(Config):
         self.disable_data_groups = new_datagroup_list
 
     def save_to_yaml(self, out_path):
-        yaml.add_representer(RegionRunConfig, region_run_config_class_representer)
-        yaml.add_representer(YearType, year_type_class_representer)
+        class _RegionConfigDumper(yaml.SafeDumper):
+            pass
+
+        _RegionConfigDumper.add_representer(RegionRunConfig, region_run_config_class_representer)
+        _RegionConfigDumper.add_representer(GlambieDataGroup, glambie_data_group_representer)
+        _RegionConfigDumper.add_representer(YearType, year_type_class_representer)
+        _RegionConfigDumper.add_multi_representer(Enum, enum_class_representer)
+
         with open(out_path, "w") as outfile:
-            outfile.write(yaml.dump(self))
+            yaml.dump(self, outfile, Dumper=_RegionConfigDumper, default_flow_style=False, sort_keys=False)
 
 
 @dataclass

@@ -34,6 +34,11 @@ def glambie_run_config_representer(
             "region_name": r.region_name,
             "enable_this_region": True,
             "config_file_path": f"{r.region_name}.yaml",
+            **(
+                {"disable_data_groups": r.disable_data_groups}
+                if r.disable_data_groups is not None
+                else {}
+            ),
         }
         for r in object_to_represent.regions
     ]

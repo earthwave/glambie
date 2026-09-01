@@ -6,7 +6,7 @@ from dataclasses import MISSING, dataclass
 from typing import Literal
 import yaml
 import logging
-from abc import ABC, abstractclassmethod
+from abc import ABC, abstractmethod
 from glambie.const.constants import (
     ExtractTrendsMethod,
     YearType,
@@ -68,8 +68,9 @@ class Config(ABC):
             config_dict = yaml.safe_load(fh)
             return cls.from_params(**config_dict)
 
-    @abstractclassmethod
-    def from_params(self):
+    @classmethod
+    @abstractmethod
+    def from_params(cls, **_kwargs):
         pass
 
 

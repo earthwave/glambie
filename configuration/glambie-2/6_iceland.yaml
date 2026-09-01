@@ -30,7 +30,7 @@ region_run_settings:
     exclude_annual_datasets : # glaciological datasets
     - 
     exclude_trend_datasets : # demdiff datasets
-    - 
+    - Krieger_DLR_RGI6_isl
     include_combined_annual_datasets:
     - WGMS-DUS_combined
     - ETHZ

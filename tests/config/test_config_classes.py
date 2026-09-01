@@ -7,7 +7,7 @@ from glambie.const.constants import (
     YearType,
     SeasonalCorrectionMethod,
 )
-from glambie.const.data_groups import GlambieDataGroup
+from glambie.const.data_groups import GLAMBIE_DATA_GROUPS, GlambieDataGroup
 import pytest
 import yaml
 
@@ -49,9 +49,27 @@ def test_glambie_run_config_regions_from_file():
     assert config.regions[0].seasonal_correction_dataset["user_group"] == "wgms_sine"
 
 
+def test_glambie_run_config_region_disable_data_groups_override():
+    yaml_abspath = os.path.join("tests", "test_data", "configs", "test_config.yaml")
+    with open(yaml_abspath, "r") as fh:
+        config_dict = yaml.safe_load(fh)
+
+    # Parent-level region entries can optionally disable datagroups for that specific region.
+    config_dict["regions"][0]["disable_data_groups"] = ["gravimetry"]
+
+    config = GlambieRunConfig.from_params(**config_dict)
+    iceland_config = next(r for r in config.regions if r.region_name == "iceland")
+    svalbard_config = next(r for r in config.regions if r.region_name == "svalbard")
+
+    assert all(isinstance(g, GlambieDataGroup) for g in iceland_config.disable_data_groups)
+    assert [g.name for g in iceland_config.disable_data_groups] == ["gravimetry"]
+    assert svalbard_config.disable_data_groups is None
+
+
 def test_write_glambie_run_config_to_yaml(tmp_path):
     yaml_abspath = os.path.join("tests", "test_data", "configs", "test_config.yaml")
     config = GlambieRunConfig.from_yaml(yaml_abspath)
+    config.regions[0].disable_data_groups = [GLAMBIE_DATA_GROUPS["gravimetry"]]
     config.save_to_yaml(str(tmp_path))
 
     parent_outfile = os.path.join(tmp_path, "0_parent.yaml")
@@ -80,6 +98,8 @@ def test_write_glambie_run_config_to_yaml(tmp_path):
     assert [r["region_name"] for r in raw["regions"]] == [r.region_name for r in config.regions]
     assert all(r["enable_this_region"] is True for r in raw["regions"])
     assert all("config_file_path" in r for r in raw["regions"])
+    assert raw["regions"][0]["disable_data_groups"] == ["gravimetry"]
+    assert "disable_data_groups" not in raw["regions"][1]
 
 
 def test_write_glambie_region_config_to_yaml(tmp_path):

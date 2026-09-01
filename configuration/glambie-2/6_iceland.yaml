@@ -14,6 +14,7 @@ region_run_settings:
     - Menounos et al
     - Tepes-et-al_alt
     - Foresta-et-al_alt
+    - Wang_ICESat
     include_combined_annual_datasets:
     - Gardner et al
     include_combined_trend_datasets:
@@ -29,7 +30,7 @@ region_run_settings:
     exclude_annual_datasets : # glaciological datasets
     - 
     exclude_trend_datasets : # demdiff datasets
-    - 
+    - Krieger_DLR_RGI6_isl
     include_combined_annual_datasets:
     - WGMS-DUS_combined
     - ETHZ

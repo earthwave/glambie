@@ -45,6 +45,19 @@ from glambie.processing.processing_helpers import set_unneeded_columns_to_nan
 log = logging.getLogger(__name__)
 
 
+def _get_enabled_datagroups_for_region(
+    glambie_run_config: GlambieRunConfig,
+    region_config: RegionRunConfig,
+) -> list[GlambieDataGroup]:
+    """Return the run datagroups enabled for a specific region."""
+    disabled_data_groups = region_config.disable_data_groups or []
+    return [
+        data_group
+        for data_group in glambie_run_config.datagroups_to_calculate
+        if data_group not in disabled_data_groups
+    ]
+
+
 def run_one_region(
     glambie_run_config: GlambieRunConfig,
     region_config: RegionRunConfig,
@@ -98,8 +111,13 @@ def run_one_region(
         min_max_time_window=[glambie_run_config.start_year, glambie_run_config.end_year],
     )
 
+    data_groups_to_process = _get_enabled_datagroups_for_region(
+        glambie_run_config=glambie_run_config,
+        region_config=region_config,
+    )
+
     result_datasets = []
-    for data_group in glambie_run_config.datagroups_to_calculate:
+    for data_group in data_groups_to_process:
         log.info(
             "Starting to process region=%s datagroup=%s",
             region_config.region_name,
@@ -224,8 +242,13 @@ def _prepare_consensus_variability_for_one_region(
         region_config.region_name,
     )
 
+    data_groups_to_process = _get_enabled_datagroups_for_region(
+        glambie_run_config=glambie_run_config,
+        region_config=region_config,
+    )
+
     result_datasets = []
-    for data_group in glambie_run_config.datagroups_to_calculate:
+    for data_group in data_groups_to_process:
         data_catalogue_annual, _ = filter_catalogue_with_config_settings(
             data_group=data_group,
             region_config=region_config,

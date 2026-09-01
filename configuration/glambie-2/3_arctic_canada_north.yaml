@@ -15,6 +15,7 @@ region_run_settings:
     - Tepes-et-al_alt
     - Gardner-et-al_alt
     - Khan-et-al_alt
+    - Wang_ICESat
     include_combined_annual_datasets:
     - Gardner et al
     include_combined_trend_datasets:

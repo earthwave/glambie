@@ -12,6 +12,7 @@ region_run_settings:
     exclude_annual_datasets :
     - Ke CQ et al from NJU
     - Menounos et al
+    - Wang_ICESat
     include_combined_annual_datasets:
     - Gardner et al
     include_combined_trend_datasets:

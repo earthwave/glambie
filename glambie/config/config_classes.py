@@ -2,11 +2,11 @@
 Configuration control dataclasses for GlaMBIE.
 """
 
-from dataclasses import dataclass
+from dataclasses import MISSING, dataclass
 from typing import Literal
 import yaml
 import logging
-from abc import ABC, abstractclassmethod
+from abc import ABC, abstractmethod
 from glambie.const.constants import (
     ExtractTrendsMethod,
     YearType,
@@ -35,19 +35,27 @@ class Config(ABC):
     @classmethod
     def _validate_dict(cls, config_dict):
         config_dict_key_set = set(config_dict.keys())
+        # All dataclass fields that may appear in input dictionaries.
         reference_dict_key_set = {
             k for k, v in cls.__dataclass_fields__.items() if v.init
         }
+        # Only fields without defaults are mandatory; fields with defaults are optional.
+        required_dict_key_set = {
+            k
+            for k, v in cls.__dataclass_fields__.items()
+            if v.init and v.default is MISSING and v.default_factory is MISSING
+        }
 
-        if config_dict_key_set != reference_dict_key_set:
+        unexpected_keys = sorted(config_dict_key_set - reference_dict_key_set)
+        # Missing optional fields are allowed; only enforce truly required keys.
+        missing_keys = sorted(required_dict_key_set - config_dict_key_set)
+        if unexpected_keys or missing_keys:
             error_msg = (
                 f"The config dictionary is not in the correct format for {cls}. "
             )
-            unexpected_keys = sorted(config_dict_key_set - reference_dict_key_set)
-            if len(unexpected_keys) > 0:
+            if unexpected_keys:
                 error_msg += f"The config dictionary contains the following unexpected keys: {unexpected_keys}. "
-            missing_keys = sorted(reference_dict_key_set - config_dict_key_set)
-            if len(missing_keys) > 0:
+            if missing_keys:
                 error_msg += f"The config dictionary is missing the following keys: {missing_keys}. "
             log.error(error_msg)
             raise KeyError(error_msg)
@@ -59,8 +67,9 @@ class Config(ABC):
             config_dict = yaml.safe_load(fh)
             return cls.from_params(**config_dict)
 
-    @abstractclassmethod
-    def from_params(self):
+    @classmethod
+    @abstractmethod
+    def from_params(cls, **_kwargs):
         pass
 
 
@@ -70,6 +79,7 @@ class RegionRunConfig(Config):
     year_type: YearType
     seasonal_correction_dataset: list
     region_run_settings: list
+    disable_data_groups: list[GlambieDataGroup] | None = None
 
     @classmethod
     def from_params(cls, **config):
@@ -77,17 +87,36 @@ class RegionRunConfig(Config):
         cls._validate_dict(config)
         config_obj = cls(**config)
         config_obj._init_year_type()
+        config_obj._init_disable_data_groups()
         return config_obj
 
     def _init_year_type(self):
         if not isinstance(self.year_type, YearType):
             self.year_type = YearType(self.year_type)
 
+    def _init_disable_data_groups(self):
+        if self.disable_data_groups is None:
+            return
+
+        new_datagroup_list = []
+        for group in self.disable_data_groups:
+            if isinstance(group, GlambieDataGroup):
+                new_datagroup_list.append(group)
+            else:
+                new_datagroup_list.append(GLAMBIE_DATA_GROUPS[group])
+        self.disable_data_groups = new_datagroup_list
+
     def save_to_yaml(self, out_path):
-        yaml.add_representer(RegionRunConfig, region_run_config_class_representer)
-        yaml.add_representer(YearType, year_type_class_representer)
+        class _RegionConfigDumper(yaml.SafeDumper):
+            pass
+
+        _RegionConfigDumper.add_representer(RegionRunConfig, region_run_config_class_representer)
+        _RegionConfigDumper.add_representer(GlambieDataGroup, glambie_data_group_representer)
+        _RegionConfigDumper.add_representer(YearType, year_type_class_representer)
+        _RegionConfigDumper.add_multi_representer(Enum, enum_class_representer)
+
         with open(out_path, "w") as outfile:
-            outfile.write(yaml.dump(self))
+            yaml.dump(self, outfile, Dumper=_RegionConfigDumper, default_flow_style=False, sort_keys=False)
 
 
 @dataclass
@@ -157,6 +186,11 @@ class GlambieRunConfig(Config):
                         do not match up: {region_config.region_name} != {region["region_name"]}."""
                         log.error(error_msg)
                         raise ValueError(error_msg)
+
+                    # Parent config can optionally disable datagroups for this specific region.
+                    if "disable_data_groups" in region:
+                        region_config.disable_data_groups = region["disable_data_groups"]
+                        region_config._init_disable_data_groups()
                     new_regions.append(region_config)
         self.regions = new_regions
 

@@ -46,20 +46,19 @@ class Config(ABC):
             if v.init and v.default is MISSING and v.default_factory is MISSING
         }
 
-        if config_dict_key_set != reference_dict_key_set:
+        unexpected_keys = sorted(config_dict_key_set - reference_dict_key_set)
+        # Missing optional fields are allowed; only enforce truly required keys.
+        missing_keys = sorted(required_dict_key_set - config_dict_key_set)
+        if unexpected_keys or missing_keys:
             error_msg = (
                 f"The config dictionary is not in the correct format for {cls}. "
             )
-            unexpected_keys = sorted(config_dict_key_set - reference_dict_key_set)
-            if len(unexpected_keys) > 0:
+            if unexpected_keys:
                 error_msg += f"The config dictionary contains the following unexpected keys: {unexpected_keys}. "
-            # Missing optional fields are allowed; only enforce truly required keys.
-            missing_keys = sorted(required_dict_key_set - config_dict_key_set)
-            if len(missing_keys) > 0:
+            if missing_keys:
                 error_msg += f"The config dictionary is missing the following keys: {missing_keys}. "
-            if len(unexpected_keys) > 0 or len(missing_keys) > 0:
-                log.error(error_msg)
-                raise KeyError(error_msg)
+            log.error(error_msg)
+            raise KeyError(error_msg)
 
     @classmethod
     def from_yaml(cls, yaml_abspath):

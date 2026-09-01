@@ -13,6 +13,7 @@ region_run_settings:
     - Ke CQ et al from NJU
     - Treichler et al.
     - Menounos et al
+    - Wang_ICESat
     include_combined_annual_datasets:
     - Gardner et al
     include_combined_trend_datasets:

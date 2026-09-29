@@ -22,8 +22,9 @@ region_run_settings:
   gravimetry:
     exclude_annual_datasets :
     - Jacob-et-al_grav
+    - LEGOS_CNES_RGI6
     exclude_trend_datasets :
-    - 
+    - LEGOS_CNES_RGI6
     include_combined_trend_datasets:
     - Box-et-al_hybrid
   demdiff_and_glaciological :

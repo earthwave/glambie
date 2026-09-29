@@ -16,12 +16,14 @@ region_run_settings:
     include_combined_annual_datasets:
     - Gardner et al
     include_combined_trend_datasets:
-    - 
+    - Florentine_region2
+    - Florentine_USGS_2
   gravimetry:
     exclude_annual_datasets :
     - Jacob-et-al_grav
+    - LEGOS_CNES_RGI6
     exclude_trend_datasets :
-    - 
+    - LEGOS_CNES_RGI6
     include_combined_trend_datasets:
     - 
   demdiff_and_glaciological :
@@ -35,7 +37,5 @@ region_run_settings:
     include_combined_trend_datasets:
     - WGMS-DUS_combined
     - ETHZ
-    - Florentine_region2
-    - Florentine_USGS_2
     - Florentine_USGS_3
     - Gardner et al

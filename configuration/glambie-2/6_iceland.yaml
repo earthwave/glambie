@@ -22,19 +22,22 @@ region_run_settings:
   gravimetry:
     exclude_annual_datasets :
     - Jacob-et-al_grav
+    - LEGOS_CNES_RGI6
     exclude_trend_datasets :
-    - 
+    - LEGOS_CNES_RGI6
     include_combined_trend_datasets:
     - Box-et-al_hybrid
   demdiff_and_glaciological :
     exclude_annual_datasets : # glaciological datasets
-    - 
+    - Glambajökull_onlysmb
     exclude_trend_datasets : # demdiff datasets
     - Krieger_DLR_RGI6_isl
     include_combined_annual_datasets:
     - WGMS-DUS_combined
     - ETHZ
+    - Glambajökull
     include_combined_trend_datasets:
     - WGMS-DUS_combined
     - ETHZ
     - Gardner et al
+    - Glambajökull
